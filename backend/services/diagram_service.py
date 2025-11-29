@@ -73,13 +73,15 @@ class DiagramService:
 
     async def save_stage(self, project_id: str, stage: str, payload: DiagramUpdateRequest) -> DiagramState:
         """Persist nodes/edges for a stage."""
-        await self.ensure_stage(project_id, stage)  # validates stage/project
+        existing = await self.ensure_stage(project_id, stage)  # validates stage/project
+        metadata = self._next_metadata(existing.metadata, payload.metadata)
         return await self.repo.upsert_stage(
             project_id,
             stage.lower(),
             payload.nodes,
             payload.edges,
             payload.title or f"{get_stage_label(stage)} Diagram",
+            metadata=metadata,
         )
 
     async def chat(self, project_id: str, stage: str, message: str) -> DiagramChatResponse:
@@ -90,13 +92,14 @@ class DiagramService:
             diagram.edges,
             message,
         )
+        metadata = self._next_metadata(diagram.metadata)
         updated = await self.repo.upsert_stage(
             project_id,
             diagram.stage,
             nodes,
             edges,
             diagram.title,
-            diagram.metadata,
+            metadata,
         )
         return DiagramChatResponse(
             message=response_text,
@@ -149,6 +152,8 @@ class DiagramService:
         metadata = {
             "stage_label": stage_label,
             "generated_at": datetime.utcnow().isoformat(),
+            "version_counter": 1,
+            "version_stamp": datetime.utcnow().isoformat(),
         }
         return {
             "title": f"{stage_label} Diagram",
@@ -192,6 +197,15 @@ class DiagramService:
 
         metadata = {"seeded_from": normalized}
         return await self.repo.upsert_stage(project_id, stage, nodes, edges, title, metadata)
+
+    def _next_metadata(self, existing: Dict[str, Any] | None, incoming: Dict[str, Any] | None = None) -> Dict[str, Any]:
+        """Blend metadata updates and bump version counters."""
+        metadata: Dict[str, Any] = dict(existing or {})
+        if incoming:
+            metadata.update(incoming)
+        metadata["version_counter"] = int(metadata.get("version_counter", 0)) + 1
+        metadata["version_stamp"] = datetime.utcnow().isoformat()
+        return metadata
 
     async def _build_requirements_nodes(self, project_id: str):
         requirements = await self.requirement_repo.list_by_project(project_id)

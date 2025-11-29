@@ -1,8 +1,7 @@
 """LLM-powered editor for existing PlantUML diagrams."""
 
-from typing import Tuple
-
 import logging
+import re
 
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 
@@ -59,16 +58,59 @@ class UmlEditorService:
 
     def _extract_plantuml(self, text: str) -> str:
         """Strip markdown fences and keep only the PlantUML block."""
-        # Remove common markdown fences
-        if "```" in text:
-            parts = text.split("```")
-            # Heuristic: last non-empty fenced block
-            for block in reversed(parts):
-                candidate = block.strip()
-                if candidate and candidate.lower().startswith("@startuml"):
-                    return candidate
+        if not text:
+            return ""
 
-        if text.lower().startswith("@startuml") and "@enduml" in text.lower():
-            return text
+        def match_block(candidate: str) -> str:
+            match = re.search(r"@startuml.*?@enduml", candidate, re.IGNORECASE | re.DOTALL)
+            if match:
+                snippet = match.group(0).strip()
+                start_idx = snippet.lower().find("@startuml")
+                end_idx = snippet.lower().rfind("@enduml")
+                if start_idx != 0 and start_idx > 0:
+                    snippet = snippet[start_idx:]
+                if end_idx >= 0:
+                    end_idx += len("@enduml")
+                    snippet = snippet[:end_idx]
+                return snippet.strip()
+
+            lowered = candidate.lower()
+            start_idx = lowered.find("@startuml")
+            if start_idx != -1:
+                snippet = candidate[start_idx:].strip()
+                if "@enduml" not in snippet.lower():
+                    snippet = snippet.rstrip() + "\n@enduml"
+                return snippet
+
+            return ""
+
+        fence_variants = ("```", "~~~")
+        for fence in fence_variants:
+            if fence in text:
+                parts = text.split(fence)
+                for block in reversed(parts):
+                    candidate = block.strip()
+                    if not candidate:
+                        continue
+                    if candidate.lower().startswith("plantuml"):
+                        candidate = candidate[len("plantuml"):].strip()
+                    cleaned = match_block(candidate)
+                    if cleaned:
+                        return cleaned
+
+        if text.strip().lower().startswith("plantuml"):
+            text = text.strip()[len("plantuml"):].strip()
+
+        cleaned = match_block(text.strip())
+        if cleaned:
+            return cleaned
+
+        lowered = text.lower()
+        start_idx = lowered.find("@startuml")
+        if start_idx != -1:
+            snippet = text[start_idx:].strip()
+            if "@enduml" not in snippet.lower():
+                snippet = snippet.rstrip() + "\n@enduml"
+            return snippet
 
         return ""

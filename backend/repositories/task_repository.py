@@ -27,6 +27,8 @@ class TaskRepository:
                 "description": task.get("description", ""),
                 "estimate_hours": float(task.get("estimate_hours", 0)),
                 "actual_hours": float(task.get("actual_hours", 0)),
+                "start_date": task.get("start_date"),
+                "due_date": task.get("due_date"),
                 "status": task.get("status", "planned"),
                 "priority": task.get("priority", "medium"),
                 "dependencies": task.get("dependencies", []) or [],
@@ -72,3 +74,28 @@ class TaskRepository:
         if result:
             return Task(**result)
         return None
+
+    async def create_task(self, project_id: str, data: dict) -> Task:
+        """Create a single task."""
+        db = get_db()
+        task_id = data.get("_id") or f"task_{str(datetime.utcnow().timestamp()).replace('.', '')}"
+        doc = {
+            "_id": task_id,
+            "project_id": project_id,
+            "requirement_id": data.get("requirement_id"),
+            "title": data.get("title", "Task"),
+            "description": data.get("description", ""),
+            "estimate_hours": float(data.get("estimate_hours", 0) or 0),
+            "actual_hours": float(data.get("actual_hours", 0) or 0),
+            "start_date": data.get("start_date"),
+            "due_date": data.get("due_date"),
+            "status": data.get("status", "planned"),
+            "priority": data.get("priority", "medium"),
+            "dependencies": data.get("dependencies", []) or [],
+            "tags": data.get("tags", []) or [],
+            "phase": data.get("phase"),
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+        }
+        await db[self.collection_name].insert_one(doc)
+        return Task(**doc)

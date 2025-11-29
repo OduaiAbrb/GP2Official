@@ -103,6 +103,7 @@ class DiagramUpdateRequest(BaseModel):
     nodes: List[Dict[str, Any]]
     edges: List[Dict[str, Any]]
     title: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
 
 
 class DiagramChatRequest(BaseModel):

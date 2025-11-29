@@ -139,6 +139,11 @@ class ApiClient {
     return response.data;
   }
 
+  async createTask(projectId: string, data: Partial<Task>): Promise<Task> {
+    const response = await this.client.post(`/projects/${projectId}/tasks/`, data);
+    return response.data;
+  }
+
   async updateTask(id: string, data: Partial<Task>): Promise<Task> {
     const response = await this.client.patch(`/tasks/${id}/`, data);
     return response.data;
@@ -175,7 +180,7 @@ class ApiClient {
   async saveDiagramWorkspace(
     projectId: string,
     stage: string,
-    payload: { nodes: DiagramNode[]; edges: DiagramEdge[]; title?: string }
+    payload: { nodes: DiagramNode[]; edges: DiagramEdge[]; title?: string; metadata?: Record<string, any> }
   ): Promise<DiagramWorkspace> {
     const response = await this.client.put(`/projects/${projectId}/sdlc-diagrams/${stage}/`, payload);
     return response.data;

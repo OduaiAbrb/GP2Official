@@ -1,11 +1,20 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { api } from '@/lib/api';
 import type { Artifact, Project } from '@/types';
-import { ArrowLeft, Loader2, MessageSquare, RefreshCcw, Save, Sparkles } from 'lucide-react';
+import {
+  ArrowLeft,
+  Loader2,
+  MessageSquare,
+  RefreshCcw,
+  Save,
+  Sparkles,
+  PenTool,
+  Trash2,
+} from 'lucide-react';
 
 type ChatMessage = {
   id: string;
@@ -46,6 +55,18 @@ export const UmlDiagramEditorPage: React.FC = () => {
     },
   ]);
   const [chatInput, setChatInput] = useState('');
+  const [previewHeight, setPreviewHeight] = useState(720);
+  const [previewZoom, setPreviewZoom] = useState(100);
+  const [livePreviewUrl, setLivePreviewUrl] = useState<string | null>(null);
+  const [livePreviewLoading, setLivePreviewLoading] = useState(false);
+  const [penEnabled, setPenEnabled] = useState(true);
+  const [penDrawing, setPenDrawing] = useState(false);
+  const [penColor, setPenColor] = useState('#f97316');
+  const [penWidth, setPenWidth] = useState(3);
+  const previewContainerRef = useRef<HTMLDivElement>(null);
+  const penCanvasRef = useRef<HTMLCanvasElement>(null);
+  const livePreviewAbort = useRef<AbortController | null>(null);
+  const objectUrlRef = useRef<string | null>(null);
 
   const projectId = projectIdParam!;
 
@@ -76,7 +97,12 @@ export const UmlDiagramEditorPage: React.FC = () => {
 
   const currentTypeInfo = umlTypes.find((t) => t.id === umlType)!;
   const diagramLabel = currentTypeInfo.label;
-  const previewUrl = artifact?.metadata?.plantuml_svg_url;
+  const previewUrl = useMemo(() => {
+    if (!artifact?.metadata?.plantuml_svg_url) return undefined;
+    const stamped = artifact.updated_at ? new Date(artifact.updated_at).getTime() : Date.now();
+    return `${artifact.metadata.plantuml_svg_url}?v=${stamped}`;
+  }, [artifact]);
+  const displayPreviewUrl = livePreviewUrl || previewUrl;
 
   const handleSave = async () => {
     if (!projectId || !plantuml.trim()) return;
@@ -86,6 +112,7 @@ export const UmlDiagramEditorPage: React.FC = () => {
       const updated = await api.saveUmlDiagram(projectId, umlType, plantuml);
       setArtifact(updated);
       setPlantuml(updated.content_json?.plantuml || plantuml);
+      setLivePreviewUrl(null);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to save diagram');
     } finally {
@@ -115,6 +142,7 @@ export const UmlDiagramEditorPage: React.FC = () => {
       setChatMessages((prev) => [...prev, assistantMessage]);
       setArtifact(updated);
       setPlantuml(updated.content_json?.plantuml || plantuml);
+      setLivePreviewUrl(null);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'AI edit failed');
     } finally {
@@ -128,6 +156,141 @@ export const UmlDiagramEditorPage: React.FC = () => {
       setError(null);
     }
   };
+
+  const refreshCanvasSize = useCallback(() => {
+    if (!previewContainerRef.current || !penCanvasRef.current) return;
+    const rect = previewContainerRef.current.getBoundingClientRect();
+    const canvas = penCanvasRef.current;
+    const ratio = window.devicePixelRatio || 1;
+    canvas.width = rect.width * ratio;
+    canvas.height = rect.height * ratio;
+    canvas.style.width = `${rect.width}px`;
+    canvas.style.height = `${rect.height}px`;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.scale(ratio, ratio);
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshCanvasSize();
+    window.addEventListener('resize', refreshCanvasSize);
+    return () => window.removeEventListener('resize', refreshCanvasSize);
+  }, [refreshCanvasSize, previewHeight, previewZoom]);
+
+  const getCanvasPosition = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    const canvas = penCanvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+    };
+  };
+
+  const handlePenPointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!penEnabled) return;
+    const canvas = penCanvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!ctx || !canvas) return;
+    const { x, y } = getCanvasPosition(event);
+    ctx.strokeStyle = penColor;
+    ctx.lineWidth = penWidth;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    canvas.setPointerCapture(event.pointerId);
+    setPenDrawing(true);
+    event.preventDefault();
+  };
+
+  const handlePenPointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!penEnabled || !penDrawing) return;
+    const ctx = penCanvasRef.current?.getContext('2d');
+    if (!ctx) return;
+    const { x, y } = getCanvasPosition(event);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    event.preventDefault();
+  };
+
+  const stopDrawing = (event?: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!penDrawing) return;
+    const canvas = penCanvasRef.current;
+    const ctx = penCanvasRef.current?.getContext('2d');
+    ctx?.closePath();
+    if (canvas && event) {
+      try {
+        canvas.releasePointerCapture(event.pointerId);
+      } catch {
+        // ignore
+      }
+    }
+    setPenDrawing(false);
+  };
+
+  const handlePenClear = () => {
+    const ctx = penCanvasRef.current?.getContext('2d');
+    const canvas = penCanvasRef.current;
+    if (ctx && canvas) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  };
+
+  useEffect(() => {
+    if (!plantuml.trim()) {
+      setLivePreviewUrl(null);
+      return;
+    }
+    setLivePreviewLoading(true);
+    if (livePreviewAbort.current) {
+      livePreviewAbort.current.abort();
+    }
+    const controller = new AbortController();
+    livePreviewAbort.current = controller;
+    const debounce = setTimeout(async () => {
+      try {
+        const response = await fetch('https://www.plantuml.com/plantuml/svg', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain;charset=UTF-8',
+          },
+          body: plantuml,
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          throw new Error('Failed to render diagram');
+        }
+        const svgText = await response.text();
+        if (objectUrlRef.current) {
+          URL.revokeObjectURL(objectUrlRef.current);
+        }
+        const blob = new Blob([svgText], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        objectUrlRef.current = url;
+        setLivePreviewUrl(url);
+      } catch (err) {
+        if ((err as any).name !== 'AbortError') {
+          console.error('Live preview failed', err);
+        }
+      } finally {
+        setLivePreviewLoading(false);
+      }
+    }, 350);
+    return () => {
+      clearTimeout(debounce);
+      controller.abort();
+    };
+  }, [plantuml]);
+
+  useEffect(() => {
+    return () => {
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+      }
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -205,31 +368,132 @@ export const UmlDiagramEditorPage: React.FC = () => {
 
           <Card className="flex flex-col">
             <CardHeader>
-              <CardTitle>Diagram Preview</CardTitle>
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <CardTitle>Diagram Preview</CardTitle>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={penEnabled ? 'default' : 'outline'}
+                      onClick={() => setPenEnabled((prev) => !prev)}
+                    >
+                      <PenTool className="h-3.5 w-3.5 mr-1" />
+                      {penEnabled ? 'Pen On' : 'Pen Tool'}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={handlePenClear}
+                      disabled={!penEnabled}
+                    >
+                      <Trash2 className="h-3.5 w-3.5 mr-1" />
+                      Clear Sketch
+                    </Button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 gap-2 text-xs text-gray-600 md:grid-cols-2">
+                  <label className="flex flex-col">
+                    Height ({previewHeight}px)
+                    <input
+                      type="range"
+                      min={480}
+                      max={1000}
+                      step={20}
+                      value={previewHeight}
+                      onChange={(e) => setPreviewHeight(Number(e.target.value))}
+                    />
+                  </label>
+                  <label className="flex flex-col">
+                    Zoom ({previewZoom}%)
+                    <input
+                      type="range"
+                      min={60}
+                      max={160}
+                      step={5}
+                      value={previewZoom}
+                      onChange={(e) => setPreviewZoom(Number(e.target.value))}
+                    />
+                  </label>
+                  {penEnabled && (
+                    <>
+                      <label className="flex flex-col">
+                        Pen Color
+                        <input
+                          type="color"
+                          value={penColor}
+                          onChange={(e) => setPenColor(e.target.value)}
+                          className="h-8 w-16 p-0 border border-gray-300 rounded"
+                        />
+                      </label>
+                      <label className="flex flex-col">
+                        Pen Width ({penWidth}px)
+                        <input
+                          type="range"
+                          min={1}
+                          max={8}
+                          value={penWidth}
+                          onChange={(e) => setPenWidth(Number(e.target.value))}
+                        />
+                      </label>
+                    </>
+                  )}
+                </div>
+                <p className="text-[11px] text-gray-500">
+                  Pen tool lets you sketch quick annotations directly over the preview. Toggle it off to return to panning/scrolling.
+                </p>
+              </div>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col">
-              <div className="border border-gray-200 rounded-lg bg-white flex-1 flex items-center justify-center overflow-auto min-h-[640px]">
-                {previewUrl ? (
-                  <img
-                    src={previewUrl}
-                    alt={`${diagramLabel} preview`}
-                    className="max-w-full max-h-full object-contain bg-white"
-                  />
-                ) : plantuml ? (
-                  <pre className="p-4 text-xs text-gray-700 whitespace-pre-wrap font-mono">
-                    {plantuml}
-                  </pre>
-                ) : (
-                  <div className="text-center text-gray-500 text-sm">
-                    No preview available. Add valid PlantUML and save to generate a diagram.
+              <div
+                className="relative border border-gray-200 rounded-lg bg-white flex-1 overflow-auto"
+                style={{ height: previewHeight }}
+                ref={previewContainerRef}
+              >
+                <div
+                  className="flex items-center justify-center w-full h-full"
+                  style={{
+                    transform: `scale(${previewZoom / 100})`,
+                    transformOrigin: 'top left',
+                    minHeight: previewHeight,
+                  }}
+                >
+                  {displayPreviewUrl ? (
+                    <img
+                      src={displayPreviewUrl}
+                      alt={`${diagramLabel} preview`}
+                      className="max-w-full max-h-full object-contain bg-white"
+                    />
+                  ) : plantuml ? (
+                    <pre className="p-4 text-xs text-gray-700 whitespace-pre-wrap font-mono">
+                      {plantuml}
+                    </pre>
+                  ) : (
+                    <div className="text-center text-gray-500 text-sm px-4">
+                      No preview available. Add valid PlantUML and save or edit the source to generate a diagram.
+                    </div>
+                  )}
+                </div>
+                <canvas
+                  ref={penCanvasRef}
+                  className="absolute inset-0 cursor-crosshair"
+                  style={{ pointerEvents: penEnabled ? 'auto' : 'none' }}
+                  onPointerDown={handlePenPointerDown}
+                  onPointerMove={handlePenPointerMove}
+                  onPointerUp={(event) => stopDrawing(event)}
+                  onPointerLeave={(event) => stopDrawing(event)}
+                />
+                {livePreviewLoading && (
+                  <div className="absolute top-2 right-2 bg-white/80 rounded-md px-2 py-1 text-xs text-gray-600 flex items-center gap-1">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Refreshing preview...
                   </div>
                 )}
               </div>
-              {previewUrl && (
-                <div className="mt-2 text-xs text-gray-500">
-                  Rendered via public PlantUML server. If the image looks stale, click Save to regenerate.
-                </div>
-              )}
+              <p className="mt-2 text-xs text-gray-500">
+                Live preview updates automatically with your edits. Save to persist changes to the project.
+              </p>
             </CardContent>
           </Card>
 

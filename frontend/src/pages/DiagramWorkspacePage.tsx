@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import ReactFlow, {
   Background,
@@ -37,6 +37,12 @@ import {
   Server,
   Cloud,
   Globe,
+  Sun,
+  Moon,
+  ZoomIn,
+  ZoomOut,
+  Crosshair,
+  Eraser,
 } from 'lucide-react';
 
 type ChatMessage = {
@@ -300,6 +306,7 @@ export const DiagramWorkspacePage: React.FC = () => {
 
   const [project, setProject] = useState<Project | null>(null);
   const [workspace, setWorkspace] = useState<DiagramWorkspace | null>(null);
+  const workspaceRef = useRef<DiagramWorkspace | null>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -331,6 +338,228 @@ export const DiagramWorkspacePage: React.FC = () => {
   const [umlChatLoading, setUmlChatLoading] = useState(false);
   const [umlError, setUmlError] = useState<string | null>(null);
   const [umlSvgDownloading, setUmlSvgDownloading] = useState(false);
+  const [penEnabled, setPenEnabled] = useState(false);
+  const [penColor, setPenColor] = useState('#2563EB');
+  const [penWidth, setPenWidth] = useState(3);
+  const [penDrawing, setPenDrawing] = useState(false);
+  const penCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const canvasWrapperRef = useRef<HTMLDivElement | null>(null);
+  const [canvasTheme, setCanvasTheme] = useState<'light' | 'dark'>('light');
+  const [focusMode, setFocusMode] = useState(false);
+  const autosaveTimer = useRef<NodeJS.Timeout | null>(null);
+  const [autosaveState, setAutosaveState] = useState<'idle' | 'saving' | 'saved' | 'offline'>('idle');
+  const [snapshotHistory, setSnapshotHistory] = useState<
+    { id: string; timestamp: string; nodes: Node[]; edges: Edge[] }[]
+  >([]);
+  const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
+  const lastSnapshotRef = useRef<string>('');
+  const [persistedPenLayer, setPersistedPenLayer] = useState<string | null>(null);
+  const [offlineNotice, setOfflineNotice] = useState<string | null>(null);
+  const cacheKey = useMemo(
+    () => (projectId ? `diagram-cache-${projectId}-${stageKey}` : null),
+    [projectId, stageKey]
+  );
+  const [viewportHeight, setViewportHeight] = useState(() =>
+    typeof window !== 'undefined' ? window.innerHeight : 900
+  );
+  const capturePenLayer = useCallback(() => {
+    const canvas = penCanvasRef.current;
+    if (!canvas) return null;
+    try {
+      return canvas.toDataURL('image/png');
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const applyPenLayerFromSource = useCallback(
+    (dataUrl?: string | null) => {
+      const canvas = penCanvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (dataUrl) {
+        const img = new Image();
+        img.onload = () => {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        };
+        img.src = dataUrl;
+      }
+      setPersistedPenLayer(dataUrl || null);
+    },
+    []
+  );
+
+  const buildMetadataPayload = useCallback(() => {
+    const base = { ...(workspace?.metadata || {}) };
+    const annotations = { ...(base.annotations || {}) };
+    const penLayer = capturePenLayer();
+    if (penLayer) {
+      annotations.pen_layer = penLayer;
+    } else {
+      delete annotations.pen_layer;
+    }
+    if (Object.keys(annotations).length > 0) {
+      base.annotations = annotations;
+    } else {
+      delete base.annotations;
+    }
+    return base;
+  }, [workspace?.metadata, capturePenLayer]);
+
+  const canvasHeight = useMemo(() => Math.max(900, viewportHeight - 120), [viewportHeight]);
+  const gridClasses = useMemo(
+    () =>
+      focusMode
+        ? 'w-full'
+        : 'grid gap-3 xl:grid-cols-[250px_minmax(0,1fr)_260px] w-full',
+    [focusMode]
+  );
+
+  const resizePenCanvas = useCallback(() => {
+    const wrapper = canvasWrapperRef.current;
+    const canvas = penCanvasRef.current;
+    if (!wrapper || !canvas) return;
+    const rect = wrapper.getBoundingClientRect();
+    const ratio = window.devicePixelRatio || 1;
+    canvas.width = rect.width * ratio;
+    canvas.height = rect.height * ratio;
+    canvas.style.width = `${rect.width}px`;
+    canvas.style.height = `${rect.height}px`;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(ratio, ratio);
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+    }
+    if (persistedPenLayer) {
+      const img = new Image();
+      img.onload = () => {
+        ctx?.clearRect(0, 0, canvas.width, canvas.height);
+        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+      };
+      img.src = persistedPenLayer;
+    }
+  }, [persistedPenLayer]);
+
+  useEffect(() => {
+    resizePenCanvas();
+    window.addEventListener('resize', resizePenCanvas);
+    return () => window.removeEventListener('resize', resizePenCanvas);
+  }, [resizePenCanvas]);
+
+  useEffect(() => {
+    const handleViewportResize = () => {
+      setViewportHeight(window.innerHeight);
+    };
+    window.addEventListener('resize', handleViewportResize);
+    return () => window.removeEventListener('resize', handleViewportResize);
+  }, []);
+
+  const getPenPosition = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    const canvas = penCanvasRef.current;
+    if (!canvas) {
+      return { x: 0, y: 0 };
+    }
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+    };
+  };
+
+  const handlePenPointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!penEnabled) return;
+    const canvas = penCanvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!ctx || !canvas) return;
+    const { x, y } = getPenPosition(event);
+    ctx.strokeStyle = penColor;
+    ctx.lineWidth = penWidth;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    canvas.setPointerCapture(event.pointerId);
+    setPenDrawing(true);
+    event.preventDefault();
+  };
+
+  const handlePenPointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!penEnabled || !penDrawing) return;
+    const ctx = penCanvasRef.current?.getContext('2d');
+    if (!ctx) return;
+    const { x, y } = getPenPosition(event);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    event.preventDefault();
+  };
+
+  const stopPenDrawing = (event?: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!penDrawing) return;
+    const canvas = penCanvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    ctx?.closePath();
+    if (canvas && event) {
+      try {
+        canvas.releasePointerCapture(event.pointerId);
+      } catch {
+        // ignore
+      }
+    }
+    setPenDrawing(false);
+    const snapshot = capturePenLayer();
+    if (snapshot) {
+      setPersistedPenLayer(snapshot);
+    }
+  };
+
+  const clearPenCanvas = useCallback(() => {
+    const canvas = penCanvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (canvas && ctx) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    setPersistedPenLayer(null);
+  }, []);
+
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; visible: boolean }>({
+    x: 0,
+    y: 0,
+    visible: false,
+  });
+  const [clipboardNodes, setClipboardNodes] = useState<Node[]>([]);
+
+  const hydrateFromCache = useCallback(
+    (cached: any, reason: string) => {
+      if (!cached?.nodes || !cached?.edges) return false;
+      setNodes(toReactFlowNodes(cached.nodes));
+      setEdges(toReactFlowEdges(cached.edges));
+      applyPenLayerFromSource(cached.penLayer || null);
+      setOfflineNotice(reason);
+      return true;
+    },
+    [applyPenLayerFromSource]
+  );
+
+  const storeOfflineCache = useCallback(
+    (penLayerOverride?: string | null) => {
+      if (!cacheKey) return;
+      try {
+        const payload = {
+          nodes: serializeNodes(nodes),
+          edges: serializeEdges(edges),
+          penLayer: penLayerOverride ?? persistedPenLayer ?? capturePenLayer(),
+          updated_at: new Date().toISOString(),
+        };
+        localStorage.setItem(cacheKey, JSON.stringify(payload));
+      } catch {
+        // ignore storage errors
+      }
+    },
+    [cacheKey, nodes, edges, persistedPenLayer, capturePenLayer]
+  );
 
   const projectSlug = useMemo(() => sanitizeFileName(project?.name || 'project'), [project?.name]);
   const projectDisplayName = project?.name || 'Project';
@@ -370,25 +599,178 @@ export const DiagramWorkspacePage: React.FC = () => {
       .catch(() => setProject(null));
   }, [projectId]);
 
+  useEffect(() => {
+    const annotations = workspace?.metadata?.annotations;
+    if (annotations && annotations.pen_layer) {
+      applyPenLayerFromSource(annotations.pen_layer);
+    } else if (!annotations && !penDrawing) {
+      clearPenCanvas();
+    }
+  }, [workspace?.metadata, applyPenLayerFromSource, penDrawing]);
+
+  const loadWorkspaceRef = useRef(false);
+
+  const fallbackNodes = useMemo(
+    () => [
+      {
+        id: 'welcome_1',
+        type: 'shape',
+        position: { x: 100, y: 80 },
+        data: {
+          label: 'Start',
+          shape: 'terminator',
+          color: '#2563EB',
+        },
+      },
+      {
+        id: 'welcome_2',
+        type: 'shape',
+        position: { x: 360, y: 200 },
+        data: {
+          label: 'Brainstorm ideas',
+          shape: 'process',
+          color: '#F97316',
+        },
+      },
+      {
+        id: 'welcome_3',
+        type: 'shape',
+        position: { x: 640, y: 120 },
+        data: {
+          label: 'Ship milestone',
+          shape: 'terminator',
+          color: '#059669',
+        },
+      },
+    ],
+    []
+  );
+
+  const fallbackEdges = useMemo(
+    () => [
+      {
+        id: 'welcome_edge_1',
+        source: 'welcome_1',
+        target: 'welcome_2',
+        type: 'smoothstep',
+        label: 'plan',
+      },
+      {
+        id: 'welcome_edge_2',
+        source: 'welcome_2',
+        target: 'welcome_3',
+        type: 'smoothstep',
+        label: 'deliver',
+      },
+    ],
+    []
+  );
+
   const loadWorkspace = useCallback(async () => {
+    if (loadWorkspaceRef.current) {
+      return;
+    }
+    loadWorkspaceRef.current = true;
     if (!projectId) return;
     setLoadingWorkspace(true);
     setError(null);
     try {
       const data = await api.getDiagramWorkspace(projectId, stageKey);
       setWorkspace(data);
-      setNodes(toReactFlowNodes(data.nodes));
-      setEdges(toReactFlowEdges(data.edges));
+      let nodesSource = data.nodes;
+      let edgesSource = data.edges;
+      let penLayerSource = data.metadata?.annotations?.pen_layer;
+      let usedCache = false;
+      if (cacheKey) {
+        const cachedRaw = localStorage.getItem(cacheKey);
+        if (cachedRaw) {
+          try {
+            const cached = JSON.parse(cachedRaw);
+            if (
+              cached.updated_at &&
+              data.updated_at &&
+              new Date(cached.updated_at) > new Date(data.updated_at)
+            ) {
+              nodesSource = cached.nodes || nodesSource;
+              edgesSource = cached.edges || edgesSource;
+              penLayerSource = cached.penLayer || penLayerSource;
+              hydrateFromCache(cached, 'Restored unsynced edits from local cache.');
+              usedCache = true;
+            }
+          } catch {
+            // ignore cache parse errors
+          }
+        }
+      }
+      if (!usedCache) {
+        const normalizedNodes = nodesSource?.length ? nodesSource : fallbackNodes;
+        const normalizedEdges = edgesSource?.length ? edgesSource : fallbackEdges;
+        setNodes(toReactFlowNodes(normalizedNodes));
+        setEdges(toReactFlowEdges(normalizedEdges));
+        if (penLayerSource) {
+          applyPenLayerFromSource(penLayerSource);
+        } else {
+          clearPenCanvas();
+        }
+        setOfflineNotice(null);
+      }
     } catch (err) {
       setError('Failed to load workspace');
+      if (cacheKey) {
+        try {
+          const cachedRaw = localStorage.getItem(cacheKey);
+          if (cachedRaw) {
+            const cached = JSON.parse(cachedRaw);
+            if (hydrateFromCache(cached, 'Offline mode: using cached diagram.')) {
+              if (!workspaceRef.current) {
+                setWorkspace({
+                  diagram_id: `offline_${stageKey}`,
+                  project_id: projectId,
+                  stage: stageKey,
+                  title: `${stageKey} Canvas (offline)`,
+                  nodes: cached.nodes || [],
+                  edges: cached.edges || [],
+                  metadata: {},
+                  created_at: cached.updated_at || new Date().toISOString(),
+                  updated_at: cached.updated_at || new Date().toISOString(),
+                } as DiagramWorkspace);
+              }
+            }
+          }
+        } catch {
+          // ignore cache failures
+        }
+      }
     } finally {
       setLoadingWorkspace(false);
+      loadWorkspaceRef.current = false;
     }
-  }, [projectId, stageKey, setEdges, setNodes]);
+  }, [
+    projectId,
+    stageKey,
+    cacheKey,
+    setEdges,
+    setNodes,
+    applyPenLayerFromSource,
+    hydrateFromCache,
+    clearPenCanvas,
+    fallbackNodes,
+    fallbackEdges,
+  ]);
 
   useEffect(() => {
     loadWorkspace();
   }, [loadWorkspace]);
+
+  useEffect(() => {
+    workspaceRef.current = workspace;
+  }, [workspace]);
+
+  useEffect(() => {
+    if (!projectId) return;
+    storeOfflineCache(capturePenLayer());
+    setAutosaveState('idle');
+  }, [nodes, edges, projectId, capturePenLayer, storeOfflineCache]);
 
   useEffect(() => {
     if (!projectId) return;
@@ -423,6 +805,21 @@ export const DiagramWorkspacePage: React.FC = () => {
       })
       .finally(() => setUmlLoading(false));
   }, [projectId, umlType]);
+
+  useEffect(() => {
+    const signature = JSON.stringify({ nodes, edges });
+    if (signature === lastSnapshotRef.current) return;
+    lastSnapshotRef.current = signature;
+    setSnapshotHistory((prev) => {
+      const entry = {
+        id: `snap_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        timestamp: new Date().toISOString(),
+        nodes: nodes.map((node) => ({ ...node })),
+        edges: edges.map((edge) => ({ ...edge })),
+      };
+      return [entry, ...prev].slice(0, 5);
+    });
+  }, [nodes, edges]);
 
   const handleConnect = useCallback(
     (connection: Connection) => {
@@ -538,21 +935,98 @@ export const DiagramWorkspacePage: React.FC = () => {
     setSelectedNodeId(null);
   };
 
-  const handleSave = async () => {
+  const handleCopy = () => {
+    if (!selectedNodeId) return;
+    const target = nodes.find((n) => n.id === selectedNodeId);
+    if (!target) return;
+    setClipboardNodes([{ ...target, position: { ...target.position } }]);
+  };
+
+  const handleCut = () => {
+    if (!selectedNodeId) return;
+    const target = nodes.find((n) => n.id === selectedNodeId);
+    if (!target) return;
+    setClipboardNodes([{ ...target, position: { ...target.position } }]);
+    handleDeleteNode();
+  };
+
+  const handlePaste = () => {
+    if (!clipboardNodes.length) return;
+    const offset = 40;
+    const pasted: Node[] = clipboardNodes.map((node, idx) => ({
+      ...node,
+      id: `${node.id}_paste_${Date.now()}_${idx}`,
+      position: { x: node.position.x + offset, y: node.position.y + offset },
+    }));
+    setNodes((prev) => [...prev, ...pasted]);
+  };
+
+  const closeContextMenu = () => setContextMenu({ x: 0, y: 0, visible: false });
+
+  const handleContextMenu = (event: React.MouseEvent) => {
+    event.preventDefault();
+    const wrapper = canvasWrapperRef.current;
+    const rect = wrapper?.getBoundingClientRect();
+    const x = rect ? event.clientX - rect.left : event.clientX;
+    const y = rect ? event.clientY - rect.top : event.clientY;
+    setContextMenu({ x, y, visible: true });
+  };
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (mod && e.key.toLowerCase() === 'c') {
+        e.preventDefault();
+        handleCopy();
+      } else if (mod && e.key.toLowerCase() === 'x') {
+        e.preventDefault();
+        handleCut();
+      } else if (mod && e.key.toLowerCase() === 'v') {
+        e.preventDefault();
+        handlePaste();
+      } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        handleDeleteNode();
+      } else if (e.key === 'Escape') {
+        closeContextMenu();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [handleCopy, handleCut, handlePaste]);
+
+  const handleSave = async (silent = false) => {
     if (!projectId) return;
-    setIsSaving(true);
+    if (!silent) {
+      setIsSaving(true);
+    }
     try {
+      const metadata = buildMetadataPayload();
       const payload = {
         nodes: serializeNodes(nodes),
         edges: serializeEdges(edges),
         title: workspace?.title,
+        metadata,
       };
       const updated = await api.saveDiagramWorkspace(projectId, stageKey, payload);
       setWorkspace(updated);
+      setOfflineNotice(null);
+      if (!silent) {
+        setAutosaveState('saved');
+      }
+      if (!silent) {
+        setIsSaving(false);
+      }
+      return updated;
     } catch (err) {
       setError('Failed to save workspace');
-    } finally {
-      setIsSaving(false);
+      setOfflineNotice('Unable to sync with the server. Working from local cache.');
+      if (!silent) {
+        setAutosaveState('offline');
+      }
+      if (!silent) {
+        setIsSaving(false);
+      }
+      throw err;
     }
   };
 
@@ -585,6 +1059,13 @@ export const DiagramWorkspacePage: React.FC = () => {
     } finally {
       setCanvasExporting(false);
     }
+  };
+
+  const handleRestoreSnapshot = (snapshotId: string) => {
+    const snapshot = snapshotHistory.find((snap) => snap.id === snapshotId);
+    if (!snapshot) return;
+    setNodes(snapshot.nodes.map((node) => ({ ...node })));
+    setEdges(snapshot.edges.map((edge) => ({ ...edge })));
   };
 
   const handleSendChat = async () => {
@@ -622,6 +1103,22 @@ export const DiagramWorkspacePage: React.FC = () => {
     }
   };
 
+  const adjustZoom = (delta: number) => {
+    if (!reactFlowInstance) return;
+    const currentZoom =
+      typeof reactFlowInstance.getZoom === 'function' ? reactFlowInstance.getZoom() : reactFlowInstance?.viewport?.zoom || 1;
+    const nextZoom = Math.min(2.5, Math.max(0.25, currentZoom + delta));
+    if (reactFlowInstance.zoomTo) {
+      reactFlowInstance.zoomTo(nextZoom);
+    }
+  };
+
+  const handleFitView = () => {
+    if (reactFlowInstance?.fitView) {
+      reactFlowInstance.fitView({ padding: 0.2 });
+    }
+  };
+
   const handleUmlSave = async () => {
     if (!projectId) return;
     setUmlSaving(true);
@@ -636,6 +1133,10 @@ export const DiagramWorkspacePage: React.FC = () => {
     } finally {
       setUmlSaving(false);
     }
+  };
+
+  const toggleCanvasTheme = () => {
+    setCanvasTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   };
 
   const handleUmlChat = async () => {
@@ -749,13 +1250,20 @@ export const DiagramWorkspacePage: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)_350px]">
-          <aside className="bg-white border border-gray-200 rounded-lg p-4 space-y-4">
-            <div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-2 uppercase tracking-wide">
-                Diagram canvas
-              </h3>
-              <p className="text-xs text-gray-500">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm" variant={focusMode ? 'default' : 'outline'} onClick={() => setFocusMode((prev) => !prev)}>
+            {focusMode ? 'Exit Focus' : 'Focus Canvas'}
+          </Button>
+        </div>
+
+        <div className={gridClasses}>
+          {!focusMode && (
+            <aside className="bg-white border border-gray-200 rounded-lg p-4 space-y-4">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 mb-2 uppercase tracking-wide">
+                  Diagram canvas
+                </h3>
+                <p className="text-xs text-gray-500">
                 Use the palette to create flowchart nodes, then drag, connect, and edit them with the assistant.
               </p>
             </div>
@@ -863,6 +1371,32 @@ export const DiagramWorkspacePage: React.FC = () => {
             </div>
 
             <div className="space-y-2">
+              <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Snapshots</p>
+              {snapshotHistory.length === 0 ? (
+                <p className="text-xs text-gray-500">Snapshots capture recent canvas states for quick undo.</p>
+              ) : (
+                <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
+                  {snapshotHistory.map((snapshot) => (
+                    <Button
+                      key={snapshot.id}
+                      size="sm"
+                      variant="outline"
+                      className="w-full justify-between"
+                      onClick={() => handleRestoreSnapshot(snapshot.id)}
+                    >
+                      <span className="text-left text-xs">
+                        {new Date(snapshot.timestamp).toLocaleTimeString()}
+                      </span>
+                      <span className="text-[10px] text-gray-500">
+                        {snapshot.nodes.length} nodes
+                      </span>
+                    </Button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
               <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Selected node</p>
               {selectedNode ? (
                 <div className="space-y-2">
@@ -934,7 +1468,7 @@ export const DiagramWorkspacePage: React.FC = () => {
                 />
                 Snap to grid
               </label>
-              <Button onClick={handleSave} className="w-full" disabled={isSaving}>
+              <Button onClick={() => handleSave()} className="w-full" disabled={isSaving}>
                 {isSaving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -947,16 +1481,27 @@ export const DiagramWorkspacePage: React.FC = () => {
                   </>
                 )}
               </Button>
+              <p className="text-[11px] text-gray-500">
+                Autosave:{' '}
+                {autosaveState === 'saving'
+                  ? 'saving...'
+                  : autosaveState === 'saved'
+                  ? 'saved'
+                  : autosaveState === 'offline'
+                  ? 'offline (unsynced)'
+                  : 'idle'}
+              </p>
             </div>
-            {workspace && (
-              <div className="text-xs text-gray-500">
-                Last updated {new Date(workspace.updated_at).toLocaleString()}
-              </div>
-            )}
-          </aside>
+              {workspace && (
+                <div className="text-xs text-gray-500">
+                  Last updated {new Date(workspace.updated_at).toLocaleString()}
+                </div>
+              )}
+            </aside>
+          )}
 
-          <div className="bg-white border border-gray-200 rounded-lg p-4 text-gray-900 shadow">
-            <div className="mb-3 flex items-center justify-between flex-wrap gap-2">
+          <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4 text-gray-900 shadow w-full overflow-hidden">
+            <div className="mb-3 flex items-center justify-between flex-wrap gap-3">
               <div>
                 <p className="text-xs uppercase text-gray-500">Canvas</p>
                 <h2 className="text-xl font-semibold flex items-center gap-2 text-gray-900">
@@ -970,19 +1515,87 @@ export const DiagramWorkspacePage: React.FC = () => {
                     ? 'SRS'
                     : 'Costs'}
                 </h2>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 max-w-3xl">
                   Use this space as a mind map for flows, architectures, or any software engineering concept. Switch
                   modes to maintain separate canvases for requirements, SRS, or costs.
                 </p>
               </div>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" onClick={() => adjustZoom(0.1)}>
+                  <ZoomIn className="h-4 w-4 mr-1" />
+                  Zoom In
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => adjustZoom(-0.1)}>
+                  <ZoomOut className="h-4 w-4 mr-1" />
+                  Zoom Out
+                </Button>
+                <Button size="sm" variant="outline" onClick={handleFitView}>
+                  <Crosshair className="h-4 w-4 mr-1" />
+                  Fit
+                </Button>
+                <Button size="sm" variant="outline" onClick={toggleCanvasTheme}>
+                  {canvasTheme === 'light' ? (
+                    <>
+                      <Moon className="h-4 w-4 mr-1" />
+                      Dark
+                    </>
+                  ) : (
+                    <>
+                      <Sun className="h-4 w-4 mr-1" />
+                      Light
+                    </>
+                  )}
+                </Button>
+                <Button
+                  size="sm"
+                  variant={penEnabled ? 'default' : 'outline'}
+                  onClick={() => setPenEnabled((prev) => !prev)}
+                >
+                  <PenTool className="h-4 w-4 mr-1" />
+                  {penEnabled ? 'Pen On' : 'Pen Tool'}
+                </Button>
+                <Button size="sm" variant="outline" onClick={clearPenCanvas} disabled={!penEnabled}>
+                  <Eraser className="h-4 w-4 mr-1" />
+                  Clear Ink
+                </Button>
+                {penEnabled && (
+                  <>
+                    <input
+                      type="color"
+                      value={penColor}
+                      onChange={(e) => setPenColor(e.target.value)}
+                      className="h-8 w-12 border border-gray-200 rounded"
+                      title="Pen color"
+                    />
+                    <input
+                      type="range"
+                      min={1}
+                      max={8}
+                      value={penWidth}
+                      onChange={(e) => setPenWidth(Number(e.target.value))}
+                      className="w-24"
+                    />
+                  </>
+                )}
+              </div>
             </div>
-            <div className="border border-gray-200 rounded-lg relative bg-white" style={{ minHeight: '80vh' }}>
+            {offlineNotice && (
+              <div className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                {offlineNotice}
+              </div>
+            )}
+            <div
+              className={`relative rounded-lg ${canvasTheme === 'dark' ? 'bg-slate-900 border border-slate-700' : 'bg-white border border-gray-200'}`}
+              style={{ minHeight: canvasHeight, height: canvasHeight, width: '100%' }}
+              ref={canvasWrapperRef}
+              onContextMenu={handleContextMenu}
+            >
               {loadingWorkspace ? (
-                <div className="flex items-center justify-center h-[80vh]">
+                <div className="flex items-center justify-center" style={{ minHeight: canvasHeight }}>
                   <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
                 </div>
               ) : (
-                <div className="relative min-h-[80vh]">
+                <div className="relative w-full" style={{ minHeight: canvasHeight, height: canvasHeight }}>
                   <ReactFlow
                     nodes={nodes}
                     edges={edges}
@@ -995,12 +1608,82 @@ export const DiagramWorkspacePage: React.FC = () => {
                     snapToGrid={snapToGrid}
                     snapGrid={[20, 20]}
                     proOptions={{ hideAttribution: true }}
-                    className="min-h-[720px]"
+                    className={`${canvasTheme === 'dark' ? 'text-white' : ''}`}
+                    onInit={setReactFlowInstance}
+                    style={{ height: '100%', width: '100%' }}
                   >
-                    <Background gap={24} size={1} />
+                    <Background gap={24} size={1} color={canvasTheme === 'dark' ? '#1e293b' : '#dbeafe'} />
                     <MiniMap />
                     <Controls />
                   </ReactFlow>
+                  {!nodes.length && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-center text-sm text-gray-400 pointer-events-none">
+                      <p>No nodes yet.</p>
+                      <p>Add shapes from the left palette or run "Sync with Phase Data".</p>
+                    </div>
+                  )}
+                  {nodes.length > 0 && (
+                    <div className="absolute top-2 right-2 z-10 flex items-center gap-2 text-xs text-gray-500 bg-white/80 backdrop-blur rounded-full px-3 py-1 shadow">
+                      <span>Nodes: {nodes.length}</span>
+                      <span>Edges: {edges.length}</span>
+                    </div>
+                  )}
+                  <canvas
+                    ref={penCanvasRef}
+                    className="absolute inset-0 pointer-events-none"
+                    style={{ pointerEvents: penEnabled ? 'auto' : 'none' }}
+                    onPointerDown={handlePenPointerDown}
+                    onPointerMove={handlePenPointerMove}
+                    onPointerUp={stopPenDrawing}
+                    onPointerLeave={stopPenDrawing}
+                  />
+                  {contextMenu.visible && (
+                    <div
+                      className="absolute z-20 bg-white border border-gray-200 rounded-md shadow-lg text-sm text-gray-800"
+                      style={{ top: contextMenu.y, left: contextMenu.x, minWidth: '160px' }}
+                    >
+                      <button
+                        className="w-full text-left px-3 py-2 hover:bg-gray-100 disabled:opacity-50"
+                        onClick={() => {
+                          handleCopy();
+                          closeContextMenu();
+                        }}
+                        disabled={!selectedNodeId}
+                      >
+                        Copy
+                      </button>
+                      <button
+                        className="w-full text-left px-3 py-2 hover:bg-gray-100 disabled:opacity-50"
+                        onClick={() => {
+                          handleCut();
+                          closeContextMenu();
+                        }}
+                        disabled={!selectedNodeId}
+                      >
+                        Cut
+                      </button>
+                      <button
+                        className="w-full text-left px-3 py-2 hover:bg-gray-100 disabled:opacity-50"
+                        onClick={() => {
+                          handlePaste();
+                          closeContextMenu();
+                        }}
+                        disabled={!clipboardNodes.length}
+                      >
+                        Paste
+                      </button>
+                      <button
+                        className="w-full text-left px-3 py-2 hover:bg-gray-100 disabled:opacity-50"
+                        onClick={() => {
+                          handleDeleteNode();
+                          closeContextMenu();
+                        }}
+                        disabled={!selectedNodeId}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1011,7 +1694,8 @@ export const DiagramWorkspacePage: React.FC = () => {
             )}
           </div>
 
-          <aside className="bg-white border border-gray-200 rounded-lg p-4 flex flex-col space-y-4">
+          {!focusMode && (
+            <aside className="bg-white border border-gray-200 rounded-lg p-4 flex flex-col space-y-4">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <Bot className="h-5 w-5 text-purple-500" />
@@ -1210,7 +1894,8 @@ export const DiagramWorkspacePage: React.FC = () => {
                 )}
               </div>
             )}
-          </aside>
+            </aside>
+          )}
         </div>
       </div>
     </Layout>

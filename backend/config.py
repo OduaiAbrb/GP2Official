@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     # Database / Frontend
     mongo_url: str = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
     database_name: str = "architect_ai"
+    use_in_memory_db: bool = os.environ.get("USE_IN_MEMORY_DB", "").lower() == "true"
     frontend_origin: str = os.environ.get("FRONTEND_ORIGIN", "http://localhost:3000")
     
     # JWT
@@ -27,6 +28,11 @@ class Settings(BaseSettings):
     llm_api_key: Optional[str] = os.environ.get("LLM_API_KEY")
     llm_model_name: str = os.environ.get("LLM_MODEL_NAME", "gpt-4")
     huggingface_api_key: Optional[str] = os.environ.get("HUGGINGFACE_API_KEY")
+    gemini_api_key: Optional[str] = os.environ.get("GEMINI_API_KEY")
+
+    # PlantUML / external services
+    plantuml_api_host: Optional[str] = os.environ.get("PLANTUML_API_HOST")
+    plantuml_api_key: Optional[str] = os.environ.get("PLANTUML_API_KEY")
     
     class Config:
         env_file = ".env"

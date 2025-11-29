@@ -43,6 +43,8 @@ async def update_task(
         actual_hours=updated.actual_hours,
         status=updated.status,
         priority=updated.priority,
+        start_date=updated.start_date,
+        due_date=updated.due_date,
         dependencies=updated.dependencies,
         tags=updated.tags,
         phase=updated.phase,

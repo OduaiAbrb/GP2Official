@@ -6,6 +6,7 @@ import logging
 from config import settings
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 from repositories.project_repository import ProjectRepository
+from models.project import default_phase_status
 from repositories.artifact_repository import ArtifactRepository
 
 logger = logging.getLogger(__name__)
@@ -64,8 +65,19 @@ class PhaseFlowService:
         if not project:
             raise ValueError("Project not found")
 
-        status = dict(project.phase_status)
-        if status.get(phase) not in {"ready", "in_progress"}:
+        # Normalize status to ensure every phase is present and planning is always startable
+        normalized_status = default_phase_status()
+        normalized_status.update(project.phase_status or {})
+        status = dict(normalized_status)
+        current_state = status.get(phase)
+        if phase == "planning" and current_state == "locked":
+            current_state = "ready"
+            status[phase] = "ready"
+        if current_state == "completed":
+            # Allow regenerating completed phases by resetting to ready
+            current_state = "ready"
+            status[phase] = "ready"
+        if current_state not in {"ready", "in_progress"}:
             raise PermissionError("This phase is locked. Complete previous phases first.")
 
         status[phase] = "in_progress"
@@ -98,7 +110,8 @@ class PhaseFlowService:
         }
 
     async def _run_phase_prompt(self, project_name: str, phase: str, user_prompt: str) -> str:
-        if not self.api_key:
+        llm_requires_key = self.provider not in {"stub", "mock"}
+        if llm_requires_key and not self.api_key:
             logger.warning("LLM API key missing; returning placeholder content")
             return f"# {PHASE_TITLES[phase]}\n\nNo LLM configured. User prompt:\n{user_prompt}"
 
@@ -108,13 +121,34 @@ class PhaseFlowService:
             "Provide concise, actionable outputs tailored to the requested phase."
         )
         phase_instructions = {
-            "planning": "Create a focused project plan: goals, constraints, key stakeholders, success metrics.",
-            "cost_benefit": "Analyze benefits, costs, ROI, and recommend go/no-go rationale.",
-            "tasks": "Break work into actionable epics/tasks with rough sequencing and dependencies.",
-            "requirements_gathering": "Outline requirement elicitation approach, personas, and sample questions.",
-            "requirements_validation": "Describe validation techniques, acceptance criteria, and traceability approach.",
-            "design_architecture": "Recommend high-level architecture, components, integrations, and tech considerations.",
-            "development": "Suggest implementation strategy, tech stack guidance, and quality safeguards (no code).",
+            "planning": (
+                "Craft the Acorn Planning Brief: summarize the problem, vision, guardrails, business goals, "
+                "key stakeholders, and success metrics. Highlight risks/assumptions and the next decision gates."
+            ),
+            "cost_benefit": (
+                "Produce the Acorn Cost–Benefit Snapshot: detail value levers, measurable KPIs, delivery effort, "
+                "operational costs, ROI sensitivity, and a go/no-go recommendation aligned to the planning brief."
+            ),
+            "tasks": (
+                "Author the Acorn Execution Map: break work into epics, major stories, and high-level dependencies. "
+                "Tag each item with expected owner persona and readiness gates for downstream phases."
+            ),
+            "requirements_gathering": (
+                "Design the Acorn Discovery Playbook: personas, research tactics, interview prompts, artifact inputs, "
+                "and how findings will trace to requirements/tasks inside the Acorn workspace."
+            ),
+            "requirements_validation": (
+                "Provide the Acorn Validation Checklist: acceptance criteria strategy, review cadence, traceability "
+                "matrix notes, and sign-off workflow that keeps requirements synced with Acorn artifacts."
+            ),
+            "design_architecture": (
+                "Deliver the Acorn Architecture Capsule: system context, component diagram narrative, integration "
+                "touchpoints, data considerations, and how diagrams tie back into Acorn’s UML canvases."
+            ),
+            "development": (
+                "Outline the Acorn Delivery Charter: implementation phases, tech stack rationale, quality safeguards, "
+                "deployment strategy, and handoff checkpoints to keep artifacts and tasks current."
+            ),
         }
         user_prompt = user_prompt.strip() or "Use available project context."
         phase_text = phase_instructions.get(phase, "")

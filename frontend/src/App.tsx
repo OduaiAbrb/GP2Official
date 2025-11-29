@@ -11,6 +11,7 @@ import { DiagramWorkspacePage } from './pages/DiagramWorkspacePage';
 import { UmlDiagramEditorPage } from './pages/UmlDiagramEditorPage';
 import { PhaseDetailPage } from './pages/PhaseDetailPage';
 import { AcornDraftPage } from './pages/AcornDraftPage';
+import { ProjectSummaryPage } from './pages/ProjectSummaryPage';
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, checkAuth } = useAuthStore();
@@ -54,6 +55,14 @@ function App() {
           element={
             <PrivateRoute>
               <ProjectDetailPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/projects/:id/summary"
+          element={
+            <PrivateRoute>
+              <ProjectSummaryPage />
             </PrivateRoute>
           }
         />

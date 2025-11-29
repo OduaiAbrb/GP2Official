@@ -41,6 +41,8 @@ class TaskResponse(BaseModel):
     actual_hours: float
     status: str
     priority: str
+    start_date: Optional[datetime] = None
+    due_date: Optional[datetime] = None
     dependencies: List[str]
     tags: List[str]
     phase: Optional[str]
@@ -56,6 +58,24 @@ class TaskUpdate(BaseModel):
     actual_hours: Optional[float] = None
     status: Optional[str] = None
     priority: Optional[str] = None
+    start_date: Optional[datetime] = None
+    due_date: Optional[datetime] = None
+    dependencies: Optional[List[str]] = None
+    tags: Optional[List[str]] = None
+    phase: Optional[str] = None
+
+
+class TaskCreate(BaseModel):
+    """Task creation payload."""
+    requirement_id: Optional[str] = None
+    title: str
+    description: Optional[str] = None
+    estimate_hours: Optional[float] = 0
+    actual_hours: Optional[float] = 0
+    status: Optional[str] = "planned"
+    priority: Optional[str] = "medium"
+    start_date: Optional[datetime] = None
+    due_date: Optional[datetime] = None
     dependencies: Optional[List[str]] = None
     tags: Optional[List[str]] = None
     phase: Optional[str] = None

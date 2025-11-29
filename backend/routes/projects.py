@@ -10,11 +10,13 @@ from services.project_service import ProjectService
 from routes.auth import get_current_user
 from models.generation import GenerationRequest, GenerationResponse
 from models.requirement import RequirementResponse
-from models.task import TaskResponse
+from models.task import TaskResponse, TaskCreate
 from models.artifact import ArtifactResponse
+from models.activity import ActivityLogResponse
 from repositories.requirement_repository import RequirementRepository
 from repositories.task_repository import TaskRepository
 from repositories.artifact_repository import ArtifactRepository
+from repositories.activity_repository import ActivityRepository
 from services.generation_service import GenerationService
 
 router = APIRouter()
@@ -22,6 +24,7 @@ project_service = ProjectService()
 requirement_repo = RequirementRepository()
 task_repo = TaskRepository()
 artifact_repo = ArtifactRepository()
+activity_repo = ActivityRepository()
 generation_service = GenerationService()
 
 
@@ -166,6 +169,8 @@ async def project_tasks(
             description=task.description,
             estimate_hours=task.estimate_hours,
             actual_hours=task.actual_hours,
+            start_date=task.start_date,
+            due_date=task.due_date,
             status=task.status,
             priority=task.priority,
             dependencies=task.dependencies,
@@ -176,6 +181,36 @@ async def project_tasks(
         )
         for task in tasks
     ]
+
+
+@router.post("/{project_id}/tasks/", response_model=TaskResponse, status_code=201)
+async def create_project_task(
+    project_id: str,
+    payload: TaskCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Create a task for a project."""
+    await project_service.get_project(project_id, current_user)
+    created = await task_repo.create_task(project_id, payload.dict(exclude_unset=True))
+    return TaskResponse(
+        id=created.id,
+        task_id=created.id,
+        project_id=created.project_id,
+        requirement_id=created.requirement_id,
+        title=created.title,
+        description=created.description,
+        estimate_hours=created.estimate_hours,
+        actual_hours=created.actual_hours,
+        status=created.status,
+        priority=created.priority,
+        start_date=created.start_date,
+        due_date=created.due_date,
+        dependencies=created.dependencies,
+        tags=created.tags,
+        phase=created.phase,
+        created_at=created.created_at,
+        updated_at=created.updated_at,
+    )
 
 
 @router.get("/{project_id}/artifacts/", response_model=List[ArtifactResponse])
@@ -203,6 +238,18 @@ async def project_artifacts(
         )
         for artifact in artifacts
     ]
+
+
+@router.get("/{project_id}/activity/", response_model=List[ActivityLogResponse])
+async def project_activity(
+    project_id: str,
+    limit: int = 50,
+    current_user: User = Depends(get_current_user)
+):
+    """Return recent activity for a project. Currently returns empty if none recorded."""
+    await project_service.get_project(project_id, current_user)
+    logs = await activity_repo.list_by_project(project_id, limit=limit)
+    return [ActivityLogResponse(**log.dict()) for log in logs]
 
 
 @router.get("/{project_id}/srs/export/")
