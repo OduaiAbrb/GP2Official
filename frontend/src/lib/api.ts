@@ -138,6 +138,14 @@ class ApiClient {
     return response.data;
   }
 
+  async replaceRequirements(
+    projectId: string,
+    data: { requirements: Partial<Requirement>[] }
+  ): Promise<Requirement[]> {
+    const response = await this.client.put(`/projects/${projectId}/requirements/bulk/`, data);
+    return response.data;
+  }
+
   // Tasks
   async getTasks(projectId: string, filters?: Record<string, any>): Promise<Task[]> {
     const response = await this.client.get(`/projects/${projectId}/tasks/`, { params: filters });

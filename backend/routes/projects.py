@@ -88,6 +88,11 @@ class FeasibilitySectionsPayload(BaseModel):
     sections: List[Dict[str, Any]]
 
 
+class RequirementBulkPayload(BaseModel):
+    """Payload for bulk replacing project requirements from AI output."""
+    requirements: List[Dict[str, Any]]
+
+
 @router.post("/", response_model=ProjectResponse)
 async def create_project(
     project_data: ProjectCreate,
@@ -167,6 +172,42 @@ async def project_requirements(
             updated_at=req.updated_at,
         )
         for req in requirements
+    ]
+
+
+@router.put("/{project_id}/requirements/bulk/", response_model=List[RequirementResponse])
+async def replace_project_requirements(
+    project_id: str,
+    payload: RequirementBulkPayload,
+    current_user: User = Depends(get_current_user),
+):
+    """Replace all requirements for a project with the provided list.
+
+    Intended to sync AI-generated requirements from the Requirements phase markdown.
+    """
+    # Ensure project exists and user has access
+    await project_service.get_project(project_id, current_user)
+
+    replaced = await requirement_repo.replace_project_requirements(
+        project_id,
+        payload.requirements,
+    )
+
+    return [
+        RequirementResponse(
+            id=req.id,
+            requirement_id=req.id,
+            project_id=req.project_id,
+            type=req.type,
+            title=req.title,
+            description=req.description,
+            priority=req.priority,
+            status=req.status,
+            confidence_score=req.confidence_score,
+            created_at=req.created_at,
+            updated_at=req.updated_at,
+        )
+        for req in replaced
     ]
 
 

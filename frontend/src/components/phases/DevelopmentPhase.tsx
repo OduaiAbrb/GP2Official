@@ -2,10 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import type { Requirement } from '@/types';
 import {
   Sparkles,
-  Loader2,
-  Code,
   Server,
   Database,
   Globe,
@@ -14,13 +13,10 @@ import {
   Box,
   GitBranch,
   Layers,
-  Terminal,
   FolderTree,
   ArrowRight,
   CheckCircle2,
   AlertTriangle,
-  ChevronDown,
-  ChevronUp,
   Copy,
 } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -39,39 +35,44 @@ interface DevelopmentPhaseProps {
   projectId: string;
   onGenerate: (prompt: string) => Promise<void>;
   isGenerating: boolean;
+  requirements?: Requirement[];
+  content?: string;
 }
 
 export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
   projectId,
   onGenerate,
   isGenerating,
+  requirements,
+  content,
 }) => {
-  const [activeTab, setActiveTab] = useState<'stack' | 'flow' | 'structure' | 'components'>('stack');
-  const [expandedCategory, setExpandedCategory] = useState<Set<string>>(new Set(['frontend', 'backend']));
+  const [activeTab, setActiveTab] = useState<'stack' | 'flow' | 'structure'>('stack');
+  const [stackFilter, setStackFilter] = useState('');
+  const [showRecommendedOnly, setShowRecommendedOnly] = useState(false);
 
   const initialTechStack: TechStackMap = {
     frontend: [
-      { name: 'React', category: 'Framework', description: 'Component-based UI library', icon: '⚛️', recommended: true },
-      { name: 'TypeScript', category: 'Language', description: 'Type-safe JavaScript', icon: '📘', recommended: true },
-      { name: 'TailwindCSS', category: 'Styling', description: 'Utility-first CSS framework', icon: '🎨', recommended: true },
-      { name: 'Vite', category: 'Build Tool', description: 'Next-gen frontend tooling', icon: '⚡', recommended: true },
-      { name: 'React Router', category: 'Routing', description: 'Declarative routing', icon: '🛤️', recommended: true },
+      { name: 'React', category: 'Framework', description: 'Component-based UI library', icon: '', recommended: true },
+      { name: 'TypeScript', category: 'Language', description: 'Type-safe JavaScript', icon: '', recommended: true },
+      { name: 'TailwindCSS', category: 'Styling', description: 'Utility-first CSS framework', icon: '', recommended: true },
+      { name: 'Vite', category: 'Build Tool', description: 'Next-gen frontend tooling', icon: '', recommended: true },
+      { name: 'React Router', category: 'Routing', description: 'Declarative routing', icon: '', recommended: true },
     ],
     backend: [
-      { name: 'Django', category: 'Framework', description: 'Python web framework', icon: '🐍', recommended: true },
-      { name: 'Django REST Framework', category: 'API', description: 'REST API toolkit', icon: '🔌', recommended: true },
-      { name: 'Celery', category: 'Task Queue', description: 'Distributed task queue', icon: '🥬', recommended: true },
-      { name: 'Redis', category: 'Cache', description: 'In-memory data store', icon: '⚡', recommended: true },
+      { name: 'Django', category: 'Framework', description: 'Python web framework', icon: '', recommended: true },
+      { name: 'Django REST Framework', category: 'API', description: 'REST API toolkit', icon: '', recommended: true },
+      { name: 'Celery', category: 'Task Queue', description: 'Distributed task queue', icon: '', recommended: true },
+      { name: 'Redis', category: 'Cache', description: 'In-memory data store', icon: '', recommended: true },
     ],
     database: [
-      { name: 'PostgreSQL', category: 'Primary DB', description: 'Relational database', icon: '🐘', recommended: true },
-      { name: 'Redis', category: 'Cache', description: 'Caching layer', icon: '🔴', recommended: true },
+      { name: 'PostgreSQL', category: 'Primary DB', description: 'Relational database', icon: '', recommended: true },
+      { name: 'Redis', category: 'Cache', description: 'Caching layer', icon: '', recommended: true },
     ],
     infrastructure: [
-      { name: 'Docker', category: 'Containerization', description: 'Container platform', icon: '🐳', recommended: true },
-      { name: 'AWS / GCP', category: 'Cloud', description: 'Cloud infrastructure', icon: '☁️', recommended: true },
-      { name: 'Nginx', category: 'Web Server', description: 'Reverse proxy', icon: '🌐', recommended: true },
-      { name: 'GitHub Actions', category: 'CI/CD', description: 'Automation pipeline', icon: '🔄', recommended: true },
+      { name: 'Docker', category: 'Containerization', description: 'Container platform', icon: '', recommended: true },
+      { name: 'AWS / GCP', category: 'Cloud', description: 'Cloud infrastructure', icon: '', recommended: true },
+      { name: 'Nginx', category: 'Web Server', description: 'Reverse proxy', icon: '', recommended: true },
+      { name: 'GitHub Actions', category: 'CI/CD', description: 'Automation pipeline', icon: '', recommended: true },
     ],
   };
 
@@ -151,13 +152,6 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
   };
 
   const [techStackData, setTechStackData] = useState<TechStackMap>(initialTechStack);
-  const [newTech, setNewTech] = useState<TechStackItem>({
-    name: '',
-    category: Object.keys(initialTechStack)[0] || 'frontend',
-    description: '',
-    icon: '✨',
-    recommended: false,
-  });
   const [bestPractices, setBestPractices] = useState<string[]>([
     'Use connection pooling for database',
     'Implement Redis caching for hot data',
@@ -180,6 +174,148 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
   const [flowStepsAi, setFlowStepsAi] = useState<string[] | null>(null);
   const [folderStructureAi, setFolderStructureAi] = useState<string | null>(null);
   const [componentsAi, setComponentsAi] = useState<string[] | null>(null);
+
+  const suggestedTechs = React.useMemo(() => {
+    const suggestions: { label: string; details: string }[] = [];
+
+    let corpus = '';
+    if (requirements && requirements.length) {
+      corpus +=
+        '\n' +
+        requirements
+          .map((r) => `${r.title} ${r.description}`)
+          .join(' \n ')
+          .toLowerCase();
+    }
+
+    // Also look at the existing development plan data (stack, flow, structure, components)
+    Object.values(techStackData).forEach((items) => {
+      items.forEach((item) => {
+        corpus += `\n${item.name} ${item.description} ${item.category}`.toLowerCase();
+      });
+    });
+
+    if (flowStepsAi && flowStepsAi.length) {
+      corpus += '\n' + flowStepsAi.join(' \n ').toLowerCase();
+    }
+    if (folderStructureAi) {
+      corpus += '\n' + folderStructureAi.toLowerCase();
+    }
+    if (componentsAi && componentsAi.length) {
+      corpus += '\n' + componentsAi.join(' \n ').toLowerCase();
+    }
+    if (content) {
+      corpus += '\n' + content.toLowerCase();
+    }
+
+    const text = corpus;
+
+    const add = (label: string, details: string) => {
+      if (!suggestions.find((s) => s.label === label)) {
+        suggestions.push({ label, details });
+      }
+    };
+
+    if (text.includes('mobile') || text.includes('android') || text.includes('ios')) {
+      add(
+        'Mobile stack',
+        'Explore Flutter, React Native, Kotlin/Android, Swift/iOS, and Expo for cross-platform mobile apps.'
+      );
+    }
+
+    if (
+      text.includes('web app') ||
+      text.includes('webapp') ||
+      text.includes('web portal') ||
+      text.includes('dashboard') ||
+      text.includes('frontend')
+    ) {
+      add(
+        'Web frontend',
+        'Explore React + TypeScript, Next.js, Vue 3, Nuxt, Angular, and SvelteKit for modern web frontends.'
+      );
+    }
+
+    if (text.includes('api') || text.includes('rest') || text.includes('graphql') || text.includes('backend')) {
+      add(
+        'Web backend / API',
+        'Compare Django REST/DRF, FastAPI, Node.js/Express, NestJS, Laravel, Ruby on Rails, and Spring Boot for APIs.'
+      );
+    }
+
+    if (text.includes('ecommerce') || text.includes('payments') || text.includes('subscription')) {
+      add(
+        'Payments & billing',
+        'Look at Stripe, Braintree, Paddle, and PayPal SDKs, plus PCI/GDPR and subscription billing patterns.'
+      );
+    }
+
+    if (text.includes('realtime') || text.includes('real-time') || text.includes('chat') || text.includes('notifications')) {
+      add(
+        'Realtime & messaging',
+        'Compare WebSockets, Socket.IO, SignalR, GraphQL subscriptions, and services like Pusher/Ably/Fanout.'
+      );
+    }
+
+    if (
+      text.includes('database') ||
+      text.includes('sql') ||
+      text.includes('postgres') ||
+      text.includes('mysql') ||
+      text.includes('mongodb') ||
+      text.includes('no-sql') ||
+      text.includes('nosql')
+    ) {
+      add(
+        'Databases & storage',
+        'Compare PostgreSQL, MySQL/MariaDB, SQLite, MongoDB, and Redis, plus ORMs like Prisma, TypeORM, SQLAlchemy, and Eloquent.'
+      );
+    }
+
+    if (
+      text.includes('docker') ||
+      text.includes('kubernetes') ||
+      text.includes('k8s') ||
+      text.includes('aws') ||
+      text.includes('gcp') ||
+      text.includes('azure') ||
+      text.includes('ci/cd') ||
+      text.includes('pipeline')
+    ) {
+      add(
+        'Infrastructure & DevOps',
+        'Explore Docker, docker-compose, Kubernetes, AWS/GCP/Azure basics, and CI/CD with GitHub Actions, GitLab CI, or CircleCI.'
+      );
+    }
+
+    // Language / framework bias
+    if (text.includes('django') || text.includes('fastapi') || text.includes('python')) {
+      add(
+        'Python backend focus',
+        'Go deeper into Django, Django REST Framework, FastAPI, SQLAlchemy/ORMs, and Celery/Redis for async tasks.'
+      );
+    }
+    if (text.includes('laravel') || text.includes('php')) {
+      add(
+        'PHP / Laravel',
+        'Explore Laravel (Eloquent, queues, events), Symfony components, and modern PHP 8+ features.'
+      );
+    }
+    if (text.includes('nestjs') || text.includes('nest.js') || text.includes('typescript backend')) {
+      add(
+        'Node / NestJS',
+        'Go deeper into NestJS modules, providers, controllers, decorators, and testing with Jest.'
+      );
+    }
+    if (text.includes('express') || text.includes('node.js') || text.includes('nodejs')) {
+      add(
+        'Node / Express',
+        'Strengthen Express fundamentals: routing, middleware, validation (Joi/Zod), and structured controllers/services.'
+      );
+    }
+
+    return suggestions;
+  }, [requirements, techStackData, flowStepsAi, folderStructureAi, componentsAi, content]);
 
   useEffect(() => {
     if (!projectId) return;
@@ -269,29 +405,6 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
     }
   };
 
-  const toggleCategory = (category: string) => {
-    setExpandedCategory((prev) => {
-      const next = new Set(prev);
-      if (next.has(category)) next.delete(category);
-      else next.add(category);
-      return next;
-    });
-  };
-
-  const handleAddTech = () => {
-    if (!newTech.name.trim() || !newTech.description.trim()) return;
-    setTechStackData((prev) => {
-      const next: TechStackMap = {
-        ...prev,
-        [newTech.category]: [newTech, ...(prev[newTech.category] || [])],
-      };
-      persistDevelopment(next, bestPractices, watchOuts);
-      return next;
-    });
-    setNewTech((prev) => ({ ...prev, name: '', description: '' }));
-    setExpandedCategory((prev) => new Set(prev).add(newTech.category));
-  };
-
   const handleToggleRecommended = (category: string, idx: number) => {
     setTechStackData((prev) => {
       const next: TechStackMap = {
@@ -359,20 +472,6 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
 
   const resolvedFolderStructure = folderStructureAi || folderStructure;
 
-  const resolvedComponents = React.useMemo(() => {
-    if (componentsAi && componentsAi.length) {
-      return [
-        {
-          layer: 'Components',
-          description: 'AI-generated component breakdown based on the development phase.',
-          items: componentsAi,
-          color: 'purple' as const,
-        },
-      ];
-    }
-    return componentBreakdown;
-  }, [componentsAi]);
-
   return (
     <div className="space-y-6">
       {/* Tab Navigation */}
@@ -381,7 +480,6 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
           { id: 'stack', label: 'Tech Stack', icon: Layers },
           { id: 'flow', label: 'System Flow', icon: GitBranch },
           { id: 'structure', label: 'Folder Structure', icon: FolderTree },
-          { id: 'components', label: 'Components', icon: Box },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -401,8 +499,106 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
       {/* Tech Stack Tab */}
       {activeTab === 'stack' && (
         <div className="space-y-4">
+          {suggestedTechs.length > 0 && (
+            <Card className="border-emerald-200 bg-emerald-50/60">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-emerald-800 text-base">
+                  <Sparkles className="h-4 w-4" />
+                  Suggested technologies to learn
+                </CardTitle>
+                <CardDescription className="text-emerald-700">
+                  Based on your current requirements (features, platforms, and constraints).
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-wrap gap-2">
+                {suggestedTechs.map((s) => (
+                  <div
+                    key={s.label}
+                    className="px-3 py-2 rounded-lg bg-white shadow-sm border border-emerald-200 max-w-xs"
+                  >
+                    <div className="text-xs font-semibold text-emerald-800 mb-1">{s.label}</div>
+                    <div className="text-[11px] text-emerald-700 leading-snug">{s.details}</div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {suggestedTechs.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Learning roadmap</CardTitle>
+                <CardDescription className="text-xs">
+                  High-level steps you can follow to grow your stack skills for this project.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <ol className="space-y-1 text-xs text-gray-700 list-decimal list-inside">
+                  {suggestedTechs.map((s, idx) => {
+                    const level: 'Beginner' | 'Intermediate' | 'Advanced' =
+                      idx <= 2 ? 'Beginner' : idx <= 5 ? 'Intermediate' : 'Advanced';
+                    const levelClass =
+                      level === 'Beginner'
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : level === 'Intermediate'
+                        ? 'bg-amber-50 text-amber-700 border-amber-200'
+                        : 'bg-purple-50 text-purple-700 border-purple-200';
+                    return (
+                      <li key={s.label} className="flex flex-wrap items-start gap-2">
+                        <span className={`px-1.5 py-0.5 rounded-full border text-[10px] font-semibold ${levelClass}`}>
+                          {level}
+                        </span>
+                        <span>
+                          <span className="font-semibold">{s.label}:</span> {s.details}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </CardContent>
+            </Card>
+          )}
+
+          {suggestedTechs.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">This week&apos;s focus</CardTitle>
+                <CardDescription className="text-xs">
+                  Start with these 1–3 roadmap areas and ship a small vertical slice using them.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-0 space-y-2 text-xs text-gray-700">
+                {suggestedTechs.slice(0, 3).map((s) => (
+                  <div key={s.label} className="p-2 rounded-lg border border-gray-200 bg-white">
+                    <div className="font-semibold mb-0.5">{s.label}</div>
+                    <div className="text-[11px] leading-snug">{s.details}</div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Stack filters */}
+          <Card>
+            <CardContent className="flex flex-wrap items-center gap-3">
+              <input
+                className="border rounded-lg px-3 py-1.5 text-xs flex-1 min-w-[160px]"
+                placeholder="Filter technologies by name or description"
+                value={stackFilter}
+                onChange={(e) => setStackFilter(e.target.value)}
+              />
+              <label className="flex items-center gap-1 text-xs text-gray-600">
+                <input
+                  type="checkbox"
+                  checked={showRecommendedOnly}
+                  onChange={(e) => setShowRecommendedOnly(e.target.checked)}
+                />
+                Show recommended only
+              </label>
+            </CardContent>
+          </Card>
+
           {Object.entries(techStackData).map(([category, items]) => {
-            const isExpanded = expandedCategory.has(category);
             const categoryIcons: Record<string, React.ReactNode> = {
               frontend: <Globe className="h-5 w-5" />,
               backend: <Server className="h-5 w-5" />,
@@ -410,118 +606,61 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
               infrastructure: <Box className="h-5 w-5" />,
             };
 
+            const filter = stackFilter.trim().toLowerCase();
+            const visibleItems = items.filter((item) => {
+              if (showRecommendedOnly && !item.recommended) return false;
+              if (!filter) return true;
+              const haystack = `${item.name} ${item.description} ${item.category}`.toLowerCase();
+              return haystack.includes(filter);
+            });
+
             return (
               <Card key={category}>
-                <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => toggleCategory(category)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      toggleCategory(category);
-                    }
-                  }}
-                  className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors cursor-pointer"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-emerald-100 rounded-lg text-emerald-600">
-                      {categoryIcons[category]}
-                    </div>
-        <Card className="border-dashed">
-          <CardHeader>
-            <CardTitle className="text-base">Add Custom Technology</CardTitle>
-            <CardDescription>Capture bespoke stack choices for this project.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="grid md:grid-cols-2 gap-3">
-              <input
-                className="border rounded-lg px-3 py-2 text-sm"
-                placeholder="Technology name"
-                value={newTech.name}
-                onChange={(e) => setNewTech((prev) => ({ ...prev, name: e.target.value }))}
-              />
-              <select
-                className="border rounded-lg px-3 py-2 text-sm"
-                value={newTech.category}
-                onChange={(e) => setNewTech((prev) => ({ ...prev, category: e.target.value }))}
-              >
-                {Object.keys(techStackData).map((cat) => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-            </div>
-            <div className="grid md:grid-cols-2 gap-3">
-              <input
-                className="border rounded-lg px-3 py-2 text-sm"
-                placeholder="Emoji/Icon"
-                value={newTech.icon}
-                onChange={(e) => setNewTech((prev) => ({ ...prev, icon: e.target.value }))}
-              />
-              <label className="flex items-center gap-2 text-sm text-gray-600">
-                <input
-                  type="checkbox"
-                  checked={newTech.recommended}
-                  onChange={(e) => setNewTech((prev) => ({ ...prev, recommended: e.target.checked }))}
-                />
-                Recommended
-              </label>
-            </div>
-            <textarea
-              className="border rounded-lg px-3 py-2 text-sm w-full"
-              rows={3}
-              placeholder="Why is this technology needed?"
-              value={newTech.description}
-              onChange={(e) => setNewTech((prev) => ({ ...prev, description: e.target.value }))}
-            />
-            <Button onClick={handleAddTech} disabled={!newTech.name.trim() || !newTech.description.trim()}>
-              Add to Stack
-            </Button>
-          </CardContent>
-        </Card>
-                    <div className="text-left">
-                      <h3 className="font-semibold text-gray-900 capitalize">{category}</h3>
-                      <p className="text-sm text-gray-500">{items.length} technologies</p>
-                    </div>
-                  </div>
-                  {isExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-                </div>
-
-                {isExpanded && (
-                  <CardContent className="pt-0">
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {items.map((item, idx) => (
-                        <div
-                          key={item.name}
-                          className="p-3 rounded-xl border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50 transition-all"
-                        >
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="text-xl">{item.icon}</span>
-                            <span className="font-medium text-gray-900">{item.name}</span>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-xs text-emerald-600"
-                              onClick={() => handleToggleRecommended(category, idx)}
-                            >
-                              {item.recommended ? 'Recommended ✓' : 'Mark Recommended'}
-                            </Button>
-                          </div>
-                          <p className="text-xs text-gray-500">{item.description}</p>
-                          <Badge variant="secondary" className="mt-2 text-xs">{item.category}</Badge>
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-sm">
+                    {categoryIcons[category]}
+                    <span className="capitalize">{category}</span>
+                  </CardTitle>
+                  <CardDescription className="text-xs text-gray-500">
+                    {visibleItems.length} of {items.length} technologies in this layer
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {visibleItems.map((item, idx) => (
+                      <div
+                        key={item.name}
+                        className="p-3 rounded-xl border border-gray-200 bg-white hover:border-emerald-300 hover:bg-emerald-50 transition-all"
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-medium text-gray-900 text-sm">{item.name}</span>
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="text-xs text-red-500 mt-1"
+                            className="text-[10px] text-emerald-600 px-1 h-6"
+                            onClick={() => handleToggleRecommended(category, idx)}
+                          >
+                            {item.recommended ? 'Recommended' : 'Mark' }
+                          </Button>
+                        </div>
+                        <p className="text-[11px] text-gray-600 mb-1">{item.description}</p>
+                        <Badge variant="secondary" className="text-[10px]">
+                          {item.category}
+                        </Badge>
+                        <div className="mt-1 flex justify-end">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-[10px] text-red-500 px-1 h-6"
                             onClick={() => handleDeleteTech(category, idx)}
                           >
                             Remove
                           </Button>
                         </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                )}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
               </Card>
             );
           })}
@@ -530,64 +669,101 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
 
       {/* System Flow Tab */}
       {activeTab === 'flow' && (
-        <Card>
-          <CardHeader className="bg-gradient-to-r from-emerald-50 to-teal-50 border-b">
-            <CardTitle className="flex items-center gap-2">
-              <GitBranch className="h-5 w-5 text-emerald-600" />
-              Request Flow Diagram
-            </CardTitle>
-            <CardDescription>How a request flows through the system</CardDescription>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="relative">
-              {/* Flow Steps */}
-              <div className="flex flex-wrap items-center justify-center gap-2">
-                {resolvedFlowSteps.map((step, idx) => {
-                  const colors = colorMap[step.color];
-                  return (
-                    <React.Fragment key={step.id}>
-                      <div className={`p-4 rounded-xl border-2 ${colors.border} ${colors.bg} min-w-[140px]`}>
-                        <div className="flex items-center gap-2 mb-2">
-                          <step.icon className={`h-5 w-5 ${colors.text}`} />
-                          <span className={`font-medium ${colors.text}`}>{step.name}</span>
+        <div className="space-y-4">
+          <Card>
+            <CardHeader className="bg-gradient-to-r from-emerald-50 to-teal-50 border-b">
+              <CardTitle className="flex items-center gap-2">
+                <GitBranch className="h-5 w-5 text-emerald-600" />
+                Request Flow Diagram
+              </CardTitle>
+              <CardDescription>How a request flows through the system</CardDescription>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="relative">
+                {/* Flow Steps */}
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  {resolvedFlowSteps.map((step, idx) => {
+                    const colors = colorMap[step.color];
+                    return (
+                      <React.Fragment key={step.id}>
+                        <div className={`p-4 rounded-xl border-2 ${colors.border} ${colors.bg} min-w-[140px]`}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <step.icon className={`h-5 w-5 ${colors.text}`} />
+                            <span className={`font-medium ${colors.text}`}>{step.name}</span>
+                          </div>
+                          <p className="text-xs text-gray-600">{step.description}</p>
                         </div>
-                        <p className="text-xs text-gray-600">{step.description}</p>
-                      </div>
-                      {idx < resolvedFlowSteps.length - 1 && (
-                        <ArrowRight className="h-6 w-6 text-gray-400 flex-shrink-0" />
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-              </div>
+                        {idx < resolvedFlowSteps.length - 1 && (
+                          <ArrowRight className="h-6 w-6 text-gray-400 flex-shrink-0" />
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
 
-              {/* Flow Legend */}
-              <div className="mt-6 p-4 bg-gray-50 rounded-xl">
-                <h4 className="font-medium text-gray-900 mb-3">Flow Details</h4>
-                <div className="grid md:grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <h5 className="font-medium text-gray-700 mb-2">Request Path</h5>
-                    <ol className="space-y-1 text-gray-600">
-                      <li>1. Client sends HTTP request</li>
-                      <li>2. API Gateway validates JWT token</li>
-                      <li>3. Load balancer routes to healthy instance</li>
-                      <li>4. Application processes business logic</li>
-                    </ol>
-                  </div>
-                  <div>
-                    <h5 className="font-medium text-gray-700 mb-2">Response Path</h5>
-                    <ol className="space-y-1 text-gray-600">
-                      <li>5. Check cache for existing data</li>
-                      <li>6. Query database if cache miss</li>
-                      <li>7. Serialize response to JSON</li>
-                      <li>8. Return to client with headers</li>
-                    </ol>
+                {/* Flow Legend */}
+                <div className="mt-6 p-4 bg-gray-50 rounded-xl">
+                  <h4 className="font-medium text-gray-900 mb-3">Flow Details</h4>
+                  <div className="grid md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <h5 className="font-medium text-gray-700 mb-2">Request Path</h5>
+                      <ol className="space-y-1 text-gray-600">
+                        <li>1. Client sends HTTP request</li>
+                        <li>2. API Gateway validates JWT token</li>
+                        <li>3. Load balancer routes to healthy instance</li>
+                        <li>4. Application processes business logic</li>
+                      </ol>
+                    </div>
+                    <div>
+                      <h5 className="font-medium text-gray-700 mb-2">Response Path</h5>
+                      <ol className="space-y-1 text-gray-600">
+                        <li>5. Check cache for existing data</li>
+                        <li>6. Query database if cache miss</li>
+                        <li>7. Serialize response to JSON</li>
+                        <li>8. Return to client with headers</li>
+                      </ol>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Methodology tips</CardTitle>
+              <CardDescription className="text-xs">
+                How to think about request/response flows for different API styles.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-0 text-xs text-gray-700 space-y-2">
+              <div>
+                <p className="font-semibold mb-1">REST APIs</p>
+                <ul className="list-disc list-inside space-y-0.5">
+                  <li>Model flows around resources (e.g. <code>/users</code>, <code>/workouts</code>).</li>
+                  <li>Use HTTP verbs to describe intent: GET (read), POST (create), PUT/PATCH (update), DELETE (remove).</li>
+                  <li>Keep the flow stateless: every request carries auth and context.</li>
+                </ul>
+              </div>
+              <div>
+                <p className="font-semibold mb-1">GraphQL</p>
+                <ul className="list-disc list-inside space-y-0.5">
+                  <li>Think in queries and mutations hitting a single <code>/graphql</code> endpoint.</li>
+                  <li>Flow is: client builds query → GraphQL server resolves fields → data loaders/services hit DB.</li>
+                  <li>Design resolvers to reuse the same services as REST controllers.</li>
+                </ul>
+              </div>
+              <div>
+                <p className="font-semibold mb-1">Event-driven</p>
+                <ul className="list-disc list-inside space-y-0.5">
+                  <li>Requests become events on a bus (e.g. "WorkoutCreated"), consumed by multiple services.</li>
+                  <li>Draw flows as publish → broker → subscribers, not just client → server.</li>
+                  <li>Use this style for decoupled background work (notifications, analytics, billing).</li>
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       {/* Folder Structure Tab */}
@@ -614,70 +790,60 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
         </Card>
       )}
 
-      {/* Components Tab */}
-      {activeTab === 'components' && (
-        <div className="space-y-4">
-          {resolvedComponents.map((layer) => {
-            const colors = colorMap[layer.color];
-            return (
-              <Card key={layer.layer} className={`border-l-4 ${colors.border}`}>
-                <CardHeader className={colors.bg}>
-                  <CardTitle className={`flex items-center gap-2 ${colors.text}`}>
-                    <Box className="h-5 w-5" />
-                    {layer.layer}
-                  </CardTitle>
-                  <CardDescription>{layer.description}</CardDescription>
-                </CardHeader>
-                <CardContent className="p-4">
-                  <div className="flex flex-wrap gap-2">
-                    {layer.items.map((item) => (
-                      <div
-                        key={item}
-                        className={`px-3 py-2 rounded-lg border ${colors.border} ${colors.bg} font-mono text-sm`}
-                      >
-                        {item}
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+      {content && (() => {
+        const lines = content.split('\n').map((line) => line.trim());
+        let endpointLines = lines
+          .filter((line) => /^(GET|POST|PUT|PATCH|DELETE|OPTIONS|HEAD)\s+\//i.test(line))
+          .map((line) => line.replace(/^[-*]\s*/, ''));
 
-      {/* AI Generate Section */}
-      <Card className="bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-emerald-500" />
-            AI Development Assistant
-          </CardTitle>
-          <CardDescription>Generate code templates, architecture recommendations, and more</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            <Button variant="outline" onClick={() => onGenerate('Generate optimized tech stack recommendation')} disabled={isGenerating}>
-              <Layers className="mr-2 h-4 w-4" /> Tech Stack
-            </Button>
-            <Button variant="outline" onClick={() => onGenerate('Generate API endpoint code templates')}>
-              <Code className="mr-2 h-4 w-4" /> API Code
-            </Button>
-            <Button variant="outline" onClick={() => onGenerate('Generate database schema migrations')}>
-              <Database className="mr-2 h-4 w-4" /> Migrations
-            </Button>
-            <Button variant="outline" onClick={() => onGenerate('Generate Docker deployment configuration')}>
-              <Terminal className="mr-2 h-4 w-4" /> Docker
-            </Button>
-          </div>
-          {isGenerating && (
-            <div className="flex items-center gap-2 text-emerald-600">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Generating...</span>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        // Fallback: look for backticked /api/... style routes even if no HTTP verb is present
+        if (endpointLines.length === 0) {
+          const routeCandidates: string[] = [];
+          const routeLineRegex = /`\/(?!\/)[^`]+`/g; // backticked paths starting with /
+          lines.forEach((line) => {
+            let match: RegExpExecArray | null;
+            while ((match = routeLineRegex.exec(line)) !== null) {
+              const raw = match[0].replace(/`/g, '');
+              routeCandidates.push(raw);
+            }
+          });
+          if (routeCandidates.length) {
+            endpointLines = Array.from(new Set(routeCandidates));
+          }
+        }
+
+        return (
+          <Card className="mt-4">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-sm">
+                <Server className="h-4 w-4" />
+                API Endpoints
+              </CardTitle>
+              <CardDescription>
+                Extracted from the development plan. Shows routes like <code>GET /route</code> or <code>/api/users/me</code>.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {endpointLines.length > 0 ? (
+                endpointLines.map((line, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between py-1 border-b last:border-b-0 text-xs font-mono"
+                  >
+                    <span>{line}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-gray-500">
+                  No explicit HTTP verb routes found in the markdown. Ask AI to list endpoints like <code>GET /projects</code>.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })()}
+
+      {/* Components summary intentionally removed for a simpler System Flow + Folder Structure view */}
 
       {/* Performance Notes */}
       <Card>

@@ -1,29 +1,23 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import type { Requirement } from '@/types';
 import {
   CheckCircle2,
   XCircle,
-  AlertTriangle,
-  Users,
-  FileCheck,
-  Shield,
   MessageSquare,
   ThumbsUp,
   ThumbsDown,
   Clock,
-  Sparkles,
-  Loader2,
   ChevronDown,
   ChevronUp,
   FileText,
-  Target,
+  Users,
 } from 'lucide-react';
 
 interface ValidationItem {
   id: string;
-  type: 'requirement' | 'prototype' | 'risk' | 'stakeholder';
   name: string;
   description: string;
   status: 'approved' | 'pending' | 'rejected' | 'review';
@@ -37,56 +31,18 @@ interface ValidationPhaseProps {
   onGenerate: (prompt: string) => Promise<void>;
   isGenerating: boolean;
   content: string;
+  requirements?: Requirement[];
 }
 
-const parseValidationItems = (markdown: string): ValidationItem[] => {
-  if (!markdown.trim()) return [];
-  const lines = markdown.split('\n');
-  const items: ValidationItem[] = [];
-  let currentType: ValidationItem['type'] = 'stakeholder';
+const buildRequirementItems = (requirements?: Requirement[]): ValidationItem[] => {
+  if (!requirements || !requirements.length) return [];
   let counter = 1;
-
-  for (const raw of lines) {
-    const line = raw.trim();
-    if (!line) continue;
-    const lower = line.toLowerCase();
-
-    if (line.startsWith('#')) {
-      if (lower.includes('stakeholder')) currentType = 'stakeholder';
-      else if (lower.includes('requirement')) currentType = 'requirement';
-      else if (lower.includes('prototype') || lower.includes('prototype')) currentType = 'prototype';
-      else if (lower.includes('risk')) currentType = 'risk';
-      continue;
-    }
-
-    if (!line.startsWith('-') && !line.startsWith('*')) continue;
-    const content = line.replace(/^[-*]\s*/, '').trim();
-    if (!content) continue;
-
-    const [namePart, descPart] = content.split(':');
-    const name = (namePart || '').trim() || `Item ${counter}`;
-    const description = (descPart || '').trim() || name;
-
-    const idPrefix =
-      currentType === 'stakeholder'
-        ? 's'
-        : currentType === 'requirement'
-        ? 'r'
-        : currentType === 'prototype'
-        ? 'p'
-        : 'k';
-
-    items.push({
-      id: `${idPrefix}${counter}`,
-      type: currentType,
-      name,
-      description,
-      status: 'pending',
-    });
-    counter += 1;
-  }
-
-  return items;
+  return requirements.map((req) => ({
+    id: `r${counter++}`,
+    name: req.title,
+    description: req.description,
+    status: 'pending',
+  }));
 };
 
 export const ValidationPhase: React.FC<ValidationPhaseProps> = ({
@@ -94,11 +50,11 @@ export const ValidationPhase: React.FC<ValidationPhaseProps> = ({
   onGenerate,
   isGenerating,
   content,
+  requirements,
 }) => {
-  const [activeTab, setActiveTab] = useState<'stakeholder' | 'requirements' | 'prototype' | 'risks'>('stakeholder');
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
-  const initialItems = parseValidationItems(content);
+  const initialItems = buildRequirementItems(requirements);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -133,24 +89,6 @@ export const ValidationPhase: React.FC<ValidationPhaseProps> = ({
     });
     return map;
   });
-
-  const getItemsByType = (type: ValidationItem['type']) =>
-    Object.values(itemsById).filter((i) => i.type === type);
-
-  const getValidationItems = () => {
-    switch (activeTab) {
-      case 'stakeholder':
-        return getItemsByType('stakeholder');
-      case 'requirements':
-        return getItemsByType('requirement');
-      case 'prototype':
-        return getItemsByType('prototype');
-      case 'risks':
-        return getItemsByType('risk');
-      default:
-        return [];
-    }
-  };
 
   const getStats = (items: ValidationItem[]) => {
     const approved = items.filter(i => i.status === 'approved').length;
@@ -198,63 +136,21 @@ export const ValidationPhase: React.FC<ValidationPhaseProps> = ({
           </CardContent>
         </Card>
       </div>
-
-      {/* Validation Tabs */}
+      {/* Requirements Validation List */}
       <Card>
         <CardHeader className="pb-2">
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant={activeTab === 'stakeholder' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveTab('stakeholder')}
-              className="flex items-center gap-2"
-            >
-              <Users className="h-4 w-4" />
-              Stakeholder Sign-off
-              <Badge variant="secondary" className="ml-1">{getItemsByType('stakeholder').length}</Badge>
-            </Button>
-            <Button
-              variant={activeTab === 'requirements' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveTab('requirements')}
-              className="flex items-center gap-2"
-            >
-              <FileCheck className="h-4 w-4" />
-              Requirements
-              <Badge variant="secondary" className="ml-1">{getItemsByType('requirement').length}</Badge>
-            </Button>
-            <Button
-              variant={activeTab === 'prototype' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveTab('prototype')}
-              className="flex items-center gap-2"
-            >
-              <FileText className="h-4 w-4" />
-              Prototype
-              <Badge variant="secondary" className="ml-1">{getItemsByType('prototype').length}</Badge>
-            </Button>
-            <Button
-              variant={activeTab === 'risks' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveTab('risks')}
-              className="flex items-center gap-2"
-            >
-              <Shield className="h-4 w-4" />
-              Risk Confirmation
-              <Badge variant="secondary" className="ml-1">{getItemsByType('risk').length}</Badge>
-            </Button>
-          </div>
+          <CardTitle>Requirements</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {getValidationItems().length === 0 && (
+            {Object.values(itemsById).length === 0 && (
               <div className="text-center py-8 text-gray-500">
                 <FileText className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                <p>No validation items parsed from AI output yet.</p>
-                <p className="text-sm mt-1">Run the Validation phase AI to generate a checklist.</p>
+                <p>No requirements found to validate.</p>
+                <p className="text-sm mt-1">Generate or sync requirements first.</p>
               </div>
             )}
-            {getValidationItems().map((item) => {
+            {Object.values(itemsById).map((item) => {
               const liveItem = itemsById[item.id] || item;
               const isExpanded = expandedItems.has(item.id);
               return (
@@ -370,67 +266,6 @@ export const ValidationPhase: React.FC<ValidationPhaseProps> = ({
               );
             })}
           </div>
-        </CardContent>
-      </Card>
-
-      {/* AI Validation Assistant */}
-      <Card className="border-teal-200 bg-gradient-to-br from-teal-50 to-cyan-50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-teal-600" />
-            AI Validation Assistant
-          </CardTitle>
-          <CardDescription>Get AI help with validation tasks</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onGenerate('Generate a comprehensive validation checklist for all requirements')}
-              disabled={isGenerating}
-              className="h-auto py-3 flex flex-col items-center gap-2"
-            >
-              <FileCheck className="h-5 w-5 text-teal-600" />
-              <span className="text-xs">Generate Checklist</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onGenerate('Identify gaps in stakeholder sign-offs and suggest next steps')}
-              disabled={isGenerating}
-              className="h-auto py-3 flex flex-col items-center gap-2"
-            >
-              <Users className="h-5 w-5 text-teal-600" />
-              <span className="text-xs">Sign-off Analysis</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onGenerate('Analyze risks and suggest additional mitigations')}
-              disabled={isGenerating}
-              className="h-auto py-3 flex flex-col items-center gap-2"
-            >
-              <AlertTriangle className="h-5 w-5 text-teal-600" />
-              <span className="text-xs">Risk Analysis</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onGenerate('Create a validation summary report for stakeholders')}
-              disabled={isGenerating}
-              className="h-auto py-3 flex flex-col items-center gap-2"
-            >
-              <Target className="h-5 w-5 text-teal-600" />
-              <span className="text-xs">Summary Report</span>
-            </Button>
-          </div>
-          {isGenerating && (
-            <div className="flex items-center justify-center gap-2 text-teal-600">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>AI is analyzing...</span>
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>

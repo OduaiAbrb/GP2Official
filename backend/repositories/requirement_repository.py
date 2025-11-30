@@ -40,6 +40,11 @@ class RequirementRepository:
         """Replace all requirements for a project."""
         db = get_db()
         await db[self.collection_name].delete_many({"project_id": project_id})
+
+        # Ensure each requirement is associated with this project
+        for req in requirements_data:
+            req["project_id"] = project_id
+
         return await self.create_bulk(requirements_data)
 
     async def get_by_id(self, requirement_id: str) -> Optional[Requirement]:

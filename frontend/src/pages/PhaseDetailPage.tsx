@@ -94,6 +94,28 @@ export const PhaseDetailPage: React.FC = () => {
     totalHours: number;
     hourlyRate: number;
   } | null>(null);
+  const [customCostItems, setCustomCostItems] = useState<{
+    id: string;
+    description: string;
+    cost: number;
+    benefit: number;
+    currency: 'USD' | 'JOD';
+  }[]>([]);
+  const [newCostItem, setNewCostItem] = useState({
+    description: '',
+    cost: '',
+    benefit: '',
+    currency: 'USD' as 'USD' | 'JOD',
+  });
+  const [useCustomRoi, setUseCustomRoi] = useState(false);
+  const [teamSizeMultiplier, setTeamSizeMultiplier] = useState(1);
+  const [roleMix, setRoleMix] = useState({
+    junior: 0,
+    mid: 0,
+    senior: 0,
+    architect: 0,
+    pm: 0,
+  });
   const phaseConfig = getPhaseConfig(phaseId || '');
 
   const [requirementDraft, setRequirementDraft] = useState({
@@ -120,6 +142,16 @@ export const PhaseDetailPage: React.FC = () => {
     }
   };
 
+  const handleSyncRequirements = async () => {
+    if (!id) return;
+    try {
+      const latest = await api.getRequirements(id);
+      setRequirements(latest);
+    } catch (err) {
+      console.error('Failed to sync requirements from backend', err);
+    }
+  };
+
   useEffect(() => {
     if (!id) return;
     const loadProjectData = async () => {
@@ -136,9 +168,23 @@ export const PhaseDetailPage: React.FC = () => {
         setPhaseStatus(status.phases);
         setTasks(taskData);
         setRequirements(reqData);
-        
+
         // Calculate cost data from tasks
-        const hourlyRate = proj.hourly_rate || 100;
+        const baseRate = proj.hourly_rate || 100;
+        const roleRates = { junior: 50, mid: 80, senior: 120, architect: 150, pm: 100 };
+        const totalRoleCount =
+          roleMix.junior + roleMix.mid + roleMix.senior + roleMix.architect + roleMix.pm;
+        const blendedRate = totalRoleCount
+          ? (
+              roleMix.junior * roleRates.junior +
+              roleMix.mid * roleRates.mid +
+              roleMix.senior * roleRates.senior +
+              roleMix.architect * roleRates.architect +
+              roleMix.pm * roleRates.pm
+            ) / totalRoleCount
+          : baseRate;
+        const hourlyRate = blendedRate * teamSizeMultiplier;
+
         const phaseGroups: Record<string, { hours: number; tasks: number }> = {};
         taskData.forEach((task: Task) => {
           const phase = task.phase || 'unassigned';
@@ -148,13 +194,13 @@ export const PhaseDetailPage: React.FC = () => {
           phaseGroups[phase].hours += task.estimate_hours || 0;
           phaseGroups[phase].tasks += 1;
         });
-        
+
         const phases = Object.entries(phaseGroups).map(([name, data]) => ({
           name: name.replace('_', ' '),
           cost: data.hours * hourlyRate,
           hours: data.hours,
         }));
-        
+
         const totalHours = taskData.reduce((sum: number, t: Task) => sum + (t.estimate_hours || 0), 0);
         setCostData({
           phases,
@@ -170,7 +216,7 @@ export const PhaseDetailPage: React.FC = () => {
     };
 
     loadProjectData();
-  }, [id]);
+  }, [id, teamSizeMultiplier, roleMix]);
 
   const phaseMarkdown = useMemo(() => {
     if (!phaseId) return '';
@@ -191,8 +237,51 @@ export const PhaseDetailPage: React.FC = () => {
     if (!id || !phaseId) return;
     setIsGenerating(true);
     setError(null);
+
     try {
-      const userPrompt = prompt || input;
+      let userPrompt = prompt || input;
+
+      // For the Cost & Benefit phase, append the current scenario so AI explanations
+      // match the charts/cards (effective cost, benefit, ROI, and custom toggle).
+      if (phaseId === 'cost_benefit') {
+        const totalHours = tasks.reduce((sum, t) => sum + (t.estimate_hours || 0), 0);
+        const baseRate = project?.hourly_rate || 100;
+        const roleRates = { junior: 50, mid: 80, senior: 120, architect: 150, pm: 100 };
+        const totalRoleCount =
+          roleMix.junior + roleMix.mid + roleMix.senior + roleMix.architect + roleMix.pm;
+        const blendedBaseHourlyRate = totalRoleCount
+          ? (
+              roleMix.junior * roleRates.junior +
+              roleMix.mid * roleRates.mid +
+              roleMix.senior * roleRates.senior +
+              roleMix.architect * roleRates.architect +
+              roleMix.pm * roleRates.pm
+            ) / totalRoleCount
+          : baseRate;
+        const effectiveHourlyRate = blendedBaseHourlyRate * teamSizeMultiplier;
+        const baseTotalCost = totalHours * effectiveHourlyRate;
+        const baseEstimatedBenefit = baseTotalCost * 2;
+
+        const totalCustomCost = customCostItems.reduce((sum, item) => sum + item.cost, 0);
+        const totalCustomBenefit = customCostItems.reduce((sum, item) => sum + item.benefit, 0);
+
+        const useCustom = useCustomRoi;
+        const effectiveCostForRoi = useCustom ? totalCustomCost : baseTotalCost;
+        const effectiveBenefit = useCustom ? totalCustomBenefit : baseEstimatedBenefit;
+        const roi = effectiveCostForRoi > 0 ? ((effectiveBenefit - effectiveCostForRoi) / effectiveCostForRoi) * 100 : 0;
+
+        const scenarioSummary = `\n\n[Current cost scenario]\n` +
+          `Mode: ${useCustom ? 'custom totals from manual items' : 'task estimates × project hourly rate (2× benefit assumption)'}\n` +
+          `Total hours (from tasks): ${totalHours}\n` +
+          `Blended base hourly rate (by roles): ${blendedBaseHourlyRate.toFixed(2)} (project base: ${baseRate})\n` +
+          `Team size multiplier: ${teamSizeMultiplier.toFixed(2)} (effective hourly rate: ${effectiveHourlyRate.toFixed(2)})\n` +
+          `Effective total cost: ${effectiveCostForRoi.toFixed(2)}\n` +
+          `Effective estimated benefit: ${effectiveBenefit.toFixed(2)}\n` +
+          `Effective ROI: ${roi.toFixed(1)}%\n` +
+          `Custom items count: ${customCostItems.length}`;
+
+        userPrompt = `${userPrompt}\n${scenarioSummary}`;
+      }
       const response = await api.generatePhase(id, phaseId, userPrompt);
       setPhaseStatus(response.phase_status);
       const updatedArtifacts = await api.getArtifacts(id);
@@ -206,7 +295,114 @@ export const PhaseDetailPage: React.FC = () => {
       if (latestPhaseArtifact && latestPhaseArtifact.content_json?.markdown) {
         const markdown = latestPhaseArtifact.content_json.markdown as string;
 
-        if (phaseId === 'development') {
+        if (phaseId === 'requirements_gathering') {
+          // Parse requirements markdown into structured requirements and overwrite project requirements
+          const lines = markdown.split('\n');
+          type ReqType = 'functional' | 'non_functional';
+          let current: ReqType = 'functional';
+          const parsed: Partial<Requirement>[] = [];
+
+          const priorityMap: Record<string, Requirement['priority']> = {
+            low: 'low',
+            medium: 'medium',
+            high: 'high',
+            critical: 'critical',
+          } as any;
+
+          const statusMap: Record<string, Requirement['status']> = {
+            proposed: 'proposed',
+            draft: 'proposed',
+            'in review': 'in_review',
+            review: 'in_review',
+            approved: 'approved',
+            implemented: 'implemented',
+          } as any;
+
+          for (const raw of lines) {
+            const line = raw.trim();
+            if (!line) continue;
+            const lower = line.toLowerCase();
+
+            if (line.startsWith('#')) {
+              if (lower.includes('non-functional') || lower.includes('non functional') || lower.includes('nfr')) {
+                current = 'non_functional';
+              } else if (lower.includes('functional') || lower.includes('fr')) {
+                current = 'functional';
+              }
+              continue;
+            }
+
+            if (!line.startsWith('-') && !line.startsWith('*')) continue;
+            let content = line.replace(/^[-*]\s*/, '').trim();
+            if (!content) continue;
+
+            // Skip obvious meta / instructional bullets rather than real requirements
+            const lowerContent = content.toLowerCase();
+            if (
+              // Bold headings or labels like **Purpose**, **Format**, etc.
+              content.startsWith('**') ||
+              // Checklists / todo style items
+              content.startsWith('[') ||
+              // Persona / template fields
+              lowerContent.includes('purpose') ||
+              lowerContent.includes('format') ||
+              lowerContent.includes('example') ||
+              lowerContent.includes('persona') ||
+              lowerContent.includes('demographics') ||
+              lowerContent.includes('goals') ||
+              lowerContent.includes('pain points') ||
+              lowerContent.includes('tech savviness') ||
+              lowerContent.includes('quote') ||
+              lowerContent.includes('action items') ||
+              lowerContent.includes('story id') ||
+              lowerContent.startsWith('as a ') // often instructional user story examples
+            ) {
+              continue;
+            }
+
+            // Optional tags: [High][Approved] Title: description
+            let priority: Requirement['priority'] | undefined;
+            let status: Requirement['status'] | undefined;
+
+            const tagPattern = /^\[(.*?)\]\s*(\[(.*?)\])?/; // [tag1][tag2] ...
+            const tagMatch = content.match(tagPattern);
+            if (tagMatch) {
+              const tag1 = (tagMatch[1] || '').toLowerCase();
+              const tag2 = ((tagMatch[3] || '') as string).toLowerCase();
+
+              if (tag1 in priorityMap) priority = priorityMap[tag1];
+              if (tag1 in statusMap) status = statusMap[tag1];
+              if (tag2) {
+                if (tag2 in priorityMap) priority = priorityMap[tag2];
+                if (tag2 in statusMap) status = statusMap[tag2];
+              }
+
+              content = content.slice(tagMatch[0].length).trim();
+            }
+
+            const [titleRaw, ...rest] = content.split(':');
+            const title = (titleRaw || '').trim();
+            if (!title) continue;
+            const description = rest.join(':').trim() || title;
+
+            parsed.push({
+              type: current,
+              title,
+              description,
+              priority: priority || 'medium',
+              status: status || 'proposed',
+            } as any);
+          }
+
+          if (parsed.length) {
+            try {
+              const replaced = await api.replaceRequirements(id, { requirements: parsed });
+              setRequirements(replaced);
+            } catch (err) {
+              console.error('Failed to auto-sync requirements from phase artifact', err);
+            }
+          }
+        } else if (phaseId === 'development') {
           // Very lightweight parser: look for headings and bullet lists / blocks
           const lines = markdown.split('\n');
           const stack: any[] = [];
@@ -245,7 +441,8 @@ export const PhaseDetailPage: React.FC = () => {
                 currentSection = 'best';
               } else if (lower.includes('risk') || lower.includes('watch out')) {
                 currentSection = 'watch';
-              } else if (lower.includes('system flow') || lower.includes('request flow')) {
+              } else if (lower.includes('system flow') || lower.includes('request flow') || lower.includes(' flow')) {
+                // Treat generic "Flow" headings (e.g. "## Flow") as the flow section too
                 currentSection = 'flow';
               } else if (lower.includes('folder structure') || lower.includes('directory structure')) {
                 currentSection = 'structure';
@@ -269,11 +466,13 @@ export const PhaseDetailPage: React.FC = () => {
               continue;
             }
 
-            if (!trimmed.startsWith('-') && !trimmed.startsWith('*')) {
+            // We only care about list-style lines inside known sections
+            const listMatch = trimmed.match(/^([-*]|\d+\.)\s+(.*)$/);
+            if (!listMatch) {
               continue;
             }
 
-            const content = trimmed.replace(/^[-*]\s*/, '').trim();
+            const content = (listMatch[2] || '').trim();
             if (!content) continue;
 
             if (currentSection === 'stack') {
@@ -415,9 +614,12 @@ export const PhaseDetailPage: React.FC = () => {
           const body = markdown.trim();
           const tags: string[] = [];
 
-          if (body.toLowerCase().includes('market')) tags.push('market');
-          if (body.toLowerCase().includes('technical')) tags.push('technical');
-          if (body.toLowerCase().includes('economic') || body.toLowerCase().includes('roi')) tags.push('economic');
+          const lowerBody = body.toLowerCase();
+          if (lowerBody.includes('market')) tags.push('market');
+          if (lowerBody.includes('technical')) tags.push('technical');
+          if (lowerBody.includes('economic') || lowerBody.includes('roi')) tags.push('economic');
+          if (lowerBody.includes('operational')) tags.push('operational');
+          if (lowerBody.includes('legal') || lowerBody.includes('compliance')) tags.push('legal');
 
           const newStudy = {
             id: `study_${Date.now()}`,
@@ -428,11 +630,104 @@ export const PhaseDetailPage: React.FC = () => {
           };
 
           try {
+            // Save study history
             const existing = await api.getFeasibilityStudies(id);
             const merged = [...(existing.studies || []), newStudy];
             await api.saveFeasibilityStudies(id, { studies: merged });
           } catch (err) {
             console.error('Failed to auto-sync feasibility studies from phase artifact', err);
+          }
+
+          // Additionally, try to map markdown into structured feasibility sections
+          try {
+            const lines = body.split('\n');
+            type SectionId = 'market' | 'technical' | 'economic' | 'operational' | 'legal';
+            const sectionOrder: SectionId[] = ['market', 'technical', 'economic', 'operational', 'legal'];
+            const sectionMap: Record<SectionId, { label: string; description: string }[]> = {
+              market: [],
+              technical: [],
+              economic: [],
+              operational: [],
+              legal: [],
+            };
+
+            let current: SectionId | null = null;
+            for (const rawLine of lines) {
+              const line = rawLine.trim();
+              if (!line) continue;
+              const lower = line.toLowerCase();
+
+              if (line.startsWith('#')) {
+                // Choose section based on heading text
+                if (lower.includes('market')) current = 'market';
+                else if (lower.includes('technical')) current = 'technical';
+                else if (lower.includes('economic')) current = 'economic';
+                else if (lower.includes('operational')) current = 'operational';
+                else if (lower.includes('legal') || lower.includes('compliance')) current = 'legal';
+                else current = null;
+                continue;
+              }
+
+              if (!current) continue;
+              if (!line.startsWith('-') && !line.startsWith('*')) continue;
+
+              const content = line.replace(/^[-*]\s*/, '').trim();
+              if (!content) continue;
+
+              const [labelRaw, descRaw] = content.split(':');
+              const label = (labelRaw || '').trim() || content;
+              const description = (descRaw || '').trim() || label;
+              sectionMap[current].push({ label, description });
+            }
+
+            // Fetch existing sections to preserve scores/colors/titles where possible
+            let existingSections: any[] = [];
+            try {
+              const existing = await api.getFeasibilitySections(id);
+              existingSections = Array.isArray(existing.sections) ? existing.sections : [];
+            } catch (err) {
+              existingSections = [];
+            }
+
+            const defaultSections = [
+              { id: 'market', title: 'Market Feasibility', color: 'purple' },
+              { id: 'technical', title: 'Technical Feasibility', color: 'blue' },
+              { id: 'economic', title: 'Economic Feasibility', color: 'green' },
+              { id: 'operational', title: 'Operational Feasibility', color: 'amber' },
+              { id: 'legal', title: 'Legal / Compliance Feasibility', color: 'red' },
+            ];
+
+            const mergedSections = sectionOrder.map((id) => {
+              const existing = existingSections.find((s) => s.id === id) || {};
+              const parsedItems = sectionMap[id];
+
+              const items = parsedItems.length
+                ? parsedItems.map((item) => ({
+                    label: item.label,
+                    description: item.description,
+                    status: 'partial',
+                  }))
+                : existing.items || [];
+
+              const base = defaultSections.find((s) => s.id === id)!;
+              const score = parsedItems.length
+                ? Math.min(100, (parsedItems.length / 5) * 100)
+                : typeof existing.score === 'number'
+                ? existing.score
+                : 0;
+
+              return {
+                id,
+                title: existing.title || base.title,
+                color: existing.color || base.color,
+                items,
+                score,
+              };
+            });
+
+            await api.saveFeasibilitySections(id, { sections: mergedSections });
+          } catch (err) {
+            console.error('Failed to auto-sync feasibility sections from phase artifact', err);
           }
         }
       }
@@ -448,19 +743,18 @@ export const PhaseDetailPage: React.FC = () => {
     if (!id || !phaseConfig) return;
     setSyncingCanvas(true);
     setError(null);
-    
+
     // Only sync for supported backend modes
     const supportedSyncModes = ['requirements', 'srs', 'costs', 'freeform'];
-    const canvasMode = phaseConfig.canvasMode;
-    
+
     try {
       // Only call sync API for supported modes
-      if (supportedSyncModes.includes(canvasMode)) {
-        await api.syncDiagramCanvas(id, canvasMode);
+      if (supportedSyncModes.includes(phaseConfig.canvasMode)) {
+        await api.syncDiagramCanvas(id, phaseConfig.canvasMode);
       }
-      
+
       // Navigate to diagram studio - use freeform for unsupported modes
-      const effectiveMode = supportedSyncModes.includes(canvasMode) ? canvasMode : 'freeform';
+      const effectiveMode = supportedSyncModes.includes(phaseConfig.canvasMode) ? phaseConfig.canvasMode : 'freeform';
       const params = effectiveMode === 'freeform' ? '' : `?mode=${effectiveMode}`;
       navigate(`/projects/${id}/diagram-studio${params}`);
     } catch (err: any) {
@@ -581,18 +875,18 @@ export const PhaseDetailPage: React.FC = () => {
         <div className="hidden lg:block">
           <PhaseNavigation projectId={id} variant="sidebar" />
         </div>
-        
+
         {/* Main Content */}
         <div className="flex-1 min-w-0">
           {/* Horizontal Navigation for smaller screens */}
           <div className="lg:hidden">
             <PhaseNavigation projectId={id} variant="horizontal" />
           </div>
-          
+
           <div className="p-6 space-y-6">
             {/* Phase Header */}
             <div className="relative">
-              <div className={`absolute -top-10 -left-10 w-32 h-32 ${colors.bg} rounded-full blur-3xl opacity-50`}></div>
+              <div className="absolute -top-10 -left-10 w-32 h-32 bg-purple-200/30 rounded-full blur-3xl"></div>
               <div className="relative flex items-center justify-between flex-wrap gap-3">
                 <Button variant="ghost" onClick={() => navigate(`/projects/${id}`)}>
                   <ArrowLeft className="mr-2 h-4 w-4" />
@@ -634,35 +928,37 @@ export const PhaseDetailPage: React.FC = () => {
               </div>
             )}
 
-            <Card className="bg-gray-50 border border-gray-200">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-gray-600" />
-                  Prompt for this phase
-                </CardTitle>
-                <CardDescription>Custom prompt will re-run the active phase using the latest project context.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <textarea
-                  ref={unifiedPromptRef}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-                  rows={3}
-                  placeholder="E.g., 'Generate the validation checklist with stakeholder signoff steps'"
-                />
-                <div className="flex justify-end">
-                  <Button
-                    disabled={isGenerating}
-                    onClick={() => {
-                      const prompt = unifiedPromptRef.current?.value || '';
-                      if (!prompt.trim()) return;
-                      handleGenerate(prompt);
-                    }}
-                  >
-                    {isGenerating ? 'Generating…' : 'Run prompt for this phase'}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            {phaseId !== 'validation' && (
+              <Card className="bg-gray-50 border border-gray-200">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-gray-600" />
+                    Prompt for this phase
+                  </CardTitle>
+                  <CardDescription>Custom prompt will re-run the active phase using the latest project context.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <textarea
+                    ref={unifiedPromptRef}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                    rows={3}
+                    placeholder="E.g., 'Generate the validation checklist with stakeholder signoff steps'"
+                  />
+                  <div className="flex justify-end">
+                    <Button
+                      disabled={isGenerating}
+                      onClick={() => {
+                        const prompt = unifiedPromptRef.current?.value || '';
+                        if (!prompt.trim()) return;
+                        handleGenerate(prompt);
+                      }}
+                    >
+                      {isGenerating ? 'Generating…' : 'Run prompt for this phase'}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Phase Content */}
             {children}
@@ -729,19 +1025,8 @@ export const PhaseDetailPage: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-gradient-to-br from-purple-50 to-white border-purple-100">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-purple-100 rounded-lg">
-                    <Target className="h-5 w-5 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-gray-900">{requirements.filter(r => r.type === 'functional').length}</p>
-                    <p className="text-xs text-gray-500">Functional</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+
+            {/* Cost vs Benefit Comparison card removed here; lives in cost_benefit phase instead */}
             <Card className="bg-gradient-to-br from-emerald-50 to-white border-emerald-100">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
@@ -770,14 +1055,27 @@ export const PhaseDetailPage: React.FC = () => {
             </Card>
           </div>
 
-          {/* Requirements List */}
+          {/* Requirements Catalog */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-blue-600" />
-                Requirements Catalog
-              </CardTitle>
-              <CardDescription>Functional and non-functional requirements with priority scoring</CardDescription>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <CardTitle>
+                    Requirements Catalog
+                  </CardTitle>
+                  <CardDescription>
+                    Functional and non-functional requirements with priority scoring
+                  </CardDescription>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSyncRequirements}
+                >
+                  Sync Validation
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {/* Add Requirement */}
@@ -995,6 +1293,23 @@ export const PhaseDetailPage: React.FC = () => {
                   ))}
                 </div>
               )}
+
+              <div className="mt-4 pt-2 border-t border-dashed border-gray-200 flex items-center justify-between text-[11px] text-gray-600">
+                <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                    checked={useCustomRoi}
+                    onChange={(e) => setUseCustomRoi(e.target.checked)}
+                  />
+                  <span className="font-medium">Use custom totals for ROI cards & comparison</span>
+                </label>
+                <span className="text-[10px] text-gray-500 text-right">
+                  {useCustomRoi
+                    ? 'High-level ROI uses custom cost & benefit sums.'
+                    : 'High-level ROI uses task hours × hourly rate with 2× benefit assumption.'}
+                </span>
+              </div>
             </CardContent>
           </Card>
 
@@ -1043,6 +1358,7 @@ export const PhaseDetailPage: React.FC = () => {
           onGenerate={handleGenerate}
           isGenerating={isGenerating}
           content={phaseMarkdown}
+          requirements={requirements}
         />
       </PhaseWrapper>
     );
@@ -1088,6 +1404,8 @@ export const PhaseDetailPage: React.FC = () => {
           projectId={id || ''}
           onGenerate={handleGenerate}
           isGenerating={isGenerating}
+          requirements={requirements}
+          content={phaseMarkdown}
         />
       </PhaseWrapper>
     );
@@ -1121,7 +1439,7 @@ export const PhaseDetailPage: React.FC = () => {
     const completedCount = tasks.filter((t) => (localTaskStatus[t.task_id] || t.status || '').toLowerCase() === 'completed').length;
     const progressPct = tasks.length ? Math.round((completedCount / tasks.length) * 100) : 0;
     const totalHours = tasks.reduce((sum, t) => sum + (t.estimate_hours || 0), 0);
-    
+
     return (
       <Layout>
         <div className="space-y-6">
@@ -1664,15 +1982,29 @@ export const PhaseDetailPage: React.FC = () => {
   // ============================================
   if (phaseId === 'cost_benefit') {
     const totalHours = tasks.reduce((sum, t) => sum + (t.estimate_hours || 0), 0);
-    const hourlyRate = project?.hourly_rate || 100;
-    const totalCost = totalHours * hourlyRate;
-    
+    const baseRate = project?.hourly_rate || 100;
+    const roleRates = { junior: 50, mid: 80, senior: 120, architect: 150, pm: 100 };
+    const totalRoleCount =
+      roleMix.junior + roleMix.mid + roleMix.senior + roleMix.architect + roleMix.pm;
+    const blendedBaseHourlyRate = totalRoleCount
+      ? (
+          roleMix.junior * roleRates.junior +
+          roleMix.mid * roleRates.mid +
+          roleMix.senior * roleRates.senior +
+          roleMix.architect * roleRates.architect +
+          roleMix.pm * roleRates.pm
+        ) / totalRoleCount
+      : baseRate;
+    const effectiveHourlyRate = blendedBaseHourlyRate * teamSizeMultiplier;
+    const totalCost = totalHours * effectiveHourlyRate;
+    const baseEstimatedBenefit = totalCost * 2; // base 2x assumption; custom items refine below
+
     // Group costs by phase/category
     const costByPhase = tasks.reduce((acc, task) => {
       const phase = task.phase || 'General';
       if (!acc[phase]) acc[phase] = { hours: 0, cost: 0, tasks: 0 };
       acc[phase].hours += task.estimate_hours || 0;
-      acc[phase].cost += (task.estimate_hours || 0) * hourlyRate;
+      acc[phase].cost += (task.estimate_hours || 0) * effectiveHourlyRate;
       acc[phase].tasks += 1;
       return acc;
     }, {} as Record<string, { hours: number; cost: number; tasks: number }>);
@@ -1681,9 +2013,19 @@ export const PhaseDetailPage: React.FC = () => {
       const priority = task.priority || 'medium';
       if (!acc[priority]) acc[priority] = { hours: 0, cost: 0 };
       acc[priority].hours += task.estimate_hours || 0;
-      acc[priority].cost += (task.estimate_hours || 0) * hourlyRate;
+      acc[priority].cost += (task.estimate_hours || 0) * effectiveHourlyRate;
       return acc;
     }, {} as Record<string, { hours: number; cost: number }>);
+
+    const totalCustomCost = customCostItems.reduce((sum, item) => sum + item.cost, 0);
+    const totalCustomBenefit = customCostItems.reduce((sum, item) => sum + item.benefit, 0);
+    const customRoi = totalCustomCost > 0 ? ((totalCustomBenefit - totalCustomCost) / totalCustomCost) * 100 : 0;
+
+    // Effective values for high-level ROI visuals (cards + comparison)
+    // If user enables custom ROI, always use their totals (even if zero) so cards start at 0
+    const effectiveCostForRoi = useCustomRoi ? totalCustomCost : totalCost;
+    const effectiveBenefit = useCustomRoi ? totalCustomBenefit : baseEstimatedBenefit;
+    const roi = effectiveCostForRoi > 0 ? ((effectiveBenefit - effectiveCostForRoi) / effectiveCostForRoi) * 100 : 0;
 
     return (
       <Layout>
@@ -1713,6 +2055,163 @@ export const PhaseDetailPage: React.FC = () => {
             </div>
           )}
 
+          {/* Scenario Controls */}
+          <Card className="border-emerald-200 bg-emerald-50/60">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Users className="h-4 w-4 text-emerald-600" />
+                Team Size Scenario
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Move the slider to simulate a smaller or larger team. This scales hourly cost and all charts/cards.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-1">
+              <div className="flex flex-col gap-2 text-xs text-gray-700">
+                <div className="flex items-center justify-between">
+                  <span>Team size multiplier</span>
+                  <span className="font-mono text-emerald-700">{teamSizeMultiplier.toFixed(2)}×</span>
+                </div>
+                <input
+                  type="range"
+                  min={0.5}
+                  max={2}
+                  step={0.1}
+                  value={teamSizeMultiplier}
+                  onChange={(e) => setTeamSizeMultiplier(parseFloat(e.target.value) || 1)}
+                  className="w-full accent-emerald-600"
+                />
+                <div className="flex justify-between text-[10px] text-gray-500">
+                  <span>0.5× (very small team)</span>
+                  <span>1.0× (current)</span>
+                  <span>2.0× (larger team)</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Custom Cost & Benefit Items */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Custom cost & benefit items</CardTitle>
+              <CardDescription className="text-xs">
+                Add specific costs and expected benefits per item (e.g. licenses, hires, marketing), in USD or JOD.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-0 space-y-4 text-xs text-gray-700">
+              <div className="grid md:grid-cols-4 gap-3 items-end">
+                <div className="md:col-span-2">
+                  <label className="block text-[11px] text-gray-500 mb-1">Description</label>
+                  <input
+                    className="w-full border rounded-lg px-2 py-1.5 text-xs"
+                    placeholder="e.g. Senior backend hire, SaaS subscription"
+                    value={newCostItem.description}
+                    onChange={(e) => setNewCostItem((prev) => ({ ...prev, description: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] text-gray-500 mb-1">Cost</label>
+                  <input
+                    type="number"
+                    className="w-full border rounded-lg px-2 py-1.5 text-xs"
+                    placeholder="e.g. 5000"
+                    value={newCostItem.cost}
+                    onChange={(e) => setNewCostItem((prev) => ({ ...prev, cost: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] text-gray-500 mb-1">Benefit</label>
+                  <input
+                    type="number"
+                    className="w-full border rounded-lg px-2 py-1.5 text-xs"
+                    placeholder="e.g. 15000"
+                    value={newCostItem.benefit}
+                    onChange={(e) => setNewCostItem((prev) => ({ ...prev, benefit: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] text-gray-500 mb-1">Currency</label>
+                  <select
+                    className="w-full border rounded-lg px-2 py-1.5 text-xs"
+                    value={newCostItem.currency}
+                    onChange={(e) => setNewCostItem((prev) => ({ ...prev, currency: e.target.value as 'USD' | 'JOD' }))}
+                  >
+                    <option value="USD">USD</option>
+                    <option value="JOD">JOD</option>
+                  </select>
+                </div>
+                <div className="md:col-span-4 flex justify-end">
+                  <Button
+                    size="sm"
+                    disabled={!newCostItem.description.trim() || !Number(newCostItem.cost) || !Number(newCostItem.benefit)}
+                    onClick={() => {
+                      const cost = Number(newCostItem.cost) || 0;
+                      const benefit = Number(newCostItem.benefit) || 0;
+                      if (!newCostItem.description.trim() || !cost || !benefit) return;
+                      setCustomCostItems((prev) => [
+                        ...prev,
+                        {
+                          id: `item_${Date.now()}_${prev.length}`,
+                          description: newCostItem.description.trim(),
+                          cost,
+                          benefit,
+                          currency: newCostItem.currency,
+                        },
+                      ]);
+                      setNewCostItem({ description: '', cost: '', benefit: '', currency: newCostItem.currency });
+                    }}
+                  >
+                    Add item
+                  </Button>
+                </div>
+              </div>
+
+              {customCostItems.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  <div className="flex items-center justify-between text-[11px] text-gray-600">
+                    <span>Total custom cost:</span>
+                    <span className="font-mono">{totalCustomCost.toLocaleString()} (mixed currencies)</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-gray-600">
+                    <span>Total custom benefit:</span>
+                    <span className="font-mono">{totalCustomBenefit.toLocaleString()} (mixed currencies)</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-gray-600">
+                    <span>Custom ROI:</span>
+                    <span className="font-mono">{isFinite(customRoi) ? `${customRoi.toFixed(0)}%` : 'N/A'}</span>
+                  </div>
+
+                  <div className="border-t border-gray-200 pt-2 space-y-1 max-h-48 overflow-y-auto">
+                    {customCostItems.map((item) => {
+                      const itemRoi = item.cost > 0 ? ((item.benefit - item.cost) / item.cost) * 100 : 0;
+                      return (
+                        <div key={item.id} className="flex items-center justify-between text-[11px] bg-gray-50 rounded-lg px-2 py-1.5">
+                          <div className="min-w-0">
+                            <p className="font-medium text-gray-800 truncate">{item.description}</p>
+                            <p className="text-[10px] text-gray-500">
+                              Cost: {item.cost.toLocaleString()} {item.currency} · Benefit: {item.benefit.toLocaleString()} {item.currency}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-[10px] font-mono text-emerald-700">{itemRoi.toFixed(0)}%</span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-[10px] text-red-500 px-1 h-6"
+                              onClick={() => setCustomCostItems((prev) => prev.filter((x) => x.id !== item.id))}
+                            >
+                              ✕
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Cost Overview Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card className="bg-gradient-to-br from-emerald-50 to-white border-emerald-100">
@@ -1722,7 +2221,7 @@ export const PhaseDetailPage: React.FC = () => {
                     <DollarSign className="h-5 w-5 text-emerald-600" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-gray-900">${totalCost.toLocaleString()}</p>
+                    <p className="text-2xl font-bold text-gray-900">${effectiveCostForRoi.toLocaleString()}</p>
                     <p className="text-xs text-gray-500">Total Estimated Cost</p>
                   </div>
                 </div>
@@ -1748,8 +2247,8 @@ export const PhaseDetailPage: React.FC = () => {
                     <Target className="h-5 w-5 text-purple-600" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-gray-900">${hourlyRate}</p>
-                    <p className="text-xs text-gray-500">Hourly Rate</p>
+                    <p className="text-2xl font-bold text-gray-900">${effectiveBenefit.toLocaleString()}</p>
+                    <p className="text-xs text-gray-500">Estimated Benefit ({useCustomRoi ? 'custom totals' : '2× assumption'})</p>
                   </div>
                 </div>
               </CardContent>
@@ -1761,8 +2260,8 @@ export const PhaseDetailPage: React.FC = () => {
                     <TrendingUp className="h-5 w-5 text-amber-600" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-gray-900">{tasks.length}</p>
-                    <p className="text-xs text-gray-500">Billable Tasks</p>
+                    <p className="text-2xl font-bold text-gray-900">{roi.toFixed(0)}%</p>
+                    <p className="text-xs text-gray-500">ROI (Benefit vs Cost)</p>
                   </div>
                 </div>
               </CardContent>
@@ -1771,6 +2270,46 @@ export const PhaseDetailPage: React.FC = () => {
 
           {/* Charts Grid */}
           <div className="grid gap-6 lg:grid-cols-2">
+            {/* Cost vs Benefit Comparison */}
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-emerald-500" />
+                  Cost vs Benefit (Current Scenario)
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Compare total project cost to estimated benefit using either base or custom totals.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 text-xs text-gray-700">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">Total Cost</span>
+                    <span className="font-mono">${effectiveCostForRoi.toLocaleString()}</span>
+                  </div>
+                  <div className="h-4 bg-gray-100 rounded-full overflow-hidden mb-2">
+                    <div
+                      className="h-full bg-rose-500"
+                      style={{ width: '50%' }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">Estimated Benefit</span>
+                    <span className="font-mono">${effectiveBenefit.toLocaleString()}</span>
+                  </div>
+                  <div className="h-4 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-emerald-500"
+                      style={{ width: `${effectiveCostForRoi > 0 ? Math.min(100, (effectiveBenefit / effectiveCostForRoi) * 50) : 0}%` }}
+                    />
+                  </div>
+                  <p className="text-[11px] text-gray-500 mt-2">
+                    Bars are normalized for display; focus on the relative size between cost and benefit.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Cost by Phase Chart */}
             <Card>
               <CardHeader>
@@ -2063,32 +2602,42 @@ export const PhaseDetailPage: React.FC = () => {
             </Card>
           </div>
 
-          {/* AI Validation */}
-          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+          {/* Requirements to Validate - mirror catalog requirements */}
+          <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-blue-500" />
-                AI Validation Assistant
+              <CardTitle className="flex items-center justify-between">
+                <span>Requirements to Validate</span>
+                <span className="text-xs text-gray-500">Synced from Requirements Catalog</span>
               </CardTitle>
-              <CardDescription>Let AI help validate requirements for completeness, consistency, and testability</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <textarea
-                className="w-full border border-blue-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:border-transparent min-h-[100px] bg-white"
-                placeholder="Ask AI to validate requirements, check for conflicts, or suggest acceptance criteria..."
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-              />
-              <div className="flex gap-2">
-                <Button onClick={() => handleGenerate()} disabled={isGenerating || status === 'locked'} className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600">
-                  {isGenerating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Validating...</> : <><Sparkles className="mr-2 h-4 w-4" /> Validate Requirements</>}
-                </Button>
-              </div>
-              {phaseMarkdown && (
-                <div className="border border-blue-200 rounded-lg bg-white p-4 mt-4">
-                  <div className="prose prose-sm max-w-none">
-                    <ReactMarkdown>{phaseMarkdown}</ReactMarkdown>
-                  </div>
+            <CardContent>
+              {requirements.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <FileText className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                  <p>No requirements found for this project yet.</p>
+                  <p className="text-sm mt-1">Generate or add requirements in the Requirements phase first.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {requirements.map((req) => (
+                    <div
+                      key={req.requirement_id}
+                      className="border rounded-lg px-3 py-2 flex items-center justify-between gap-3 bg-white"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{req.title}</p>
+                        <p className="text-xs text-gray-500 line-clamp-2">{req.description}</p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <Badge variant={req.priority === 'high' || req.priority === 'critical' ? 'destructive' : 'secondary'} className="text-xs capitalize">
+                          {req.priority}
+                        </Badge>
+                        <Badge variant={req.status === 'approved' ? 'success' : req.status === 'in_review' ? 'secondary' : 'outline'} className="text-[10px] uppercase tracking-wide">
+                          {req.status.replace('_', ' ')}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </CardContent>
