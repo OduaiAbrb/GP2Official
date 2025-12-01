@@ -93,14 +93,24 @@ export const phaseConfigs: PhaseConfig[] = [
     order: 7,
   },
   {
+    id: 'risks',
+    title: 'Risks & Mitigations',
+    shortTitle: 'Risks',
+    description: 'Top project risks, impact, likelihood, and mitigations',
+    canvasMode: 'freeform',
+    stepNumber: 9,
+    color: 'orange',
+    order: 8,
+  },
+  {
     id: 'summary',
     title: 'Summary',
     shortTitle: 'Summary',
     description: 'Final summary, risks, and next steps',
     canvasMode: 'freeform',
-    stepNumber: 9,
+    stepNumber: 10,
     color: 'orange',
-    order: 8,
+    order: 9,
   },
 ];
 

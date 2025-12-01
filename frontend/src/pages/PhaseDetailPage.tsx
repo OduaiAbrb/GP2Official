@@ -226,6 +226,78 @@ export const PhaseDetailPage: React.FC = () => {
     return artifact?.content_json?.markdown || '';
   }, [artifacts, phaseId]);
 
+  // Simple parser for Risks phase markdown so we can render real UI components
+  const parsedRisks = useMemo(() => {
+    if (!phaseMarkdown || phaseId !== 'risks') {
+      return null;
+    }
+
+    const lines = phaseMarkdown.split('\n');
+    const overview: string[] = [];
+    const riskRows: { risk: string; impact: string; likelihood: string; mitigation: string; owner: string }[] = [];
+    const beforeAfter: { aspect: string; before: string; after: string }[] = [];
+    const actions: string[] = [];
+
+    let section: 'none' | 'overview' | 'register' | 'beforeAfter' | 'actions' = 'none';
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+
+      if (line.startsWith('#')) {
+        const lower = line.toLowerCase();
+        if (lower.includes('risk overview')) section = 'overview';
+        else if (lower.includes('risk register')) section = 'register';
+        else if (lower.includes('before vs after')) section = 'beforeAfter';
+        else if (lower.includes('recommended actions')) section = 'actions';
+        continue;
+      }
+
+      if (section === 'overview' && (line.startsWith('- ') || line.startsWith('* '))) {
+        overview.push(line.replace(/^[-*]\s*/, ''));
+        continue;
+      }
+
+      if (section === 'register') {
+        // Skip header/separator lines
+        if (line.startsWith('| Risk') || line.startsWith('| ---')) continue;
+        if (line.startsWith('|')) {
+          const cols = line
+            .split('|')
+            .map((c: string) => c.trim())
+            .filter(Boolean);
+          if (cols.length >= 5) {
+            const [risk, impact, likelihood, mitigation, owner] = cols;
+            riskRows.push({ risk, impact, likelihood, mitigation, owner });
+          }
+        }
+        continue;
+      }
+
+      if (section === 'beforeAfter') {
+        if (line.startsWith('| Aspect') || line.startsWith('| ---')) continue;
+        if (line.startsWith('|')) {
+          const cols = line
+            .split('|')
+            .map((c) => c.trim())
+            .filter(Boolean);
+          if (cols.length >= 3) {
+            const [aspect, before, after] = cols;
+            beforeAfter.push({ aspect, before, after });
+          }
+        }
+        continue;
+      }
+
+      if (section === 'actions' && line.startsWith('-')) {
+        const cleaned = line.replace(/^-\s*\[.?\]\s*/, '').trim();
+        if (cleaned) actions.push(cleaned);
+      }
+    }
+
+    return { overview, riskRows, beforeAfter, actions };
+  }, [phaseMarkdown, phaseId]);
+
   const unifiedPromptRef = useRef<HTMLTextAreaElement | null>(null);
 
   const latestArtifact = useMemo(() => {
@@ -242,7 +314,7 @@ export const PhaseDetailPage: React.FC = () => {
       let userPrompt = prompt || input;
 
       // For the Cost & Benefit phase, append the current scenario so AI explanations
-      // match the charts/cards (effective cost, benefit, ROI, and custom toggle).
+      // match the charts/cards (effective cost, benefit, ROI, custom toggle, and role usage).
       if (phaseId === 'cost_benefit') {
         const totalHours = tasks.reduce((sum, t) => sum + (t.estimate_hours || 0), 0);
         const baseRate = project?.hourly_rate || 100;
@@ -262,6 +334,18 @@ export const PhaseDetailPage: React.FC = () => {
         const baseTotalCost = totalHours * effectiveHourlyRate;
         const baseEstimatedBenefit = baseTotalCost * 2;
 
+        // Summarize how many tasks are assigned to each role so AI considers per-task roles
+        const roleCounts = tasks.reduce((acc, t) => {
+          const r = (t.role || 'unassigned').toLowerCase();
+          acc[r] = (acc[r] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+        const roleUsageSummary = Object.keys(roleCounts).length
+          ? Object.entries(roleCounts)
+              .map(([role, count]) => `${role}: ${count} tasks`)
+              .join(', ')
+          : 'no explicit roles set on tasks (using blended role mix only)';
+
         const totalCustomCost = customCostItems.reduce((sum, item) => sum + item.cost, 0);
         const totalCustomBenefit = customCostItems.reduce((sum, item) => sum + item.benefit, 0);
 
@@ -278,7 +362,8 @@ export const PhaseDetailPage: React.FC = () => {
           `Effective total cost: ${effectiveCostForRoi.toFixed(2)}\n` +
           `Effective estimated benefit: ${effectiveBenefit.toFixed(2)}\n` +
           `Effective ROI: ${roi.toFixed(1)}%\n` +
-          `Custom items count: ${customCostItems.length}`;
+          `Custom items count: ${customCostItems.length}\n` +
+          `Per-task role usage: ${roleUsageSummary}`;
 
         userPrompt = `${userPrompt}\n${scenarioSummary}`;
       }
@@ -1412,6 +1497,206 @@ export const PhaseDetailPage: React.FC = () => {
   }
 
   // ============================================
+  // RISKS PHASE
+  // ============================================
+  if (phaseId === 'risks') {
+    return (
+      <PhaseWrapper>
+        <div className="space-y-6">
+          {/* Header */}
+          <div className="relative">
+            <div className="absolute -top-10 -left-10 w-32 h-32 bg-red-200/30 rounded-full blur-3xl"></div>
+            <div className="relative flex items-center justify-between flex-wrap gap-3">
+              <Button variant="ghost" onClick={() => navigate(`/projects/${id}`)}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Project
+              </Button>
+              <div className="text-right">
+                <p className="text-xs uppercase text-gray-500 tracking-wider">Phase</p>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-red-600 to-amber-600 bg-clip-text text-transparent">
+                  Risks & Mitigations
+                </h1>
+                <p className="text-sm text-gray-500">{project?.name}</p>
+              </div>
+            </div>
+          </div>
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4" />
+              {error}
+            </div>
+          )}
+
+          {/* Main layout: Overview + detailed tables */}
+          <div className="space-y-4">
+            {/* Overview card */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-red-500" />
+                  Risk Overview
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  High-level summary of the main delivery, technical, and organizational risks.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {parsedRisks && parsedRisks.overview.length ? (
+                  <ul className="list-disc pl-5 space-y-1 text-xs text-gray-700">
+                    {parsedRisks.overview.map((item, idx) => (
+                      <li key={idx} className="leading-snug">
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-xs text-gray-500">Generate risks to see a summarized overview here.</p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Risk Register + Before/After + Actions */}
+            <div className="space-y-4">
+              {/* Risk Register table */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Grid2X2 className="h-4 w-4 text-red-500" />
+                    Risk Register
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Detailed list of identified risks with impact, likelihood, mitigation, and owner.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {parsedRisks && parsedRisks.riskRows.length ? (
+                    <div className="overflow-x-auto border border-gray-200 rounded-lg">
+                      <table className="w-full text-xs border-collapse">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-2 py-2 text-left font-semibold text-gray-700 border-b border-gray-200">Risk</th>
+                            <th className="px-2 py-2 text-left font-semibold text-gray-700 border-b border-gray-200">Impact</th>
+                            <th className="px-2 py-2 text-left font-semibold text-gray-700 border-b border-gray-200">Likelihood</th>
+                            <th className="px-2 py-2 text-left font-semibold text-gray-700 border-b border-gray-200">Mitigation</th>
+                            <th className="px-2 py-2 text-left font-semibold text-gray-700 border-b border-gray-200">Owner</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {parsedRisks.riskRows.map((row, idx) => {
+                            const impact = row.impact.toLowerCase();
+                            const likelihood = row.likelihood.toLowerCase();
+
+                            const chip = (level: string) => {
+                              const lower = level.toLowerCase();
+                              if (lower.startsWith('high')) {
+                                return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-50 text-red-700 text-[10px] font-medium">🔴 {level}</span>;
+                              }
+                              if (lower.startsWith('medium')) {
+                                return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-medium">🟡 {level}</span>;
+                              }
+                              if (lower.startsWith('low')) {
+                                return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-medium">🟢 {level}</span>;
+                              }
+                              return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-50 text-gray-600 text-[10px] font-medium">{level}</span>;
+                            };
+
+                            return (
+                              <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/60'}>
+                                <td className="align-top px-2 py-2 border-b border-gray-100 text-gray-900 font-medium w-48">
+                                  {row.risk}
+                                </td>
+                                <td className="align-top px-2 py-2 border-b border-gray-100">{chip(row.impact)}</td>
+                                <td className="align-top px-2 py-2 border-b border-gray-100">{chip(row.likelihood)}</td>
+                                <td className="align-top px-2 py-2 border-b border-gray-100 text-gray-700 max-w-xs">
+                                  <p className="whitespace-normal break-words">{row.mitigation}</p>
+                                </td>
+                                <td className="align-top px-2 py-2 border-b border-gray-100 text-gray-700 w-32">{row.owner}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-500">Generate risks to populate the risk register table.</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Before vs After Mitigation */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-amber-500" />
+                    Before vs After Mitigation
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    How the overall risk posture changes once mitigations are applied.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {parsedRisks && parsedRisks.beforeAfter.length ? (
+                    <div className="overflow-x-auto border border-gray-200 rounded-lg">
+                      <table className="w-full text-xs border-collapse">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-2 py-2 text-left font-semibold text-gray-700 border-b border-gray-200">Aspect</th>
+                            <th className="px-2 py-2 text-left font-semibold text-gray-700 border-b border-gray-200">Before</th>
+                            <th className="px-2 py-2 text-left font-semibold text-gray-700 border-b border-gray-200">After</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {parsedRisks.beforeAfter.map((row, idx) => (
+                            <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/60'}>
+                              <td className="px-2 py-2 border-b border-gray-100 text-gray-900 font-medium">{row.aspect}</td>
+                              <td className="px-2 py-2 border-b border-gray-100 text-gray-700">{row.before}</td>
+                              <td className="px-2 py-2 border-b border-gray-100 text-gray-700">{row.after}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-500">Generate risks to see a before/after comparison.</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Recommended Actions checklist */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <ListChecks className="h-4 w-4 text-emerald-500" />
+                    Recommended Actions
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Concrete next steps derived from the risk analysis.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {parsedRisks && parsedRisks.actions.length ? (
+                    <ul className="space-y-1 text-xs text-gray-700">
+                      {parsedRisks.actions.map((action, idx) => (
+                        <li key={idx} className="flex items-start gap-2">
+                          <input type="checkbox" className="mt-[2px] h-3 w-3 rounded border-gray-300" />
+                          <span className="whitespace-normal break-words">{action}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-xs text-gray-500">Generate risks to see a checklist of recommended actions.</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </PhaseWrapper>
+    );
+  }
+
+  // ============================================
   // FINAL SUMMARY PHASE
   // ============================================
   if (phaseId === 'summary') {
@@ -1570,28 +1855,54 @@ export const PhaseDetailPage: React.FC = () => {
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     <select
                       className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm"
                       value={newTask.priority}
                       onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
                     >
-                      <option value="low">🟢 Low</option>
-                      <option value="medium">🟡 Medium</option>
-                      <option value="high">🔴 High</option>
+                      <option value="low">
+                        🟢 Low
+                      </option>
+                      <option value="medium">
+                        🟡 Medium
+                      </option>
+                      <option value="high">
+                        🔴 High
+                      </option>
                     </select>
                     <select
                       className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm"
                       value={newTask.status}
                       onChange={(e) => setNewTask({ ...newTask, status: e.target.value })}
                     >
-                      <option value="planned">📋 Planned</option>
-                      <option value="in_progress">🔄 In Progress</option>
-                      <option value="completed">✅ Completed</option>
+                      <option value="planned">
+                        📋 Planned
+                      </option>
+                      <option value="in_progress">
+                        🔄 In Progress
+                      </option>
+                      <option value="completed">
+                        ✅ Completed
+                      </option>
+                    </select>
+                    <select
+                      className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm"
+                      value={newTask.role || ''}
+                      onChange={(e) => setNewTask({ ...newTask, role: e.target.value || undefined })}
+                    >
+                      <option value="">No role</option>
+                      <option value="junior">Junior</option>
+                      <option value="mid">Mid</option>
+                      <option value="senior">Senior</option>
+                      <option value="architect">Architect</option>
+                      <option value="pm">PM</option>
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Dependencies (task titles or IDs, comma separated)</label>
+                    <label className="text-xs text-gray-500 mb-1 block">
+                      Dependencies (task titles or IDs, comma separated)
+                    </label>
                     <input
                       className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-purple-400 focus:border-transparent"
                       placeholder="e.g. Design UI, Implement API"
@@ -1619,6 +1930,7 @@ export const PhaseDetailPage: React.FC = () => {
                             due_date: newTask.due_date || undefined,
                             priority: newTask.priority,
                             status: newTask.status,
+                            role: newTask.role || undefined,
                             dependencies,
                             tags: newTask.milestone ? ['milestone'] : [],
                           };
@@ -1631,6 +1943,7 @@ export const PhaseDetailPage: React.FC = () => {
                             due_date: '',
                             priority: 'medium',
                             status: 'planned',
+                            role: '',
                             dependencies: '',
                             milestone: false,
                           });
@@ -1995,16 +2308,26 @@ export const PhaseDetailPage: React.FC = () => {
           roleMix.pm * roleRates.pm
         ) / totalRoleCount
       : baseRate;
-    const effectiveHourlyRate = blendedBaseHourlyRate * teamSizeMultiplier;
-    const totalCost = totalHours * effectiveHourlyRate;
+
+    const getTaskRate = (task: Task) => {
+      const key = (task.role || '').toLowerCase() as keyof typeof roleRates;
+      const baseRoleRate = key && roleRates[key] ? roleRates[key] : blendedBaseHourlyRate;
+      return baseRoleRate * teamSizeMultiplier;
+    };
+
+    const totalCost = tasks.reduce(
+      (sum, t) => sum + (t.estimate_hours || 0) * getTaskRate(t),
+      0
+    );
     const baseEstimatedBenefit = totalCost * 2; // base 2x assumption; custom items refine below
 
     // Group costs by phase/category
     const costByPhase = tasks.reduce((acc, task) => {
       const phase = task.phase || 'General';
       if (!acc[phase]) acc[phase] = { hours: 0, cost: 0, tasks: 0 };
-      acc[phase].hours += task.estimate_hours || 0;
-      acc[phase].cost += (task.estimate_hours || 0) * effectiveHourlyRate;
+      const hours = task.estimate_hours || 0;
+      acc[phase].hours += hours;
+      acc[phase].cost += hours * getTaskRate(task);
       acc[phase].tasks += 1;
       return acc;
     }, {} as Record<string, { hours: number; cost: number; tasks: number }>);
@@ -2012,8 +2335,9 @@ export const PhaseDetailPage: React.FC = () => {
     const costByPriority = tasks.reduce((acc, task) => {
       const priority = task.priority || 'medium';
       if (!acc[priority]) acc[priority] = { hours: 0, cost: 0 };
-      acc[priority].hours += task.estimate_hours || 0;
-      acc[priority].cost += (task.estimate_hours || 0) * effectiveHourlyRate;
+      const hours = task.estimate_hours || 0;
+      acc[priority].hours += hours;
+      acc[priority].cost += hours * getTaskRate(task);
       return acc;
     }, {} as Record<string, { hours: number; cost: number }>);
 
@@ -2055,7 +2379,46 @@ export const PhaseDetailPage: React.FC = () => {
             </div>
           )}
 
-          {/* Scenario Controls */}
+          {/* Scenario Presets + Team Size Controls */}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="text-xs text-gray-600">Scenario presets:</div>
+            <div className="flex flex-wrap gap-2 text-xs">
+              <Button
+                size="xs"
+                variant="outline"
+                onClick={() => {
+                  setTeamSizeMultiplier(0.8);
+                  setRoleMix({ junior: 1, mid: 1, senior: 0, architect: 0, pm: 0 });
+                  setUseCustomRoi(false);
+                }}
+              >
+                MVP
+              </Button>
+              <Button
+                size="xs"
+                variant="outline"
+                onClick={() => {
+                  setTeamSizeMultiplier(1.3);
+                  setRoleMix({ junior: 0, mid: 1, senior: 2, architect: 1, pm: 1 });
+                  setUseCustomRoi(false);
+                }}
+              >
+                Aggressive
+              </Button>
+              <Button
+                size="xs"
+                variant="outline"
+                onClick={() => {
+                  setTeamSizeMultiplier(1.5);
+                  setRoleMix({ junior: 1, mid: 2, senior: 2, architect: 1, pm: 1 });
+                  setUseCustomRoi(true);
+                }}
+              >
+                Enterprise
+              </Button>
+            </div>
+          </div>
+
           <Card className="border-emerald-200 bg-emerald-50/60">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">

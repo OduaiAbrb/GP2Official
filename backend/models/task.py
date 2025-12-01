@@ -18,6 +18,7 @@ class Task(BaseModel):
     due_date: Optional[datetime] = None
     status: str = "planned"
     priority: str = "medium"
+    role: Optional[str] = None
     assignee_id: Optional[str] = None
     dependencies: List[str] = Field(default_factory=list)
     tags: List[str] = Field(default_factory=list)
@@ -41,6 +42,7 @@ class TaskResponse(BaseModel):
     actual_hours: float
     status: str
     priority: str
+    role: Optional[str] = None
     start_date: Optional[datetime] = None
     due_date: Optional[datetime] = None
     dependencies: List[str]
@@ -58,6 +60,7 @@ class TaskUpdate(BaseModel):
     actual_hours: Optional[float] = None
     status: Optional[str] = None
     priority: Optional[str] = None
+    role: Optional[str] = None
     start_date: Optional[datetime] = None
     due_date: Optional[datetime] = None
     dependencies: Optional[List[str]] = None
@@ -74,6 +77,7 @@ class TaskCreate(BaseModel):
     actual_hours: Optional[float] = 0
     status: Optional[str] = "planned"
     priority: Optional[str] = "medium"
+    role: Optional[str] = None
     start_date: Optional[datetime] = None
     due_date: Optional[datetime] = None
     dependencies: Optional[List[str]] = None

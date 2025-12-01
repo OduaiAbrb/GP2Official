@@ -31,6 +31,7 @@ class TaskRepository:
                 "due_date": task.get("due_date"),
                 "status": task.get("status", "planned"),
                 "priority": task.get("priority", "medium"),
+                "role": task.get("role"),
                 "dependencies": task.get("dependencies", []) or [],
                 "tags": task.get("tags", []) or [],
                 "phase": task.get("phase"),

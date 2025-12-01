@@ -82,6 +82,7 @@ export interface Task {
   due_date?: string;
   status: string;
   priority: string;
+  role?: string;
   assignee_id?: string;
   dependencies: string[];
   tags: string[];

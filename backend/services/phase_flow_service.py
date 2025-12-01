@@ -19,6 +19,8 @@ PHASE_ORDER = [
     "design",
     "development",
     "tasks",
+    "cost_benefit",
+    "risks",
     "summary",
 ]
 
@@ -30,6 +32,8 @@ PHASE_TITLES = {
     "design": "Design",
     "development": "Development",
     "tasks": "Tasks",
+    "cost_benefit": "Costs & Benefits",
+    "risks": "Risks & Mitigations",
     "summary": "Summary",
 }
 
@@ -165,6 +169,30 @@ class PhaseFlowService:
             "tasks": (
                 "Author the Execution Map: break work into epics, stories, and tasks with time estimates. "
                 "Define dependencies, milestones, and owner assignments for Gantt visualization."
+            ),
+            "cost_benefit": (
+                "Produce a concise Cost & Benefit analysis using the latest project context (requirements, tasks, and any custom items). "
+                "Summarize the main cost drivers, estimated benefits, and ROI. Highlight budget hotspots and high-ROI opportunities. "
+                "If the user provided a scenario (team size, role mix, custom ROI, or what-if prompt), reflect that scenario explicitly in the analysis."
+            ),
+            "risks": (
+                "Compile a clear, actionable Risk Register for the project in Markdown. Use this exact structure: \n"
+                "\n# Risk Overview\n"
+                "Provide 2–3 bullet points summarizing overall risk posture (e.g., main themes, confidence level).\n"
+                "\n## Risk Register\n"
+                "Create a Markdown table with columns: `Risk`, `Impact`, `Likelihood`, `Mitigation`, `Owner`.\n"
+                "- Include at least 8–12 distinct risks covering delivery, technical, security, data, UX, organizational, and dependency risks.\n"
+                "- Use simple values like High/Medium/Low for Impact and Likelihood.\n"
+                "\n## Before vs After Mitigation\n"
+                "Create a small comparison table that shows how the overall risk posture changes if mitigations are applied, e.g.:\n"
+                "| Aspect | Before | After |\n"
+                "|--------|--------|-------|\n"
+                "| Delivery risk | High | Medium |\n"
+                "| Technical risk | High | Medium |\n"
+                "| ... | ... | ... |\n"
+                "\n## Recommended Actions (Checklist)\n"
+                "List 5–10 concrete next actions as a Markdown checklist (using - [ ]), each referencing one or more risks and owners.\n"
+                "Keep the entire response in clean Markdown so the UI can render tables and sections side-by-side."
             ),
             "summary": (
                 "Compile the Project Summary: key achievements, final metrics, lessons learned, "
