@@ -3,9 +3,17 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Optional, Dict, Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 
-from models.project import ProjectCreate, ProjectUpdate, ProjectResponse
+from models.project import (
+    ProjectCreate,
+    ProjectUpdate,
+    ProjectResponse,
+    ScenarioBranchRequest,
+    ScenarioDiffResponse,
+    GuidedWorkspaceRequest,
+    GuidedWorkspaceResponse,
+)
 
 from models.user import User
 from services.project_service import ProjectService
@@ -13,13 +21,16 @@ from routes.auth import get_current_user
 from models.generation import GenerationRequest, GenerationResponse
 from models.requirement import RequirementResponse
 from models.task import TaskResponse, TaskCreate
-from models.artifact import ArtifactResponse
+from models.artifact import ArtifactResponse, ArtifactUpdateRequest
+from models.ai_run import AiRunResponse
 from models.activity import ActivityLogResponse
 from repositories.requirement_repository import RequirementRepository
 from repositories.task_repository import TaskRepository
 from repositories.artifact_repository import ArtifactRepository
 from repositories.activity_repository import ActivityRepository
+from repositories.ai_run_repository import AiRunRepository
 from services.generation_service import GenerationService
+from services.context_assistant import ContextAssistantService
 
 router = APIRouter()
 project_service = ProjectService()
@@ -28,6 +39,8 @@ task_repo = TaskRepository()
 artifact_repo = ArtifactRepository()
 activity_repo = ActivityRepository()
 generation_service = GenerationService()
+ai_run_repo = AiRunRepository()
+assistant_service = ContextAssistantService()
 
 
 class GenerationConfig(BaseModel):
@@ -93,6 +106,21 @@ class RequirementBulkPayload(BaseModel):
     requirements: List[Dict[str, Any]]
 
 
+class AssistantChatRequest(BaseModel):
+    prompt: str
+    phase_id: Optional[str] = None
+
+
+class AssistantChatResponse(BaseModel):
+    reply: str
+
+
+class TeamMemberPayload(BaseModel):
+    email: EmailStr
+    project_role: Optional[str] = None
+    notes: Optional[str] = None
+
+
 @router.post("/", response_model=ProjectResponse)
 async def create_project(
     project_data: ProjectCreate,
@@ -108,6 +136,14 @@ async def list_projects(current_user: User = Depends(get_current_user)):
     return await project_service.list_projects(current_user)
 
 
+@router.post("/templates/resolve/", response_model=GuidedWorkspaceResponse)
+async def resolve_workspace_template(
+    payload: GuidedWorkspaceRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """Resolve wizard answers into concrete workspace settings."""
+    return await project_service.resolve_workspace_template(payload)
+
 @router.get("/{project_id}", response_model=ProjectResponse)
 async def get_project(
     project_id: str,
@@ -115,6 +151,35 @@ async def get_project(
 ):
     """Get a specific project."""
     return await project_service.get_project(project_id, current_user)
+
+
+@router.get("/{project_id}/branches/", response_model=List[ProjectResponse])
+async def list_branches(
+    project_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """List scenario branches for a project."""
+    return await project_service.list_scenario_branches(project_id, current_user)
+
+
+@router.post("/{project_id}/branches/", response_model=ProjectResponse)
+async def create_branch(
+    project_id: str,
+    payload: ScenarioBranchRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """Create a branch scenario for a project."""
+    return await project_service.create_scenario_branch(project_id, payload, current_user)
+
+
+@router.get("/{project_id}/branches/{branch_id}/diff/", response_model=ScenarioDiffResponse)
+async def branch_diff(
+    project_id: str,
+    branch_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Compare a branch to the baseline project."""
+    return await project_service.get_branch_diff(project_id, branch_id, current_user)
 
 
 @router.put("/{project_id}", response_model=ProjectResponse)
@@ -439,6 +504,106 @@ async def project_artifacts(
         )
         for artifact in artifacts
     ]
+
+
+@router.get("/{project_id}/ai-runs/", response_model=List[AiRunResponse])
+async def project_ai_runs(
+    project_id: str,
+    limit: int = 25,
+    current_user: User = Depends(get_current_user)
+):
+    """List AI execution history for a project."""
+    await project_service.get_project(project_id, current_user)
+    runs = await ai_run_repo.list_by_project(project_id, limit=limit)
+    response: List[AiRunResponse] = []
+    for run in runs:
+        response.append(
+            AiRunResponse(
+                run_id=run.id,
+                project_id=run.project_id,
+                user_id=run.user_id,
+                job_type=run.job_type,
+                phase=run.phase,
+                provider=run.provider,
+                model=run.model,
+                status=run.status,
+                prompt_preview=(run.prompt[:400] if run.prompt else None),
+                response_preview=(run.response_excerpt[:400] if run.response_excerpt else None),
+                duration_ms=run.duration_ms,
+                error_message=run.error_message,
+                metadata=run.metadata,
+                created_at=run.created_at,
+                completed_at=run.completed_at,
+            )
+        )
+    return response
+
+
+@router.post("/{project_id}/assistant/chat/", response_model=AssistantChatResponse)
+async def assistant_chat(
+    project_id: str,
+    payload: AssistantChatRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """Conversational overlay response with project context."""
+    project = await project_service.get_project(project_id, current_user)
+    reply = await assistant_service.chat(
+        project_id,
+        project.organization,
+        payload.prompt,
+        payload.phase_id,
+    )
+    return AssistantChatResponse(reply=reply)
+
+
+@router.post("/{project_id}/team/", response_model=ProjectResponse)
+async def add_team_member(
+    project_id: str,
+    payload: TeamMemberPayload,
+    current_user: User = Depends(get_current_user),
+):
+    """Add or update a project team member."""
+    return await project_service.add_team_member(project_id, payload.model_dump(), current_user)
+
+
+@router.delete("/{project_id}/team/{member_id}", response_model=ProjectResponse)
+async def remove_team_member(
+    project_id: str,
+    member_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    """Remove a project team member."""
+    return await project_service.remove_team_member(project_id, member_id, current_user)
+
+
+@router.patch("/{project_id}/artifacts/{artifact_id}/", response_model=ArtifactResponse)
+async def update_artifact(
+    project_id: str,
+    artifact_id: str,
+    payload: ArtifactUpdateRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """Update the stored content of a project artifact."""
+    await project_service.get_project(project_id, current_user)
+    updates = payload.model_dump(exclude_unset=True)
+    if not updates:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No updates supplied")
+    artifact = await artifact_repo.update_artifact(project_id, artifact_id, updates)
+    if not artifact:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Artifact not found")
+    return ArtifactResponse(
+        id=artifact.id,
+        artifact_id=artifact.id,
+        project_id=artifact.project_id,
+        type=artifact.type,
+        title=artifact.title,
+        content_json=artifact.content_json,
+        version=artifact.version,
+        is_approved=artifact.is_approved,
+        metadata=artifact.metadata,
+        created_at=artifact.created_at,
+        updated_at=artifact.updated_at,
+    )
 
 
 @router.get("/{project_id}/activity/", response_model=List[ActivityLogResponse])

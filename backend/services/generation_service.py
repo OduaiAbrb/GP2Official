@@ -1,6 +1,8 @@
 """AI generation service."""
 
 import asyncio
+import json
+import time
 from typing import Dict, Any, Optional, List
 from fastapi import HTTPException, status
 
@@ -12,6 +14,7 @@ from repositories.generation_repository import GenerationRepository
 from repositories.requirement_repository import RequirementRepository
 from repositories.task_repository import TaskRepository
 from repositories.artifact_repository import ArtifactRepository
+from repositories.ai_run_repository import AiRunRepository
 from services.llm_client import LLMClient
 from services.srs_generator import SRSGenerator
 from services.uml_generator import UMLGenerator
@@ -19,6 +22,7 @@ from services.task_planner import TaskPlanner
 from services.risk_analyzer import RiskAnalyzer
 from services.cost_estimator import CostEstimator
 from services.plantuml_service import build_plantuml_image_url
+from config import settings
 
 
 class GenerationService:
@@ -30,6 +34,7 @@ class GenerationService:
         self.requirement_repo = RequirementRepository()
         self.task_repo = TaskRepository()
         self.artifact_repo = ArtifactRepository()
+        self.ai_run_repo = AiRunRepository()
         self.llm_client = LLMClient()
         self.srs_generator = SRSGenerator()
         self.uml_generator = UMLGenerator()
@@ -51,7 +56,7 @@ class GenerationService:
         job = await self.generation_repo.create(request.project_id, current_user.id)
         
         # Start generation in background
-        asyncio.create_task(self._execute_generation(job.id, project, request))
+        asyncio.create_task(self._execute_generation(job.id, project, request, current_user.id))
         
         return GenerationResponse(
             job_id=job.id,
@@ -79,8 +84,20 @@ class GenerationService:
             error_message=job.error_message,
         )
     
-    async def _execute_generation(self, job_id: str, project, request: GenerationRequest):
+    async def _execute_generation(self, job_id: str, project, request: GenerationRequest, user_id: Optional[str]):
         """Execute the generation workflow."""
+        audit_run = await self.ai_run_repo.create_run(
+            project_id=project.id,
+            user_id=user_id,
+            job_type="project_generation",
+            phase=None,
+            provider=settings.llm_provider,
+            model=settings.llm_model_name,
+            prompt=self._summarize_generation_request(request),
+            metadata={"job_id": job_id},
+        )
+        started_at = time.perf_counter()
+
         try:
             # Update status to running
             await self.generation_repo.update_status(job_id, JobStatus.RUNNING, progress=0.1)
@@ -207,12 +224,24 @@ class GenerationService:
                 progress=1.0,
                 result_summary=result_summary
             )
+            await self.ai_run_repo.complete_run(
+                audit_run.id,
+                status="completed",
+                response=json.dumps(result_summary),
+                duration_ms=int((time.perf_counter() - started_at) * 1000),
+            )
             
         except Exception as e:
             await self.generation_repo.update_status(
                 job_id,
                 JobStatus.FAILED,
                 error_message=str(e)
+            )
+            await self.ai_run_repo.complete_run(
+                audit_run.id,
+                status="failed",
+                error_message=str(e),
+                duration_ms=int((time.perf_counter() - started_at) * 1000),
             )
     
     async def _extract_requirements(self, project) -> list:
@@ -295,6 +324,12 @@ Generate a list of functional and non-functional requirements."""
             payload,
             metadata=metadata,
         )
+
+    def _summarize_generation_request(self, request: GenerationRequest) -> str:
+        """Create a compact string representing the generation config."""
+        payload = request.model_dump(exclude_none=True)
+        payload.pop("project_id", None)
+        return json.dumps(payload)[:1800]
 
     def _serialize_requirement(self, requirement) -> Dict[str, Any]:
         return {

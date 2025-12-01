@@ -100,3 +100,30 @@ class TaskRepository:
         }
         await db[self.collection_name].insert_one(doc)
         return Task(**doc)
+
+    async def list_by_projects(self, project_ids: List[str]) -> List[Task]:
+        """Return tasks for multiple projects."""
+        if not project_ids:
+            return []
+        db = get_db()
+        cursor = db[self.collection_name].find({"project_id": {"$in": project_ids}})
+        tasks: List[Task] = []
+        async for doc in cursor:
+            tasks.append(Task(**doc))
+        return tasks
+
+    async def clone_project_tasks(self, source_project_id: str, target_project_id: str) -> List[Task]:
+        """Duplicate all tasks from one project to another."""
+        db = get_db()
+        cursor = db[self.collection_name].find({"project_id": source_project_id})
+        docs: List[dict] = []
+        async for doc in cursor:
+            new_doc = doc.copy()
+            new_doc["_id"] = f"task_{str(datetime.utcnow().timestamp()).replace('.', '')}"
+            new_doc["project_id"] = target_project_id
+            new_doc["created_at"] = datetime.utcnow()
+            new_doc["updated_at"] = datetime.utcnow()
+            docs.append(new_doc)
+        if docs:
+            await db[self.collection_name].insert_many(docs)
+        return [Task(**doc) for doc in docs]

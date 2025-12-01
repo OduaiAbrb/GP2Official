@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Sparkles, CheckCircle, Code, Layers, Boxes, ArrowRight } from 'lucide-react';
+import { ROLE_OPTIONS } from '@/constants/roles';
 
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ export const RegisterPage: React.FC = () => {
     password: '',
     full_name: '',
     organization: '',
+    role: 'program_manager',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -171,6 +173,24 @@ export const RegisterPage: React.FC = () => {
                       className="border-2 border-amber-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all"
                     />
                     <div className="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-amber-500 to-orange-600 w-0 group-focus-within:w-full transition-all duration-500"></div>
+                  </div>
+
+                  <div className="relative group">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Workspace Role</label>
+                    <select
+                      value={formData.role}
+                      onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                      className="w-full border-2 border-amber-200 rounded-lg px-3 py-2 text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all bg-white"
+                    >
+                      {ROLE_OPTIONS.map((role) => (
+                        <option key={role.id} value={role.id}>
+                          {role.label}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {ROLE_OPTIONS.find((role) => role.id === formData.role)?.description}
+                    </p>
                   </div>
 
                   <div className="relative group">

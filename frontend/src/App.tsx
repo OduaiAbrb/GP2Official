@@ -12,6 +12,8 @@ import { UmlDiagramEditorPage } from './pages/UmlDiagramEditorPage';
 import { PhaseDetailPage } from './pages/PhaseDetailPage';
 import { AcornDraftPage } from './pages/AcornDraftPage';
 import { ProjectSummaryPage } from './pages/ProjectSummaryPage';
+import { GuidedWorkspaceBuilder } from './pages/GuidedWorkspaceBuilder';
+import ProfilePage from './pages/ProfilePage';
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, checkAuth } = useAuthStore();
@@ -47,6 +49,22 @@ function App() {
           element={
             <PrivateRoute>
               <NewProjectPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/projects/new/wizard"
+          element={
+            <PrivateRoute>
+              <GuidedWorkspaceBuilder />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <PrivateRoute>
+              <ProfilePage />
             </PrivateRoute>
           }
         />

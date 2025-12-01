@@ -5,8 +5,10 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { api } from '@/lib/api';
-import type { Artifact, Project, Task, Requirement } from '@/types';
+import type { Artifact, Project, Task, Requirement, SandboxRunResult } from '@/types';
 import { phaseConfigs, getPhaseConfig, getNextPhase, phaseColors } from '@/constants/phases';
+import { workspacePresets } from '@/constants/workspacePresets';
+import { useAuthStore } from '@/store/authStore';
 import ReactMarkdown from 'react-markdown';
 import { PhaseNavigation } from '@/components/PhaseNavigation';
 import {
@@ -40,6 +42,7 @@ import {
   FileText,
   Layers,
   GitBranch,
+  LayoutDashboard,
   Edit3,
   Trash2,
   Plus,
@@ -53,7 +56,53 @@ import {
   Users,
   Settings,
   Palette,
+  Save,
+  Undo2,
+  Printer,
+  Play,
 } from 'lucide-react';
+
+type RiskRegisterRow = {
+  risk: string;
+  impact: string;
+  likelihood: string;
+  mitigation: string;
+  owner: string;
+};
+
+type RiskPostureRow = {
+  aspect: string;
+  before: string;
+  after: string;
+};
+
+type RiskDraft = {
+  overview: string[];
+  riskRows: RiskRegisterRow[];
+  beforeAfter: RiskPostureRow[];
+  actions: string[];
+};
+
+const createEmptyRiskRow = (): RiskRegisterRow => ({
+  risk: '',
+  impact: 'Medium',
+  likelihood: 'Medium',
+  mitigation: '',
+  owner: '',
+});
+
+const createEmptyPostureRow = (): RiskPostureRow => ({
+  aspect: '',
+  before: '',
+  after: '',
+});
+
+const createDefaultRiskDraft = (): RiskDraft => ({
+  overview: [''],
+  riskRows: [createEmptyRiskRow()],
+  beforeAfter: [createEmptyPostureRow()],
+  actions: [''],
+});
 
 export const PhaseDetailPage: React.FC = () => {
   const { id, phaseId } = useParams<{ id: string; phaseId: string }>();
@@ -88,6 +137,13 @@ export const PhaseDetailPage: React.FC = () => {
   const [ganttZoom, setGanttZoom] = useState(100);
   const [ganttViewMode, setGanttViewMode] = useState<'chart' | 'list' | 'board'>('chart');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const ganttCanvasRef = useRef<HTMLDivElement | null>(null);
+  const [ganttExporting, setGanttExporting] = useState(false);
+  const [sandboxLanguage, setSandboxLanguage] = useState('python');
+  const [sandboxCode, setSandboxCode] = useState('print("Hello Acorn")');
+  const [sandboxInput, setSandboxInput] = useState('');
+  const [sandboxResult, setSandboxResult] = useState<SandboxRunResult | null>(null);
+  const [sandboxRunning, setSandboxRunning] = useState(false);
   const [costData, setCostData] = useState<{
     phases: { name: string; cost: number; hours: number }[];
     totalCost: number;
@@ -108,6 +164,10 @@ export const PhaseDetailPage: React.FC = () => {
     currency: 'USD' as 'USD' | 'JOD',
   });
   const [useCustomRoi, setUseCustomRoi] = useState(false);
+  const [manualCostSlices, setManualCostSlices] = useState<{ id: string; label: string; cost: number; hours: number }[]>([]);
+  const [useManualCostSlices, setUseManualCostSlices] = useState(false);
+  const [editingCostSlices, setEditingCostSlices] = useState(false);
+  const [manualSliceDraft, setManualSliceDraft] = useState({ label: '', cost: '', hours: '' });
   const [teamSizeMultiplier, setTeamSizeMultiplier] = useState(1);
   const [roleMix, setRoleMix] = useState({
     junior: 0,
@@ -132,6 +192,12 @@ export const PhaseDetailPage: React.FC = () => {
     priority: 'medium',
     status: 'proposed',
   });
+  const [isEditingRisks, setIsEditingRisks] = useState(false);
+  const [riskDraft, setRiskDraft] = useState<RiskDraft>(createDefaultRiskDraft());
+  const [savingRisks, setSavingRisks] = useState(false);
+  const { user } = useAuthStore();
+  const userAuthority = user?.role_authority || 0;
+  const canTriggerAi = userAuthority >= 3;
 
   const handleUpdateTask = async (taskId: string, patch: Partial<Task>) => {
     try {
@@ -218,13 +284,45 @@ export const PhaseDetailPage: React.FC = () => {
     loadProjectData();
   }, [id, teamSizeMultiplier, roleMix]);
 
-  const phaseMarkdown = useMemo(() => {
-    if (!phaseId) return '';
-    const artifact = artifacts.find(
-      (art) => art.type === `PHASE_${phaseId.toUpperCase()}`
-    );
-    return artifact?.content_json?.markdown || '';
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      if (!event.altKey || (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight')) {
+        return;
+      }
+      const target = event.target as HTMLElement | null;
+      if (target && ['INPUT', 'TEXTAREA'].includes(target.tagName)) {
+        return;
+      }
+      event.preventDefault();
+      shiftTimeline(event.key === 'ArrowLeft' ? -1 : 1);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
+  const latestArtifact = useMemo(() => {
+    if (!phaseId) return null;
+    return artifacts.find((art) => art.type === `PHASE_${phaseId.toUpperCase()}`);
   }, [artifacts, phaseId]);
+
+  const phaseMarkdown = latestArtifact?.content_json?.markdown || '';
+  const phaseRawMarkdown = latestArtifact?.content_json?.raw_markdown || '';
+
+  const RawMarkdownDisclosure: React.FC = () => {
+    if (!phaseRawMarkdown || phaseRawMarkdown === phaseMarkdown) {
+      return null;
+    }
+    return (
+      <details className="mt-3 text-xs text-gray-500">
+        <summary className="cursor-pointer font-medium text-gray-600">
+          Show raw AI output
+        </summary>
+        <pre className="mt-2 whitespace-pre-wrap rounded-lg border border-gray-200 bg-gray-50 p-3 text-[11px] leading-relaxed text-gray-700 overflow-x-auto">
+          {phaseRawMarkdown}
+        </pre>
+      </details>
+    );
+  };
 
   // Simple parser for Risks phase markdown so we can render real UI components
   const parsedRisks = useMemo(() => {
@@ -298,15 +396,111 @@ export const PhaseDetailPage: React.FC = () => {
     return { overview, riskRows, beforeAfter, actions };
   }, [phaseMarkdown, phaseId]);
 
+  useEffect(() => {
+    if (phaseId !== 'risks' || !parsedRisks || isEditingRisks) {
+      return;
+    }
+    setRiskDraft({
+      overview: parsedRisks.overview.length ? [...parsedRisks.overview] : [''],
+      riskRows: parsedRisks.riskRows.length
+        ? parsedRisks.riskRows.map((row) => ({ ...row }))
+        : [createEmptyRiskRow()],
+      beforeAfter: parsedRisks.beforeAfter.length
+        ? parsedRisks.beforeAfter.map((row) => ({ ...row }))
+        : [createEmptyPostureRow()],
+      actions: parsedRisks.actions.length ? [...parsedRisks.actions] : [''],
+    });
+  }, [phaseId, parsedRisks, isEditingRisks]);
+
   const unifiedPromptRef = useRef<HTMLTextAreaElement | null>(null);
 
-  const latestArtifact = useMemo(() => {
-    if (!phaseId) return null;
-    return artifacts.find((art) => art.type === `PHASE_${phaseId.toUpperCase()}`);
-  }, [artifacts, phaseId]);
+  const hydrateRiskDraft = (source: RiskDraft | null) => {
+    if (source) {
+      return {
+        overview: source.overview.length ? [...source.overview] : [''],
+        riskRows: source.riskRows.length ? source.riskRows.map((row) => ({ ...row })) : [createEmptyRiskRow()],
+        beforeAfter: source.beforeAfter.length ? source.beforeAfter.map((row) => ({ ...row })) : [createEmptyPostureRow()],
+        actions: source.actions.length ? [...source.actions] : [''],
+      };
+    }
+    return createDefaultRiskDraft();
+  };
+
+  const buildRiskMarkdown = (draft: RiskDraft) => {
+    const lines: string[] = [];
+    const overviewItems = draft.overview.map((entry) => entry.trim()).filter(Boolean);
+    lines.push('# Risk Overview', '');
+    if (overviewItems.length) {
+      overviewItems.forEach((item) => lines.push(`- ${item}`));
+    } else {
+      lines.push('- Summary pending user input');
+    }
+    lines.push('', '## Risk Register', '| Risk | Impact | Likelihood | Mitigation | Owner |', '| --- | --- | --- | --- | --- |');
+
+    const registerRows = draft.riskRows.filter(
+      (row) => row.risk.trim() || row.mitigation.trim() || row.owner.trim() || row.impact.trim() || row.likelihood.trim()
+    );
+    (registerRows.length ? registerRows : draft.riskRows).forEach((row) => {
+      lines.push(
+        `| ${row.risk.trim() || '-'} | ${row.impact.trim() || '-'} | ${row.likelihood.trim() || '-'} | ${row.mitigation.trim() || '-'} | ${row.owner.trim() || '-'} |`
+      );
+    });
+
+    lines.push('', '## Before vs After Mitigation', '| Aspect | Before | After |', '| --- | --- | --- |');
+    const postureRows = draft.beforeAfter.filter((row) => row.aspect.trim() || row.before.trim() || row.after.trim());
+    (postureRows.length ? postureRows : draft.beforeAfter).forEach((row) => {
+      lines.push(`| ${row.aspect.trim() || '-'} | ${row.before.trim() || '-'} | ${row.after.trim() || '-'} |`);
+    });
+
+    lines.push('', '## Recommended Actions', '');
+    const actions = draft.actions.map((entry) => entry.trim()).filter(Boolean);
+    (actions.length ? actions : ['Define next mitigation actions']).forEach((action) => {
+      lines.push(`- [ ] ${action}`);
+    });
+
+    return lines.join('\n');
+  };
+
+  const handleStartRiskEdit = () => {
+    if (phaseId !== 'risks') return;
+    setRiskDraft(hydrateRiskDraft(parsedRisks));
+    setIsEditingRisks(true);
+  };
+
+  const handleCancelRiskEdit = () => {
+    setIsEditingRisks(false);
+    setRiskDraft(hydrateRiskDraft(parsedRisks));
+  };
+
+  const handleSaveRisks = async () => {
+    if (!id || !latestArtifact) return;
+    setSavingRisks(true);
+    setError(null);
+    try {
+      const markdown = buildRiskMarkdown(riskDraft);
+      const updated = await api.updateArtifact(id, latestArtifact.artifact_id, {
+        title: latestArtifact.title,
+        content_json: { ...(latestArtifact.content_json || {}), markdown },
+        metadata: latestArtifact.metadata,
+      });
+      setArtifacts((prev) =>
+        prev.map((artifact) => (artifact.artifact_id === updated.artifact_id ? updated : artifact))
+      );
+      setIsEditingRisks(false);
+    } catch (err) {
+      console.error('Failed to save risk edits', err);
+      setError('Unable to save risk updates. Please try again.');
+    } finally {
+      setSavingRisks(false);
+    }
+  };
 
   const handleGenerate = async (prompt?: string) => {
     if (!id || !phaseId) return;
+    if (!canTriggerAi) {
+      setError('Your role cannot run AI generations. Ask a Program Manager for elevated access.');
+      return;
+    }
     setIsGenerating(true);
     setError(null);
 
@@ -862,6 +1056,129 @@ export const PhaseDetailPage: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
+  const shiftTimeline = (days: number) => {
+    setTasks((prev) =>
+      prev.map((task) => {
+        const start = task.start_date ? new Date(task.start_date) : null;
+        const due = task.due_date ? new Date(task.due_date) : null;
+        if (!start && !due) return task;
+        const shiftDate = (date: Date | null) =>
+          date ? new Date(date.getTime() + days * 86400000) : null;
+        const shiftedStart = shiftDate(start);
+        const shiftedDue = shiftDate(due);
+        return {
+          ...task,
+          start_date: shiftedStart ? shiftedStart.toISOString() : task.start_date,
+          due_date: shiftedDue ? shiftedDue.toISOString() : task.due_date,
+        };
+      })
+    );
+  };
+
+  const handleExportTimeline = async (mode: 'png' | 'print') => {
+    if (!ganttData.bars.length || !project) return;
+    setGanttExporting(true);
+    try {
+      const width = 1200;
+      const height = Math.max(360, ganttData.height + 140);
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(0, 0, width, height);
+      ctx.fillStyle = '#111827';
+      ctx.font = '18px Inter, sans-serif';
+      ctx.fillText(`${project.name} – ${phaseConfig?.title || 'Timeline'}`, 32, 40);
+      ctx.font = '12px Inter, sans-serif';
+      ctx.fillStyle = '#475569';
+      ctx.fillText(`Exported ${new Date().toLocaleString()}`, 32, 60);
+
+      const labelWidth = 220;
+      const timelineWidth = width - labelWidth - 80;
+      const yOffset = 100;
+
+      // Draw connectors
+      ctx.strokeStyle = '#c7d2fe';
+      ctx.lineWidth = 2;
+      ganttData.connectors.forEach((conn) => {
+        const startX = labelWidth + (conn.x1 / 100) * timelineWidth;
+        const endX = labelWidth + (conn.x2 / 100) * timelineWidth;
+        const startY = yOffset + conn.y1;
+        const endY = yOffset + conn.y2;
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.bezierCurveTo(startX + 20, startY, endX - 20, endY, endX, endY);
+        ctx.stroke();
+      });
+
+      ganttData.bars.forEach((bar, idx) => {
+        const x = labelWidth + (bar.x / 100) * timelineWidth;
+        const widthPx = (Math.max(8, bar.width) / 100) * timelineWidth;
+        const y = yOffset + idx * (barHeight + 16);
+        ctx.fillStyle = '#0f172a';
+        ctx.font = '13px Inter, sans-serif';
+        ctx.fillText(bar.title, 40, y + barHeight - 4);
+        ctx.fillStyle = bar.color;
+        ctx.fillRect(x, y, widthPx, barHeight);
+        if (bar.isMilestone) {
+          ctx.fillStyle = '#f97316';
+          ctx.beginPath();
+          ctx.moveTo(x + widthPx, y);
+          ctx.lineTo(x + widthPx + 8, y + barHeight / 2);
+          ctx.lineTo(x + widthPx, y + barHeight);
+          ctx.closePath();
+          ctx.fill();
+        }
+      });
+
+      const dataUrl = canvas.toDataURL('image/png');
+      if (mode === 'png') {
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = `${project.name}-gantt.png`.replace(/\s+/g, '-').toLowerCase();
+        link.click();
+      } else {
+        const win = window.open('');
+        if (win) {
+          win.document.write(`<img src="${dataUrl}" style="width:100%" />`);
+          win.document.close();
+          win.focus();
+          win.print();
+        }
+      }
+    } catch (err) {
+      console.error('Failed to export Gantt', err);
+    } finally {
+      setGanttExporting(false);
+    }
+  };
+
+  const handleRunSandbox = async () => {
+    if (!sandboxCode.trim()) return;
+    setSandboxRunning(true);
+    try {
+      const result = await api.runSandbox({
+        language: sandboxLanguage,
+        code: sandboxCode,
+        input_text: sandboxInput || undefined,
+      });
+      setSandboxResult(result);
+    } catch (err) {
+      console.error('Sandbox execution failed', err);
+      setSandboxResult({
+        language: sandboxLanguage,
+        stdout: '',
+        stderr: 'Execution failed. Please try again later.',
+        exit_code: -1,
+        duration_ms: 0,
+      });
+    } finally {
+      setSandboxRunning(false);
+    }
+  };
+
   const toggleLocalTaskStatus = (taskId: string) => {
     setLocalTaskStatus((prev) => {
       const next = { ...prev };
@@ -923,8 +1240,28 @@ export const PhaseDetailPage: React.FC = () => {
       const isMilestone = (t.tags || []).includes('milestone');
       return { id: t.task_id, title: t.title, x, width, y: 50 + idx * (barHeight + 16), color, isMilestone };
     });
-    const connectors: { x1: number; x2: number; y1: number; y2: number }[] = [];
-    return { bars, connectors, start: min, end: max, height: 80 + bars.length * (barHeight + 16) };
+    const barsById: Record<string, typeof bars[number]> = {};
+    bars.forEach((bar) => {
+      barsById[bar.id] = bar;
+    });
+    const connectors: { id: string; x1: number; x2: number; y1: number; y2: number }[] = [];
+    defaults.forEach((task) => {
+      const target = barsById[task.task_id];
+      if (!target || !task.dependencies) return;
+      task.dependencies.forEach((depId) => {
+        const source = barsById[depId];
+        if (!source) return;
+        connectors.push({
+          id: `${depId}-${task.task_id}`,
+          x1: Math.min(100, source.x + source.width),
+          x2: Math.max(0, target.x),
+          y1: source.y + barHeight / 2,
+          y2: target.y + barHeight / 2,
+        });
+      });
+    });
+    const height = 80 + bars.length * (barHeight + 16);
+    return { bars, connectors, start: min, end: max, height };
   }, [tasks, localTaskStatus, ganttScale, barHeight]);
 
   if (isLoading) {
@@ -949,112 +1286,216 @@ export const PhaseDetailPage: React.FC = () => {
   }
 
   const status = phaseStatus[phaseConfig.id] || 'locked';
-  const colors = phaseColors[phaseConfig.color] || phaseColors.yellow;
+  const colors = phaseColors[phaseConfig.color] || phaseColors.orange;
   const nextPhase = getNextPhase(phaseId || '');
+  const activePreset = project?.ui_preferences?.preset || 'default';
+  const presetSettings =
+    workspacePresets.find((preset) => preset.id === activePreset) || workspacePresets[0];
+  const showSidebar = presetSettings.layout.showSummary !== false;
+  const showToolbar = !presetSettings.layout.condensePhases;
 
   // Wrapper component for phase navigation
-  const PhaseWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <Layout>
-      <div className="flex">
-        {/* Phase Navigation Sidebar */}
-        <div className="hidden lg:block">
-          <PhaseNavigation projectId={id} variant="sidebar" />
-        </div>
+  const PhaseWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const quickActions = [
+      {
+        id: 'overview',
+        label: 'Project Overview',
+        icon: LayoutDashboard,
+        onClick: () => navigate(`/projects/${id}`),
+        disabled: false,
+      },
+      {
+        id: 'export',
+        label: 'Export Markdown',
+        icon: Download,
+        onClick: handleDownload,
+        disabled: !phaseMarkdown,
+      },
+      {
+        id: 'rerun',
+        label: 'Re-run AI',
+        icon: Sparkles,
+        onClick: () => handleGenerate(),
+        disabled: isGenerating || status === 'locked',
+      },
+    ];
 
-        {/* Main Content */}
-        <div className="flex-1 min-w-0">
-          {/* Horizontal Navigation for smaller screens */}
-          <div className="lg:hidden">
-            <PhaseNavigation projectId={id} variant="horizontal" />
-          </div>
+    const gridTemplate = showSidebar
+      ? showToolbar
+        ? 'xl:grid-cols-[260px,minmax(0,1fr),72px]'
+        : 'xl:grid-cols-[260px,minmax(0,1fr)]'
+      : showToolbar
+      ? 'xl:grid-cols-[minmax(0,1fr),72px]'
+      : '';
+    return (
+      <Layout>
+        <div className="min-h-[calc(100vh-4rem)] bg-slate-50/80">
+          <div className="mx-auto max-w-[1400px] px-3 sm:px-4 lg:px-6 py-6">
+            <div className={`grid gap-5 ${gridTemplate}`}>
+              {/* Phase Navigation Sidebar */}
+              {showSidebar && (
+                <aside className="hidden xl:block">
+                  <div className="sticky top-6 rounded-2xl border border-slate-200 bg-white/90 shadow-sm">
+                    <PhaseNavigation projectId={id} variant="sidebar" />
+                  </div>
+                </aside>
+              )}
 
-          <div className="p-6 space-y-6">
-            {/* Phase Header */}
-            <div className="relative">
-              <div className="absolute -top-10 -left-10 w-32 h-32 bg-purple-200/30 rounded-full blur-3xl"></div>
-              <div className="relative flex items-center justify-between flex-wrap gap-3">
-                <Button variant="ghost" onClick={() => navigate(`/projects/${id}`)}>
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to Project
-                </Button>
-                <div className="text-right">
-                  <p className="text-xs uppercase text-gray-500 tracking-wider">Phase {(phaseConfig.order || 0) + 1} of {phaseConfigs.length}</p>
-                  <h1 className={`text-2xl font-bold bg-gradient-to-r ${colors.gradient} bg-clip-text text-transparent`}>
-                    Step {phaseConfig.stepNumber}: {phaseConfig.title}
-                  </h1>
-                  <p className="text-sm text-gray-500">{project?.name}</p>
+              {/* Main Content */}
+              <div className="min-w-0">
+                {/* Horizontal Navigation for smaller screens */}
+                <div className="xl:hidden mb-4 -mx-2">
+                  <PhaseNavigation projectId={id} variant="horizontal" />
+                </div>
+
+                <div className="rounded-3xl bg-white/90 backdrop-blur-sm p-6 shadow-md ring-1 ring-black/5 space-y-6">
+                  {!canTriggerAi && (
+                    <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-3 text-sm text-amber-800 flex items-center gap-2">
+                      <Shield className="h-4 w-4" />
+                      <span>
+                        You currently have reviewer access ({user?.role_label || 'Limited'}). A Program Manager must re-run AI for this phase.
+                      </span>
+                    </div>
+                  )}
+                  {/* Phase Header */}
+                  <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-5">
+                    <div
+                      className="absolute inset-0 opacity-40"
+                      style={{
+                        background: `radial-gradient(circle at top left, rgba(99,102,241,0.2), transparent 55%)`,
+                      }}
+                    />
+                    <div className="relative flex flex-wrap items-start justify-between gap-4">
+                      <div>
+                        <p className="text-xs uppercase text-gray-500 tracking-wider">
+                          Phase {(phaseConfig.order || 0) + 1} of {phaseConfigs.length}
+                        </p>
+                        <h1 className={`mt-1 text-3xl font-semibold bg-gradient-to-r ${colors.gradient} bg-clip-text text-transparent`}>
+                          Step {phaseConfig.stepNumber}: {phaseConfig.title}
+                        </h1>
+                        <p className="text-sm text-gray-500">{project?.name}</p>
+                      </div>
+                      <div className="flex flex-col items-end gap-3">
+                        <Button variant="ghost" onClick={() => navigate(`/projects/${id}`)}>
+                          <ArrowLeft className="mr-2 h-4 w-4" />
+                          Back to Project
+                        </Button>
+                        <Badge className="bg-slate-900 text-white">
+                          {status === 'locked' ? 'Locked' : status === 'completed' ? 'Completed' : 'Active'}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+
+                  {nextPhase && (
+                    <Card className={`border bg-white`}>
+                      <CardContent className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xs uppercase tracking-wider text-gray-500">Next Phase</p>
+                          <h3 className="text-xl font-semibold text-gray-900">
+                            Step {nextPhase.stepNumber}: {nextPhase.title}
+                          </h3>
+                        </div>
+                        <Button
+                          className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white"
+                          onClick={() => navigate(`/projects/${id}/phases/${nextPhase.id}`)}
+                        >
+                          Continue to {nextPhase.shortTitle}
+                          <ArrowLeft className="ml-2 h-4 w-4 rotate-180" />
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {error && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4" />
+                      {error}
+                    </div>
+                  )}
+
+                  {phaseId !== 'validation' && (
+                    <Card className="bg-slate-50 border border-slate-200">
+                      <CardHeader className="pb-4">
+                        <CardTitle className="flex items-center gap-2 text-base">
+                          <Sparkles className="h-4 w-4 text-indigo-500" />
+                          Prompt for this phase
+                        </CardTitle>
+                        <CardDescription>
+                          Custom prompt will re-run the active phase using the latest project context.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <textarea
+                          ref={unifiedPromptRef}
+                          className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:border-transparent bg-white"
+                          rows={3}
+                          placeholder="E.g., 'Generate the validation checklist with stakeholder signoff steps'"
+                        />
+                        <div className="flex flex-wrap justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              if (unifiedPromptRef.current) {
+                                unifiedPromptRef.current.value = '';
+                              }
+                            }}
+                            disabled={isGenerating}
+                          >
+                            Clear
+                          </Button>
+                          <Button
+                            disabled={isGenerating}
+                            onClick={() => {
+                              const prompt = unifiedPromptRef.current?.value || '';
+                              if (!prompt.trim()) return;
+                              handleGenerate(prompt);
+                            }}
+                          >
+                            {isGenerating ? 'Generating…' : 'Run prompt for this phase'}
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Phase Content */}
+                  {children}
                 </div>
               </div>
+
+              {/* Right toolbar */}
+              {showToolbar && (
+                <aside className="hidden xl:flex flex-col items-center gap-4">
+                  <div className="sticky top-6 flex flex-col gap-3">
+                    {quickActions.map((action) => {
+                      const Icon = action.icon;
+                      return (
+                        <button
+                          key={action.id}
+                          onClick={action.onClick}
+                          disabled={action.disabled}
+                          className={`group flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:shadow-lg ${
+                            action.disabled ? 'opacity-50 cursor-not-allowed' : 'hover:-translate-y-0.5'
+                          }`}
+                          aria-label={action.label}
+                        >
+                          <Icon className="h-5 w-5" />
+                          <span className="absolute right-full mr-2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs text-white opacity-0 transition group-hover:opacity-100">
+                            {action.label}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </aside>
+              )}
             </div>
-
-            {nextPhase && (
-              <Card className={`bg-gradient-to-r ${colors.gradient}`}>
-                <CardContent className="flex items-center justify-between">
-                  <div className="text-white">
-                    <p className="text-sm opacity-80">Next Phase</p>
-                    <h3 className="text-xl font-bold">Step {nextPhase.stepNumber}: {nextPhase.title}</h3>
-                  </div>
-                  <Button
-                    className="bg-white/20 hover:bg-white/30 text-white border-white/30"
-                    variant="outline"
-                    onClick={() => navigate(`/projects/${id}/phases/${nextPhase.id}`)}
-                  >
-                    Continue to {nextPhase.shortTitle}
-                    <ArrowLeft className="ml-2 h-4 w-4 rotate-180" />
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4" />
-                {error}
-              </div>
-            )}
-
-            {phaseId !== 'validation' && (
-              <Card className="bg-gray-50 border border-gray-200">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-gray-600" />
-                    Prompt for this phase
-                  </CardTitle>
-                  <CardDescription>Custom prompt will re-run the active phase using the latest project context.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <textarea
-                    ref={unifiedPromptRef}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-                    rows={3}
-                    placeholder="E.g., 'Generate the validation checklist with stakeholder signoff steps'"
-                  />
-                  <div className="flex justify-end">
-                    <Button
-                      disabled={isGenerating}
-                      onClick={() => {
-                        const prompt = unifiedPromptRef.current?.value || '';
-                        if (!prompt.trim()) return;
-                        handleGenerate(prompt);
-                      }}
-                    >
-                      {isGenerating ? 'Generating…' : 'Run prompt for this phase'}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Phase Content */}
-            {children}
           </div>
         </div>
-
-        {/* Floating Navigation for quick access */}
-        <PhaseNavigation projectId={id} variant="floating" />
-      </div>
-    </Layout>
-  );
+      </Layout>
+    );
+  };
 
   // ============================================
   // FEASIBILITY STUDY PHASE
@@ -1506,12 +1947,54 @@ export const PhaseDetailPage: React.FC = () => {
           {/* Header */}
           <div className="relative">
             <div className="absolute -top-10 -left-10 w-32 h-32 bg-red-200/30 rounded-full blur-3xl"></div>
-            <div className="relative flex items-center justify-between flex-wrap gap-3">
-              <Button variant="ghost" onClick={() => navigate(`/projects/${id}`)}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Project
-              </Button>
-              <div className="text-right">
+            <div className="relative flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="ghost" onClick={() => navigate(`/projects/${id}`)}>
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to Project
+                </Button>
+                <span className="text-xs uppercase text-red-500 font-semibold tracking-widest">Active Risk Review</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {isEditingRisks ? (
+                  <>
+                    <Button variant="outline" size="sm" onClick={handleCancelRiskEdit} disabled={savingRisks}>
+                      <Undo2 className="mr-2 h-4 w-4" />
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="bg-gradient-to-r from-red-500 to-amber-500 text-white border-none"
+                      onClick={handleSaveRisks}
+                      disabled={savingRisks || !latestArtifact}
+                    >
+                      {savingRisks ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Saving…
+                        </>
+                      ) : (
+                        <>
+                          <Save className="mr-2 h-4 w-4" />
+                          Save Changes
+                        </>
+                      )}
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleStartRiskEdit}
+                    disabled={!latestArtifact}
+                    title={!latestArtifact ? 'Generate this phase before editing' : 'Edit the generated markdown'}
+                  >
+                    <Edit3 className="mr-2 h-4 w-4" />
+                    Edit Output
+                  </Button>
+                )}
+              </div>
+              <div className="text-right flex-1 min-w-[220px]">
                 <p className="text-xs uppercase text-gray-500 tracking-wider">Phase</p>
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-red-600 to-amber-600 bg-clip-text text-transparent">
                   Risks & Mitigations
@@ -1542,7 +2025,48 @@ export const PhaseDetailPage: React.FC = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {parsedRisks && parsedRisks.overview.length ? (
+                {isEditingRisks ? (
+                  <div className="space-y-2">
+                    {riskDraft.overview.map((item, idx) => (
+                      <div key={idx} className="flex items-start gap-2">
+                        <textarea
+                          className="flex-1 min-h-[50px] border border-gray-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-red-200"
+                          value={item}
+                          onChange={(e) =>
+                            setRiskDraft((prev) => {
+                              const updated = [...prev.overview];
+                              updated[idx] = e.target.value;
+                              return { ...prev, overview: updated };
+                            })
+                          }
+                        />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="px-2"
+                          onClick={() =>
+                            setRiskDraft((prev) => {
+                              const updated = prev.overview.filter((_, i) => i !== idx);
+                              return { ...prev, overview: updated.length ? updated : [''] };
+                            })
+                          }
+                          disabled={riskDraft.overview.length === 1}
+                        >
+                          <Trash2 className="h-4 w-4 text-gray-400" />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setRiskDraft((prev) => ({ ...prev, overview: [...prev.overview, ''] }))}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Summary Line
+                    </Button>
+                  </div>
+                ) : parsedRisks && parsedRisks.overview.length ? (
                   <ul className="list-disc pl-5 space-y-1 text-xs text-gray-700">
                     {parsedRisks.overview.map((item, idx) => (
                       <li key={idx} className="leading-snug">
@@ -1570,7 +2094,134 @@ export const PhaseDetailPage: React.FC = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {parsedRisks && parsedRisks.riskRows.length ? (
+                  {isEditingRisks ? (
+                    <div className="space-y-3">
+                      <div className="overflow-x-auto border border-gray-200 rounded-lg">
+                        <table className="w-full text-xs border-collapse">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-2 py-2 text-left font-semibold text-gray-700 border-b border-gray-200">Risk</th>
+                              <th className="px-2 py-2 text-left font-semibold text-gray-700 border-b border-gray-200">Impact</th>
+                              <th className="px-2 py-2 text-left font-semibold text-gray-700 border-b border-gray-200">Likelihood</th>
+                              <th className="px-2 py-2 text-left font-semibold text-gray-700 border-b border-gray-200">Mitigation</th>
+                              <th className="px-2 py-2 text-left font-semibold text-gray-700 border-b border-gray-200">Owner</th>
+                              <th className="px-2 py-2 text-right font-semibold text-gray-700 border-b border-gray-200 sr-only">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {riskDraft.riskRows.map((row, idx) => (
+                              <tr key={idx} className="bg-white">
+                                <td className="px-2 py-2 border-b border-gray-100">
+                                  <input
+                                    className="w-full border border-gray-200 rounded px-2 py-1 text-xs"
+                                    placeholder="Risk description"
+                                    value={row.risk}
+                                    onChange={(e) =>
+                                      setRiskDraft((prev) => {
+                                        const updated = [...prev.riskRows];
+                                        updated[idx] = { ...updated[idx], risk: e.target.value };
+                                        return { ...prev, riskRows: updated };
+                                      })
+                                    }
+                                  />
+                                </td>
+                                <td className="px-2 py-2 border-b border-gray-100">
+                                  <select
+                                    className="w-full border border-gray-200 rounded px-2 py-1 text-xs bg-white"
+                                    value={row.impact}
+                                    onChange={(e) =>
+                                      setRiskDraft((prev) => {
+                                        const updated = [...prev.riskRows];
+                                        updated[idx] = { ...updated[idx], impact: e.target.value };
+                                        return { ...prev, riskRows: updated };
+                                      })
+                                    }
+                                  >
+                                    <option>High</option>
+                                    <option>Medium</option>
+                                    <option>Low</option>
+                                  </select>
+                                </td>
+                                <td className="px-2 py-2 border-b border-gray-100">
+                                  <select
+                                    className="w-full border border-gray-200 rounded px-2 py-1 text-xs bg-white"
+                                    value={row.likelihood}
+                                    onChange={(e) =>
+                                      setRiskDraft((prev) => {
+                                        const updated = [...prev.riskRows];
+                                        updated[idx] = { ...updated[idx], likelihood: e.target.value };
+                                        return { ...prev, riskRows: updated };
+                                      })
+                                    }
+                                  >
+                                    <option>High</option>
+                                    <option>Medium</option>
+                                    <option>Low</option>
+                                  </select>
+                                </td>
+                                <td className="px-2 py-2 border-b border-gray-100">
+                                  <textarea
+                                    className="w-full border border-gray-200 rounded px-2 py-1 text-xs min-h-[60px]"
+                                    placeholder="Mitigation strategy"
+                                    value={row.mitigation}
+                                    onChange={(e) =>
+                                      setRiskDraft((prev) => {
+                                        const updated = [...prev.riskRows];
+                                        updated[idx] = { ...updated[idx], mitigation: e.target.value };
+                                        return { ...prev, riskRows: updated };
+                                      })
+                                    }
+                                  />
+                                </td>
+                                <td className="px-2 py-2 border-b border-gray-100">
+                                  <input
+                                    className="w-full border border-gray-200 rounded px-2 py-1 text-xs"
+                                    placeholder="Owner"
+                                    value={row.owner}
+                                    onChange={(e) =>
+                                      setRiskDraft((prev) => {
+                                        const updated = [...prev.riskRows];
+                                        updated[idx] = { ...updated[idx], owner: e.target.value };
+                                        return { ...prev, riskRows: updated };
+                                      })
+                                    }
+                                  />
+                                </td>
+                                <td className="px-2 py-2 border-b border-gray-100 text-right">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="px-2"
+                                    onClick={() =>
+                                      setRiskDraft((prev) => {
+                                        const updated = prev.riskRows.filter((_, i) => i !== idx);
+                                        return { ...prev, riskRows: updated.length ? updated : [createEmptyRiskRow()] };
+                                      })
+                                    }
+                                    disabled={riskDraft.riskRows.length === 1}
+                                  >
+                                    <Trash2 className="h-4 w-4 text-gray-400" />
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setRiskDraft((prev) => ({ ...prev, riskRows: [...prev.riskRows, createEmptyRiskRow()] }))}
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Add Risk
+                        </Button>
+                        <p className="text-[11px] text-gray-500">Use the table to adjust owners, severity, and mitigations inline.</p>
+                      </div>
+                    </div>
+                  ) : parsedRisks && parsedRisks.riskRows.length ? (
                     <div className="overflow-x-auto border border-gray-200 rounded-lg">
                       <table className="w-full text-xs border-collapse">
                         <thead className="bg-gray-50">
@@ -1636,7 +2287,95 @@ export const PhaseDetailPage: React.FC = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {parsedRisks && parsedRisks.beforeAfter.length ? (
+                  {isEditingRisks ? (
+                    <div className="space-y-3">
+                      <div className="overflow-x-auto border border-gray-200 rounded-lg">
+                        <table className="w-full text-xs border-collapse">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-2 py-2 text-left font-semibold text-gray-700 border-b border-gray-200">Aspect</th>
+                              <th className="px-2 py-2 text-left font-semibold text-gray-700 border-b border-gray-200">Before</th>
+                              <th className="px-2 py-2 text-left font-semibold text-gray-700 border-b border-gray-200">After</th>
+                              <th className="px-2 py-2 text-right font-semibold text-gray-700 border-b border-gray-200 sr-only">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {riskDraft.beforeAfter.map((row, idx) => (
+                              <tr key={idx} className="bg-white">
+                                <td className="px-2 py-2 border-b border-gray-100">
+                                  <input
+                                    className="w-full border border-gray-200 rounded px-2 py-1 text-xs"
+                                    placeholder="Aspect"
+                                    value={row.aspect}
+                                    onChange={(e) =>
+                                      setRiskDraft((prev) => {
+                                        const updated = [...prev.beforeAfter];
+                                        updated[idx] = { ...updated[idx], aspect: e.target.value };
+                                        return { ...prev, beforeAfter: updated };
+                                      })
+                                    }
+                                  />
+                                </td>
+                                <td className="px-2 py-2 border-b border-gray-100">
+                                  <textarea
+                                    className="w-full border border-gray-200 rounded px-2 py-1 text-xs min-h-[50px]"
+                                    placeholder="Before mitigation"
+                                    value={row.before}
+                                    onChange={(e) =>
+                                      setRiskDraft((prev) => {
+                                        const updated = [...prev.beforeAfter];
+                                        updated[idx] = { ...updated[idx], before: e.target.value };
+                                        return { ...prev, beforeAfter: updated };
+                                      })
+                                    }
+                                  />
+                                </td>
+                                <td className="px-2 py-2 border-b border-gray-100">
+                                  <textarea
+                                    className="w-full border border-gray-200 rounded px-2 py-1 text-xs min-h-[50px]"
+                                    placeholder="After mitigation"
+                                    value={row.after}
+                                    onChange={(e) =>
+                                      setRiskDraft((prev) => {
+                                        const updated = [...prev.beforeAfter];
+                                        updated[idx] = { ...updated[idx], after: e.target.value };
+                                        return { ...prev, beforeAfter: updated };
+                                      })
+                                    }
+                                  />
+                                </td>
+                                <td className="px-2 py-2 border-b border-gray-100 text-right">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="px-2"
+                                    onClick={() =>
+                                      setRiskDraft((prev) => {
+                                        const updated = prev.beforeAfter.filter((_, i) => i !== idx);
+                                        return { ...prev, beforeAfter: updated.length ? updated : [createEmptyPostureRow()] };
+                                      })
+                                    }
+                                    disabled={riskDraft.beforeAfter.length === 1}
+                                  >
+                                    <Trash2 className="h-4 w-4 text-gray-400" />
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setRiskDraft((prev) => ({ ...prev, beforeAfter: [...prev.beforeAfter, createEmptyPostureRow()] }))}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Aspect
+                      </Button>
+                    </div>
+                  ) : parsedRisks && parsedRisks.beforeAfter.length ? (
                     <div className="overflow-x-auto border border-gray-200 rounded-lg">
                       <table className="w-full text-xs border-collapse">
                         <thead className="bg-gray-50">
@@ -1675,7 +2414,49 @@ export const PhaseDetailPage: React.FC = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {parsedRisks && parsedRisks.actions.length ? (
+                  {isEditingRisks ? (
+                    <div className="space-y-2">
+                      {riskDraft.actions.map((action, idx) => (
+                        <div key={idx} className="flex items-start gap-2">
+                          <textarea
+                            className="flex-1 min-h-[45px] border border-gray-200 rounded px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-200"
+                            placeholder="Describe the recommended action..."
+                            value={action}
+                            onChange={(e) =>
+                              setRiskDraft((prev) => {
+                                const updated = [...prev.actions];
+                                updated[idx] = e.target.value;
+                                return { ...prev, actions: updated };
+                              })
+                            }
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="px-2"
+                            onClick={() =>
+                              setRiskDraft((prev) => {
+                                const updated = prev.actions.filter((_, i) => i !== idx);
+                                return { ...prev, actions: updated.length ? updated : [''] };
+                              })
+                            }
+                            disabled={riskDraft.actions.length === 1}
+                          >
+                            <Trash2 className="h-4 w-4 text-gray-400" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setRiskDraft((prev) => ({ ...prev, actions: [...prev.actions, ''] }))}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Action
+                      </Button>
+                    </div>
+                  ) : parsedRisks && parsedRisks.actions.length ? (
                     <ul className="space-y-1 text-xs text-gray-700">
                       {parsedRisks.actions.map((action, idx) => (
                         <li key={idx} className="flex items-start gap-2">
@@ -1726,32 +2507,9 @@ export const PhaseDetailPage: React.FC = () => {
     const totalHours = tasks.reduce((sum, t) => sum + (t.estimate_hours || 0), 0);
 
     return (
-      <Layout>
-        <div className="space-y-6">
-          {/* Header */}
-          <div className="relative">
-            <div className="absolute -top-10 -left-10 w-32 h-32 bg-purple-200/30 rounded-full blur-3xl"></div>
-            <div className="relative flex items-center justify-between flex-wrap gap-3">
-              <Button variant="ghost" onClick={() => navigate(`/projects/${id}`)}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Project
-              </Button>
-              <div className="text-right">
-                <p className="text-xs uppercase text-gray-500 tracking-wider">Phase</p>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                  Tasks & Timeline
-                </h1>
-                <p className="text-sm text-gray-500">{project?.name}</p>
-              </div>
-            </div>
-          </div>
-
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4" />
-              {error}
-            </div>
-          )}
+      <PhaseWrapper>
+        <>
+          <div className="space-y-6">
 
           {/* Stats Overview */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1855,54 +2613,28 @@ export const PhaseDetailPage: React.FC = () => {
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <select
                       className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm"
                       value={newTask.priority}
                       onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
                     >
-                      <option value="low">
-                        🟢 Low
-                      </option>
-                      <option value="medium">
-                        🟡 Medium
-                      </option>
-                      <option value="high">
-                        🔴 High
-                      </option>
+                      <option value="low">🟢 Low</option>
+                      <option value="medium">🟡 Medium</option>
+                      <option value="high">🔴 High</option>
                     </select>
                     <select
                       className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm"
                       value={newTask.status}
                       onChange={(e) => setNewTask({ ...newTask, status: e.target.value })}
                     >
-                      <option value="planned">
-                        📋 Planned
-                      </option>
-                      <option value="in_progress">
-                        🔄 In Progress
-                      </option>
-                      <option value="completed">
-                        ✅ Completed
-                      </option>
-                    </select>
-                    <select
-                      className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm"
-                      value={newTask.role || ''}
-                      onChange={(e) => setNewTask({ ...newTask, role: e.target.value || undefined })}
-                    >
-                      <option value="">No role</option>
-                      <option value="junior">Junior</option>
-                      <option value="mid">Mid</option>
-                      <option value="senior">Senior</option>
-                      <option value="architect">Architect</option>
-                      <option value="pm">PM</option>
+                      <option value="planned">📋 Planned</option>
+                      <option value="in_progress">🔄 In Progress</option>
+                      <option value="completed">✅ Completed</option>
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500 mb-1 block">
-                      Dependencies (task titles or IDs, comma separated)
-                    </label>
+                    <label className="text-xs text-gray-500 mb-1 block">Dependencies (task titles or IDs, comma separated)</label>
                     <input
                       className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-purple-400 focus:border-transparent"
                       placeholder="e.g. Design UI, Implement API"
@@ -1930,7 +2662,6 @@ export const PhaseDetailPage: React.FC = () => {
                             due_date: newTask.due_date || undefined,
                             priority: newTask.priority,
                             status: newTask.status,
-                            role: newTask.role || undefined,
                             dependencies,
                             tags: newTask.milestone ? ['milestone'] : [],
                           };
@@ -1943,7 +2674,6 @@ export const PhaseDetailPage: React.FC = () => {
                             due_date: '',
                             priority: 'medium',
                             status: 'planned',
-                            role: '',
                             dependencies: '',
                             milestone: false,
                           });
@@ -2259,6 +2989,60 @@ export const PhaseDetailPage: React.FC = () => {
             </div>
           </div>
 
+          <Card className="bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base text-purple-900">
+                <Sparkles className="h-4 w-4 text-purple-500" />
+                AI Task Insights
+              </CardTitle>
+              <CardDescription className="text-sm text-purple-700">
+                Ask the assistant to summarize execution risks, propose a new sprint, or refine dependencies.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <textarea
+                className="w-full border border-purple-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-400 focus:border-transparent min-h-[90px] bg-white"
+                placeholder="E.g., “Summarize task dependencies”, “Highlight schedule risks”, “Draft QA tasks for sprint 2”"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+              />
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  onClick={() => handleGenerate()}
+                  disabled={isGenerating || status === 'locked'}
+                  className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Thinking...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" /> Generate Insight
+                    </>
+                  )}
+                </Button>
+                <Button variant="outline" onClick={handleDownload} disabled={!phaseMarkdown}>
+                  <Download className="mr-2 h-4 w-4" /> Export
+                </Button>
+              </div>
+              <div className="border border-purple-100 rounded-xl bg-white/80 p-4 min-h-[160px]">
+                {phaseMarkdown ? (
+                  <div className="prose prose-sm max-w-none text-gray-700">
+                    <ReactMarkdown>{phaseMarkdown}</ReactMarkdown>
+                    <RawMarkdownDisclosure />
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-sm text-gray-500 gap-1 py-6">
+                    <Sparkles className="h-6 w-6 text-purple-400" />
+                    <p>No AI output yet for this phase.</p>
+                    <p className="text-xs">Describe what you need above to generate a summary.</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Task Detail Modal */}
           {selectedTask && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setSelectedTask(null)}>
@@ -2286,7 +3070,8 @@ export const PhaseDetailPage: React.FC = () => {
             </div>
           )}
         </div>
-      </Layout>
+        </>
+      </PhaseWrapper>
     );
   }
 
@@ -2351,33 +3136,48 @@ export const PhaseDetailPage: React.FC = () => {
     const effectiveBenefit = useCustomRoi ? totalCustomBenefit : baseEstimatedBenefit;
     const roi = effectiveCostForRoi > 0 ? ((effectiveBenefit - effectiveCostForRoi) / effectiveCostForRoi) * 100 : 0;
 
-    return (
-      <Layout>
-        <div className="space-y-6">
-          {/* Header */}
-          <div className="relative">
-            <div className="absolute -top-10 -left-10 w-32 h-32 bg-emerald-200/30 rounded-full blur-3xl"></div>
-            <div className="relative flex items-center justify-between flex-wrap gap-3">
-              <Button variant="ghost" onClick={() => navigate(`/projects/${id}`)}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Project
-              </Button>
-              <div className="text-right">
-                <p className="text-xs uppercase text-gray-500 tracking-wider">Phase</p>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                  Cost & Benefit Analysis
-                </h1>
-                <p className="text-sm text-gray-500">{project?.name}</p>
-              </div>
-            </div>
-          </div>
+    const actualPhaseSlices = Object.entries(costByPhase).map(([phase, data]) => ({
+      id: phase,
+      label: phase.replace('_', ' '),
+      cost: data.cost,
+      hours: data.hours,
+    }));
+    const phaseSlicesForChart =
+      useManualCostSlices && manualCostSlices.length ? manualCostSlices : actualPhaseSlices;
+    const manualTotalCost = phaseSlicesForChart.reduce((sum, entry) => sum + entry.cost, 0) || 1;
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4" />
-              {error}
-            </div>
-          )}
+    const startEditingCostSlices = () => {
+      if (!useManualCostSlices || manualCostSlices.length === 0) {
+        setManualCostSlices(actualPhaseSlices.map((slice, idx) => ({
+          id: slice.id || `phase_${idx}`,
+          label: slice.label,
+          cost: Math.round(slice.cost),
+          hours: Math.round(slice.hours),
+        })));
+      }
+      setManualSliceDraft({ label: '', cost: '', hours: '' });
+      setEditingCostSlices(true);
+    };
+
+    const addManualSlice = () => {
+      if (!manualSliceDraft.label.trim() || !Number(manualSliceDraft.cost)) return;
+      setManualCostSlices((prev) => [
+        ...prev,
+        {
+          id: `manual_${Date.now()}_${prev.length}`,
+          label: manualSliceDraft.label.trim(),
+          cost: Number(manualSliceDraft.cost),
+          hours: Number(manualSliceDraft.hours) || 0,
+        },
+      ]);
+      setManualSliceDraft({ label: '', cost: '', hours: '' });
+    };
+
+    return (
+      <PhaseWrapper>
+        <>
+          <div className="space-y-6">
+
 
           {/* Scenario Presets + Team Size Controls */}
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -2631,6 +3431,22 @@ export const PhaseDetailPage: React.FC = () => {
             </Card>
           </div>
 
+          {phaseMarkdown && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Sparkles className="h-4 w-4 text-emerald-500" />
+                  AI Summary
+                </CardTitle>
+                <CardDescription className="text-sm">Latest AI output for this phase.</CardDescription>
+              </CardHeader>
+              <CardContent className="prose prose-sm max-w-none text-gray-700">
+                <ReactMarkdown>{phaseMarkdown}</ReactMarkdown>
+                <RawMarkdownDisclosure />
+              </CardContent>
+            </Card>
+          )}
+
           {/* Charts Grid */}
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Cost vs Benefit Comparison */}
@@ -2675,32 +3491,155 @@ export const PhaseDetailPage: React.FC = () => {
 
             {/* Cost by Phase Chart */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <PieChart className="h-5 w-5 text-emerald-500" />
-                  Cost Distribution by Phase
-                </CardTitle>
+              <CardHeader className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <PieChart className="h-5 w-5 text-emerald-500" />
+                    Cost Distribution by Phase
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    {useManualCostSlices ? 'Using manual overrides' : 'Calculated from current tasks'}
+                  </CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="xs" variant="outline" onClick={startEditingCostSlices}>
+                    {editingCostSlices ? 'Hide editor' : 'Edit values'}
+                  </Button>
+                  {useManualCostSlices && (
+                    <Button
+                      size="xs"
+                      variant="ghost"
+                      onClick={() => {
+                        setUseManualCostSlices(false);
+                        setManualCostSlices([]);
+                      }}
+                    >
+                      Use actual
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
+                {editingCostSlices && (
+                  <div className="space-y-2 mb-4 text-xs">
+                    {manualCostSlices.map((slice, idx) => (
+                      <div key={slice.id} className="grid grid-cols-12 gap-2 items-center">
+                        <input
+                          className="col-span-4 border rounded px-2 py-1"
+                          value={slice.label}
+                          onChange={(e) =>
+                            setManualCostSlices((prev) =>
+                              prev.map((entry, i) =>
+                                i === idx ? { ...entry, label: e.target.value } : entry
+                              )
+                            )
+                          }
+                        />
+                        <input
+                          type="number"
+                          className="col-span-3 border rounded px-2 py-1"
+                          value={slice.cost}
+                          onChange={(e) =>
+                            setManualCostSlices((prev) =>
+                              prev.map((entry, i) =>
+                                i === idx ? { ...entry, cost: Number(e.target.value) || 0 } : entry
+                              )
+                            )
+                          }
+                        />
+                        <input
+                          type="number"
+                          className="col-span-3 border rounded px-2 py-1"
+                          value={slice.hours}
+                          onChange={(e) =>
+                            setManualCostSlices((prev) =>
+                              prev.map((entry, i) =>
+                                i === idx ? { ...entry, hours: Number(e.target.value) || 0 } : entry
+                              )
+                            )
+                          }
+                        />
+                        <Button
+                          size="xs"
+                          variant="ghost"
+                          onClick={() =>
+                            setManualCostSlices((prev) => prev.filter((_, i) => i !== idx))
+                          }
+                        >
+                          ✕
+                        </Button>
+                      </div>
+                    ))}
+                    <div className="grid grid-cols-12 gap-2 items-center">
+                      <input
+                        className="col-span-4 border rounded px-2 py-1"
+                        placeholder="Label"
+                        value={manualSliceDraft.label}
+                        onChange={(e) => setManualSliceDraft((prev) => ({ ...prev, label: e.target.value }))}
+                      />
+                      <input
+                        type="number"
+                        className="col-span-3 border rounded px-2 py-1"
+                        placeholder="Cost"
+                        value={manualSliceDraft.cost}
+                        onChange={(e) => setManualSliceDraft((prev) => ({ ...prev, cost: e.target.value }))}
+                      />
+                      <input
+                        type="number"
+                        className="col-span-3 border rounded px-2 py-1"
+                        placeholder="Hours"
+                        value={manualSliceDraft.hours}
+                        onChange={(e) => setManualSliceDraft((prev) => ({ ...prev, hours: e.target.value }))}
+                      />
+                      <Button size="xs" variant="outline" onClick={addManualSlice}>
+                        Add
+                      </Button>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="xs"
+                        onClick={() => {
+                          setUseManualCostSlices(true);
+                          setEditingCostSlices(false);
+                        }}
+                        disabled={!manualCostSlices.length}
+                      >
+                        Apply overrides
+                      </Button>
+                      <Button
+                        size="xs"
+                        variant="outline"
+                        onClick={() => {
+                          setEditingCostSlices(false);
+                          setManualSliceDraft({ label: '', cost: '', hours: '' });
+                        }}
+                      >
+                        Close editor
+                      </Button>
+                    </div>
+                  </div>
+                )}
                 <div className="space-y-3">
-                  {Object.entries(costByPhase).map(([phase, data]) => {
-                    const percentage = totalCost > 0 ? (data.cost / totalCost) * 100 : 0;
+                  {phaseSlicesForChart.map((slice, idx) => {
+                    const percentage = totalCost > 0 && !useManualCostSlices ? (slice.cost / totalCost) * 100 : (slice.cost / manualTotalCost) * 100;
                     const colors = ['bg-emerald-500', 'bg-blue-500', 'bg-purple-500', 'bg-amber-500', 'bg-pink-500'];
-                    const colorIdx = Object.keys(costByPhase).indexOf(phase) % colors.length;
+                    const colorIdx = idx % colors.length;
                     return (
-                      <div key={phase} className="space-y-1">
+                      <div key={slice.id} className="space-y-1">
                         <div className="flex items-center justify-between text-sm">
-                          <span className="font-medium capitalize">{phase.replace('_', ' ')}</span>
-                          <span className="text-gray-500">${data.cost.toLocaleString()} ({data.hours}h)</span>
+                          <span className="font-medium capitalize">{slice.label}</span>
+                          <span className="text-gray-500">${Math.round(slice.cost).toLocaleString()} ({Math.round(slice.hours)}h)</span>
                         </div>
                         <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                          <div className={`h-full ${colors[colorIdx]} transition-all`} style={{ width: `${percentage}%` }} />
+                          <div className={`h-full ${colors[colorIdx]} transition-all`} style={{ width: `${Math.min(100, Math.max(percentage, 0))}%` }} />
                         </div>
                       </div>
                     );
                   })}
-                  {Object.keys(costByPhase).length === 0 && (
-                    <p className="text-sm text-gray-500 text-center py-4">No cost data available. Add tasks with estimates to see breakdown.</p>
+                  {phaseSlicesForChart.length === 0 && (
+                    <p className="text-sm text-gray-500 text-center py-4">
+                      No cost data available. Add tasks with estimates or switch back to actual data.
+                    </p>
                   )}
                 </div>
               </CardContent>
@@ -2799,13 +3738,15 @@ export const PhaseDetailPage: React.FC = () => {
                 <div className="border border-emerald-200 rounded-lg bg-white p-4 mt-4">
                   <div className="prose prose-sm max-w-none">
                     <ReactMarkdown>{phaseMarkdown}</ReactMarkdown>
+                    <RawMarkdownDisclosure />
                   </div>
                 </div>
               )}
             </CardContent>
           </Card>
         </div>
-      </Layout>
+        </>
+      </PhaseWrapper>
     );
   }
 
@@ -3169,6 +4110,7 @@ export const PhaseDetailPage: React.FC = () => {
                 <div className="border border-violet-200 rounded-lg bg-white p-4 mt-4">
                   <div className="prose prose-sm max-w-none">
                     <ReactMarkdown>{phaseMarkdown}</ReactMarkdown>
+                    <RawMarkdownDisclosure />
                   </div>
                 </div>
               )}
@@ -3253,6 +4195,7 @@ export const PhaseDetailPage: React.FC = () => {
                   {phaseMarkdown ? (
                     <div className="prose prose-sm max-w-none">
                       <ReactMarkdown>{phaseMarkdown}</ReactMarkdown>
+                      <RawMarkdownDisclosure />
                     </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center py-12 text-gray-400">

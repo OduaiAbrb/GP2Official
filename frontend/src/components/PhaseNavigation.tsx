@@ -13,6 +13,8 @@ import {
   Code,
   ListChecks,
   Flag,
+  DollarSign,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface PhaseNavigationProps {
@@ -51,6 +53,10 @@ export const PhaseNavigation: React.FC<PhaseNavigationProps> = ({
         return <Code className="h-4 w-4" />;
       case 'tasks':
         return <ListChecks className="h-4 w-4" />;
+      case 'cost_benefit':
+        return <DollarSign className="h-4 w-4" />;
+      case 'risks':
+        return <AlertTriangle className="h-4 w-4" />;
       case 'summary':
         return <Flag className="h-4 w-4" />;
       default:

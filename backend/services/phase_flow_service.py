@@ -1,13 +1,16 @@
 """Phase flow generation service."""
 
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional
 import logging
+import time
 
 from config import settings
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 from repositories.project_repository import ProjectRepository
 from models.project import default_phase_status
 from repositories.artifact_repository import ArtifactRepository
+from repositories.ai_run_repository import AiRunRepository
+from services.markdown_formatter import MarkdownFormatter
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +50,8 @@ class PhaseFlowService:
         self.model = settings.llm_model_name
         self.project_repo = ProjectRepository()
         self.artifact_repo = ArtifactRepository()
+        self.ai_run_repo = AiRunRepository()
+        self.markdown_formatter = MarkdownFormatter()
 
     async def get_status(self, project_id: str, organization: str) -> Dict[str, str]:
         project = await self.project_repo.get_by_id(project_id, organization)
@@ -62,7 +67,14 @@ class PhaseFlowService:
         project = await self.project_repo.update_phase_status(project_id, organization, updated)
         return project.phase_status
 
-    async def generate_phase(self, project_id: str, organization: str, phase: str, prompt: str) -> Tuple[Dict[str, str], Dict]:
+    async def generate_phase(
+        self,
+        project_id: str,
+        organization: str,
+        phase: str,
+        prompt: str,
+        user_id: Optional[str] = None,
+    ) -> Tuple[Dict[str, str], Dict]:
         phase = phase.lower()
         if phase not in PHASE_ORDER:
             raise ValueError("Invalid phase")
@@ -89,15 +101,20 @@ class PhaseFlowService:
         status[phase] = "in_progress"
         await self.project_repo.update_phase_status(project_id, organization, status)
 
-        content = await self._run_phase_prompt(project.name, phase, prompt)
+        raw_content = await self._run_phase_prompt(project.id, project.name, phase, prompt, user_id)
+        formatted_content = self.markdown_formatter.format(raw_content, artifact_type=f"phase:{phase}")
 
         artifact_type = f"PHASE_{phase.upper()}"
         metadata = {"phase": phase}
+        payload = {
+            "markdown": formatted_content,
+            "raw_markdown": raw_content,
+        }
         artifact = await self.artifact_repo.upsert_artifact(
             project_id,
             artifact_type,
             f"{PHASE_TITLES[phase]} Output",
-            {"markdown": content},
+            payload,
             metadata=metadata,
         )
 
@@ -112,15 +129,20 @@ class PhaseFlowService:
         return updated_project.phase_status, {
             "artifact_id": artifact.id,
             "content": artifact.content_json,
+            "raw_markdown": raw_content,
+            "formatted_markdown": formatted_content,
             "metadata": artifact.metadata,
         }
 
-    async def _run_phase_prompt(self, project_name: str, phase: str, user_prompt: str) -> str:
+    async def _run_phase_prompt(
+        self,
+        project_id: str,
+        project_name: str,
+        phase: str,
+        user_prompt: str,
+        user_id: Optional[str] = None,
+    ) -> str:
         llm_requires_key = self.provider not in {"stub", "mock"}
-        if llm_requires_key and not self.api_key:
-            logger.warning("LLM API key missing; returning placeholder content")
-            return f"# {PHASE_TITLES[phase]}\n\nNo LLM configured. User prompt:\n{user_prompt}"
-
         system_message = (
             "You are Athena, an expert AI program manager inside the Acorn platform. "
             "You help users through sequential software planning phases. "
@@ -209,15 +231,52 @@ class PhaseFlowService:
             "Produce a structured Markdown response with headings, bullet lists, and clear action items."
         )
 
+        run_entry = await self.ai_run_repo.create_run(
+            project_id=project_id,
+            user_id=user_id,
+            job_type="phase",
+            phase=phase,
+            provider=self.provider,
+            model=self.model,
+            prompt=prompt,
+            metadata={"phase_title": PHASE_TITLES.get(phase)},
+        )
+
+        if llm_requires_key and not self.api_key:
+            logger.warning("LLM API key missing; returning placeholder content")
+            placeholder = f"# {PHASE_TITLES[phase]}\n\nNo LLM configured. User prompt:\n{user_prompt}"
+            await self.ai_run_repo.complete_run(
+                run_entry.id,
+                status="skipped",
+                response=placeholder,
+                error_message="LLM API key missing",
+            )
+            return placeholder
+
         chat = LlmChat(
             api_key=self.api_key,
             session_id=f"phase_{phase}",
             system_message=system_message,
         ).with_model(self.provider, self.model)
 
+        started_at = time.perf_counter()
         try:
             response = await chat.send_message(UserMessage(text=prompt))
+            duration = int((time.perf_counter() - started_at) * 1000)
+            await self.ai_run_repo.complete_run(
+                run_entry.id,
+                status="completed",
+                response=response,
+                duration_ms=duration,
+            )
             return response
         except Exception as exc:  # pragma: no cover
             logger.error("Failed to generate phase output: %s", exc)
+            duration = int((time.perf_counter() - started_at) * 1000)
+            await self.ai_run_repo.complete_run(
+                run_entry.id,
+                status="failed",
+                error_message=str(exc),
+                duration_ms=duration,
+            )
             return f"# {PHASE_TITLES[phase]}\n\nWe encountered an error generating this phase. Please try again later."

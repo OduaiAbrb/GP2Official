@@ -20,6 +20,8 @@ class PhaseGenerateRequest(BaseModel):
 class PhaseGenerateResponse(BaseModel):
     phase_status: dict
     content: dict
+    raw_markdown: str | None = None
+    formatted_markdown: str | None = None
 
 
 @router.get("/projects/{project_id}/phases/")
@@ -41,7 +43,13 @@ async def generate_phase_output(
 ):
     project = await project_service.get_project(project_id, current_user)
     try:
-        phase_status, artifact = await phase_service.generate_phase(project_id, project.organization, phase, payload.prompt)
+        phase_status, artifact = await phase_service.generate_phase(
+            project_id,
+            project.organization,
+            phase,
+            payload.prompt,
+            current_user.id,
+        )
     except PermissionError as exc:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -53,7 +61,14 @@ async def generate_phase_output(
             detail=str(exc),
         )
 
-    return PhaseGenerateResponse(phase_status=phase_status, content=artifact)
+    raw_markdown = artifact.get("raw_markdown")
+    formatted_markdown = artifact.get("formatted_markdown")
+    return PhaseGenerateResponse(
+        phase_status=phase_status,
+        content=artifact,
+        raw_markdown=raw_markdown,
+        formatted_markdown=formatted_markdown,
+    )
 
 
 @router.post("/projects/{project_id}/phases/unlock-all/")

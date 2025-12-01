@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 import os
 
 from database import init_db, close_db
-from routes import auth, projects, generation, requirements, tasks, diagrams, ux_flow, phase_flow
+from routes import auth, projects, generation, requirements, tasks, diagrams, ux_flow, phase_flow, sandbox, users
 from config import settings
 
 
@@ -53,6 +53,8 @@ app.include_router(tasks.router, prefix="/api", tags=["Tasks"])
 app.include_router(diagrams.router, prefix="/api", tags=["Diagrams"])
 app.include_router(ux_flow.router, prefix="/api", tags=["UX Flow"])
 app.include_router(phase_flow.router, prefix="/api", tags=["Phases"])
+app.include_router(sandbox.router, prefix="/api/sandbox", tags=["Sandbox"])
+app.include_router(users.router, prefix="/api/users", tags=["Users"])
 
 
 @app.get("/api/health")

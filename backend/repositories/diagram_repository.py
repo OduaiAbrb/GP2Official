@@ -40,29 +40,35 @@ class DiagramRepository:
         edges: List[Dict],
         title: Optional[str] = None,
         metadata: Optional[Dict] = None,
+        frames: Optional[List[Dict]] = None,
     ) -> DiagramState:
         """Create or update a workspace for a stage."""
         db = get_db()
         now = datetime.utcnow()
         metadata = metadata or {}
         title = title or f"{get_stage_label(stage)} Diagram"
+        update_doc = {
+            "$set": {
+                "title": title,
+                "nodes": nodes,
+                "edges": edges,
+                "metadata": metadata,
+                "updated_at": now,
+            },
+            "$setOnInsert": {
+                "_id": f"diagram_{str(now.timestamp()).replace('.', '')}",
+                "project_id": project_id,
+                "stage": stage,
+                "created_at": now,
+                "frames": frames or [],
+            },
+        }
+        if frames is not None:
+            update_doc["$set"]["frames"] = frames
+
         result = await db[self.collection_name].find_one_and_update(
             {"project_id": project_id, "stage": stage},
-            {
-                "$set": {
-                    "title": title,
-                    "nodes": nodes,
-                    "edges": edges,
-                    "metadata": metadata,
-                    "updated_at": now,
-                },
-                "$setOnInsert": {
-                    "_id": f"diagram_{str(now.timestamp()).replace('.', '')}",
-                    "project_id": project_id,
-                    "stage": stage,
-                    "created_at": now,
-                },
-            },
+            update_doc,
             upsert=True,
             return_document=True,
         )

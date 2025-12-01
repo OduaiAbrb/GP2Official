@@ -43,6 +43,9 @@ import {
   ZoomOut,
   Crosshair,
   Eraser,
+  Play,
+  Pause,
+  Camera,
 } from 'lucide-react';
 
 type ChatMessage = {
@@ -323,6 +326,10 @@ export const DiagramWorkspacePage: React.FC = () => {
     sequence: true,
     entity_relationship: true,
   });
+  const [frames, setFrames] = useState<{ id: string; timestamp: string; nodes: DiagramNode[]; edges?: DiagramEdge[] }[]>([]);
+  const [playbackIndex, setPlaybackIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const playbackTimer = useRef<NodeJS.Timeout | null>(null);
 
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
@@ -458,6 +465,32 @@ export const DiagramWorkspacePage: React.FC = () => {
     window.addEventListener('resize', handleViewportResize);
     return () => window.removeEventListener('resize', handleViewportResize);
   }, []);
+
+  useEffect(() => {
+    if (!isPlaying || frames.length === 0) {
+      if (playbackTimer.current) {
+        clearInterval(playbackTimer.current);
+        playbackTimer.current = null;
+      }
+      return;
+    }
+    playbackTimer.current = setInterval(() => {
+      setPlaybackIndex((prev) => (prev + 1) % frames.length);
+    }, 2000);
+    return () => {
+      if (playbackTimer.current) {
+        clearInterval(playbackTimer.current);
+        playbackTimer.current = null;
+      }
+    };
+  }, [isPlaying, frames.length]);
+
+  useEffect(() => {
+    if (!isPlaying || !frames.length) {
+      return;
+    }
+    applyFrameToCanvas(playbackIndex);
+  }, [isPlaying, playbackIndex, frames, applyFrameToCanvas]);
 
   const getPenPosition = (event: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = penCanvasRef.current;
@@ -677,6 +710,15 @@ export const DiagramWorkspacePage: React.FC = () => {
     try {
       const data = await api.getDiagramWorkspace(projectId, stageKey);
       setWorkspace(data);
+      const playbackFrames = (data.frames || []).map((frame: any, idx: number) => ({
+        id: frame.id || `frame_${idx}`,
+        timestamp: frame.timestamp || data.updated_at,
+        nodes: frame.nodes || [],
+        edges: frame.edges || [],
+      }));
+      setFrames(playbackFrames);
+      setPlaybackIndex(0);
+      setIsPlaying(false);
       let nodesSource = data.nodes;
       let edgesSource = data.edges;
       let penLayerSource = data.metadata?.annotations?.pen_layer;
@@ -1006,9 +1048,22 @@ export const DiagramWorkspacePage: React.FC = () => {
         edges: serializeEdges(edges),
         title: workspace?.title,
         metadata,
+        frames: frames.map((frame) => ({
+          id: frame.id,
+          timestamp: frame.timestamp,
+          nodes: frame.nodes,
+          edges: frame.edges,
+        })),
       };
       const updated = await api.saveDiagramWorkspace(projectId, stageKey, payload);
       setWorkspace(updated);
+      const updatedFrames = (updated.frames || []).map((frame: any, idx: number) => ({
+        id: frame.id || `frame_${idx}`,
+        timestamp: frame.timestamp || updated.updated_at,
+        nodes: frame.nodes || [],
+        edges: frame.edges || [],
+      }));
+      setFrames(updatedFrames);
       setOfflineNotice(null);
       if (!silent) {
         setAutosaveState('saved');
@@ -1028,6 +1083,26 @@ export const DiagramWorkspacePage: React.FC = () => {
       }
       throw err;
     }
+  };
+
+  const applyFrameToCanvas = useCallback(
+    (index: number) => {
+      const frame = frames[index];
+      if (!frame) return;
+      if (frame.nodes?.length) {
+        setNodes(toReactFlowNodes(frame.nodes));
+      }
+      if (frame.edges?.length) {
+        setEdges(toReactFlowEdges(frame.edges));
+      }
+    },
+    [frames, setNodes, setEdges]
+  );
+
+  const handleFrameJump = (index: number) => {
+    setIsPlaying(false);
+    setPlaybackIndex(index);
+    applyFrameToCanvas(index);
   };
 
   const handleSyncFromAI = async () => {
@@ -1059,6 +1134,18 @@ export const DiagramWorkspacePage: React.FC = () => {
     } finally {
       setCanvasExporting(false);
     }
+  };
+
+  const handleCaptureFrame = () => {
+    const snapshotNodes = serializeNodes(nodes);
+    const snapshotEdges = serializeEdges(edges);
+    const newFrame = {
+      id: `frame_${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      nodes: snapshotNodes,
+      edges: snapshotEdges,
+    };
+    setFrames((prev) => [...prev.slice(-9), newFrame]);
   };
 
   const handleRestoreSnapshot = (snapshotId: string) => {
@@ -1575,6 +1662,40 @@ export const DiagramWorkspacePage: React.FC = () => {
                       onChange={(e) => setPenWidth(Number(e.target.value))}
                       className="w-24"
                     />
+                  </>
+                )}
+                <Button size="sm" variant="outline" onClick={handleCaptureFrame}>
+                  <Camera className="h-4 w-4 mr-1" />
+                  Capture Frame
+                </Button>
+                {frames.length > 0 && (
+                  <>
+                    <Button
+                      size="sm"
+                      variant={isPlaying ? 'default' : 'outline'}
+                      onClick={() => setIsPlaying((prev) => !prev)}
+                    >
+                      {isPlaying ? (
+                        <>
+                          <Pause className="h-4 w-4 mr-1" /> Pause
+                        </>
+                      ) : (
+                        <>
+                          <Play className="h-4 w-4 mr-1" /> Play
+                        </>
+                      )}
+                    </Button>
+                    <select
+                      className="border border-gray-200 rounded-lg px-3 py-1 text-sm"
+                      value={playbackIndex}
+                      onChange={(e) => handleFrameJump(Number(e.target.value))}
+                    >
+                      {frames.map((frame, idx) => (
+                        <option key={frame.id} value={idx}>
+                          Frame {idx + 1} · {new Date(frame.timestamp).toLocaleTimeString()}
+                        </option>
+                      ))}
+                    </select>
                   </>
                 )}
               </div>

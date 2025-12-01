@@ -75,6 +75,7 @@ class DiagramState(BaseModel):
     nodes: List[Dict[str, Any]] = Field(default_factory=list)
     edges: List[Dict[str, Any]] = Field(default_factory=list)
     metadata: Dict[str, Any] = Field(default_factory=dict)
+    frames: List[Dict[str, Any]] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -93,6 +94,7 @@ class DiagramStateResponse(BaseModel):
     nodes: List[Dict[str, Any]]
     edges: List[Dict[str, Any]]
     metadata: Dict[str, Any]
+    frames: List[Dict[str, Any]]
     created_at: datetime
     updated_at: datetime
 
@@ -104,6 +106,7 @@ class DiagramUpdateRequest(BaseModel):
     edges: List[Dict[str, Any]]
     title: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None
+    frames: Optional[List[Dict[str, Any]]] = None
 
 
 class DiagramChatRequest(BaseModel):

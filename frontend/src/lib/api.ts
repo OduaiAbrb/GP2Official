@@ -2,10 +2,13 @@ import axios, { AxiosInstance, AxiosError } from 'axios';
 import type {
   User,
   RegisterRequest,
+  UserProfileUpdatePayload,
+  WorkspaceInvite,
   Project,
   Requirement,
   Task,
   Artifact,
+  ArtifactContent,
   GenerationJob,
   ActivityLog,
   DiagramWorkspace,
@@ -13,9 +16,34 @@ import type {
   DiagramNode,
   DiagramEdge,
   UxFlowArtifact,
+  AiRun,
+  ScenarioDiff,
+  GuidedWorkspaceConfig,
+  SandboxRunResult,
 } from '@/types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+type ArtifactUpdatePayload = {
+  title?: string;
+  content_json?: Record<string, any>;
+  metadata?: Record<string, any>;
+  is_approved?: boolean;
+};
+
+type PhaseGenerateResponse = {
+  phase_status: Record<string, string>;
+  content: {
+    artifact_id?: string;
+    content?: ArtifactContent;
+    raw_markdown?: string;
+    formatted_markdown?: string;
+    metadata?: Record<string, any>;
+    [key: string]: any;
+  };
+  raw_markdown?: string;
+  formatted_markdown?: string;
+};
 
 class ApiClient {
   private client: AxiosInstance;
@@ -51,11 +79,19 @@ class ApiClient {
             if (refreshToken) {
               const response = await axios.post(
                 `${API_URL}/api/auth/token/refresh/`,
-                { refresh: refreshToken }
+                { refresh_token: refreshToken }
               );
-              const { access } = response.data;
-              localStorage.setItem('access_token', access);
-              originalRequest.headers.Authorization = `Bearer ${access}`;
+              const { access_token, refresh_token: newRefreshToken } = response.data;
+              if (!originalRequest.headers) {
+                originalRequest.headers = {};
+              }
+              if (access_token) {
+                localStorage.setItem('access_token', access_token);
+                originalRequest.headers.Authorization = `Bearer ${access_token}`;
+              }
+              if (newRefreshToken) {
+                localStorage.setItem('refresh_token', newRefreshToken);
+              }
               return this.client(originalRequest);
             }
           } catch (refreshError) {
@@ -82,9 +118,37 @@ class ApiClient {
     return response.data;
   }
 
+  async logout(refreshToken: string): Promise<void> {
+    await this.client.post('/auth/logout/', { refresh_token: refreshToken });
+  }
+
   async getMe(): Promise<User> {
     const response = await this.client.get('/auth/me/');
     return response.data;
+  }
+  
+  async getProfile(): Promise<User> {
+    const response = await this.client.get('/users/me/profile');
+    return response.data;
+  }
+
+  async updateProfile(payload: UserProfileUpdatePayload): Promise<User> {
+    const response = await this.client.patch('/users/me/profile', payload);
+    return response.data;
+  }
+
+  async getWorkspaceInvites(): Promise<WorkspaceInvite[]> {
+    const response = await this.client.get('/users/invites/');
+    return response.data;
+  }
+
+  async createWorkspaceInvite(payload: { email: string; role: string; message?: string }): Promise<WorkspaceInvite> {
+    const response = await this.client.post('/users/invites/', payload);
+    return response.data;
+  }
+
+  async deleteWorkspaceInvite(inviteId: string): Promise<void> {
+    await this.client.delete(`/users/invites/${inviteId}`);
   }
 
   // Projects
@@ -98,6 +162,31 @@ class ApiClient {
     return response.data;
   }
 
+  async getScenarioBranches(projectId: string): Promise<Project[]> {
+    const response = await this.client.get(`/projects/${projectId}/branches/`);
+    return response.data;
+  }
+
+  async createScenarioBranch(
+    projectId: string,
+    data: {
+      label: string;
+      description?: string;
+      overrides?: Record<string, any>;
+      include_tasks?: boolean;
+      include_requirements?: boolean;
+      include_artifacts?: boolean;
+    }
+  ): Promise<Project> {
+    const response = await this.client.post(`/projects/${projectId}/branches/`, data);
+    return response.data;
+  }
+
+  async getScenarioBranchDiff(projectId: string, branchId: string): Promise<ScenarioDiff> {
+    const response = await this.client.get(`/projects/${projectId}/branches/${branchId}/diff/`);
+    return response.data;
+  }
+
   async createProject(data: Partial<Project>): Promise<Project> {
     const response = await this.client.post('/projects/', data);
     return response.data;
@@ -105,6 +194,18 @@ class ApiClient {
 
   async updateProject(id: string, data: Partial<Project>): Promise<Project> {
     const response = await this.client.patch(`/projects/${id}/`, data);
+    return response.data;
+  }
+
+  async resolveWorkspaceTemplate(config: {
+    industry: string;
+    team_size: string;
+    compliance: string[];
+    ai_provider: string;
+    delivery_model: string;
+    collaboration_focus: string;
+  }): Promise<GuidedWorkspaceConfig> {
+    const response = await this.client.post('/projects/templates/resolve/', config);
     return response.data;
   }
 
@@ -170,6 +271,30 @@ class ApiClient {
     return response.data;
   }
 
+  async updateArtifact(
+    projectId: string,
+    artifactId: string,
+    data: ArtifactUpdatePayload
+  ): Promise<Artifact> {
+    const response = await this.client.patch(`/projects/${projectId}/artifacts/${artifactId}/`, data);
+    return response.data;
+  }
+
+  async getAiRuns(projectId: string, limit = 25): Promise<AiRun[]> {
+    const response = await this.client.get(`/projects/${projectId}/ai-runs/`, {
+      params: { limit },
+    });
+    return response.data;
+  }
+
+  async chatAssistant(
+    projectId: string,
+    payload: { prompt: string; phase_id?: string }
+  ): Promise<{ reply: string }> {
+    const response = await this.client.post(`/projects/${projectId}/assistant/chat/`, payload);
+    return response.data;
+  }
+
   // Generation Jobs
   async getGenerationJob(id: string): Promise<GenerationJob> {
     const response = await this.client.get(`/generation-jobs/${id}/`);
@@ -193,7 +318,13 @@ class ApiClient {
   async saveDiagramWorkspace(
     projectId: string,
     stage: string,
-    payload: { nodes: DiagramNode[]; edges: DiagramEdge[]; title?: string; metadata?: Record<string, any> }
+    payload: {
+      nodes: DiagramNode[];
+      edges: DiagramEdge[];
+      title?: string;
+      metadata?: Record<string, any>;
+      frames?: any[];
+    }
   ): Promise<DiagramWorkspace> {
     const response = await this.client.put(`/projects/${projectId}/sdlc-diagrams/${stage}/`, payload);
     return response.data;
@@ -229,6 +360,15 @@ class ApiClient {
     await this.client.post(`/projects/${projectId}/diagrams/sync/`, { mode });
   }
 
+  async runSandbox(payload: {
+    language: string;
+    code: string;
+    input_text?: string;
+  }): Promise<SandboxRunResult> {
+    const response = await this.client.post('/sandbox/run', payload);
+    return response.data;
+  }
+
   async exportRequirements(projectId: string): Promise<any> {
     const response = await this.client.get(`/projects/${projectId}/requirements/export/`);
     return response.data;
@@ -249,7 +389,7 @@ class ApiClient {
     projectId: string,
     phase: string,
     prompt: string
-  ): Promise<{ phase_status: Record<string, string>; content: { content: { markdown: string } } }> {
+  ): Promise<PhaseGenerateResponse> {
     const response = await this.client.post(`/projects/${projectId}/phases/${phase}/generate/`, { prompt });
     return response.data;
   }
@@ -266,6 +406,19 @@ class ApiClient {
 
   async saveRoadmap(projectId: string, data: { milestones: any[]; summary?: any[] }): Promise<any> {
     const response = await this.client.put(`/projects/${projectId}/roadmap/`, data);
+    return response.data;
+  }
+
+  async addTeamMember(
+    projectId: string,
+    payload: { email: string; project_role?: string; notes?: string }
+  ): Promise<Project> {
+    const response = await this.client.post(`/projects/${projectId}/team/`, payload);
+    return response.data;
+  }
+
+  async removeTeamMember(projectId: string, memberId: string): Promise<Project> {
+    const response = await this.client.delete(`/projects/${projectId}/team/${memberId}`);
     return response.data;
   }
 

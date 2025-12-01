@@ -57,3 +57,39 @@ class ArtifactRepository:
         async for doc in cursor:
             artifacts.append(Artifact(**doc))
         return artifacts
+
+    async def update_artifact(self, project_id: str, artifact_id: str, updates: dict) -> Optional[Artifact]:
+        """Update an artifact document by id."""
+        if not updates:
+            return None
+        db = get_db()
+        now = datetime.utcnow()
+        payload = {k: v for k, v in updates.items() if v is not None}
+        if not payload:
+            return None
+        payload["updated_at"] = now
+        result = await db[self.collection_name].find_one_and_update(
+            {"project_id": project_id, "_id": artifact_id},
+            {"$set": payload},
+            return_document=True,
+        )
+        if not result:
+            return None
+        return Artifact(**result)
+
+    async def clone_project_artifacts(self, source_project_id: str, target_project_id: str) -> List[Artifact]:
+        """Duplicate artifacts from one project to another."""
+        db = get_db()
+        cursor = db[self.collection_name].find({"project_id": source_project_id})
+        docs: List[dict] = []
+        async for doc in cursor:
+            new_doc = doc.copy()
+            new_doc["_id"] = f"artifact_{str(datetime.utcnow().timestamp()).replace('.', '')}"
+            new_doc["project_id"] = target_project_id
+            now = datetime.utcnow()
+            new_doc["created_at"] = now
+            new_doc["updated_at"] = now
+            docs.append(new_doc)
+        if docs:
+            await db[self.collection_name].insert_many(docs)
+        return [Artifact(**doc) for doc in docs]

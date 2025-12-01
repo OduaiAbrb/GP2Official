@@ -85,13 +85,23 @@ export const ProjectsPage: React.FC = () => {
                 {projects.length} {projects.length === 1 ? 'project' : 'projects'} growing
               </p>
             </div>
-            <Button
-              onClick={() => navigate('/projects/new')}
-              className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-105 group"
-            >
-              <Plus className="w-5 h-5 mr-2 group-hover:rotate-90 transition-transform duration-300" />
-              Plant New Project
-            </Button>
+            <div className="flex flex-wrap gap-3">
+              <Button
+                onClick={() => navigate('/projects/new/wizard')}
+                variant="outline"
+                className="border-amber-300 text-amber-700 hover:bg-amber-50"
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Guided Builder
+              </Button>
+              <Button
+                onClick={() => navigate('/projects/new')}
+                className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-105 group"
+              >
+                <Plus className="w-5 h-5 mr-2 group-hover:rotate-90 transition-transform duration-300" />
+                Plant New Project
+              </Button>
+            </div>
           </div>
         </div>
 

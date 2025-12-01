@@ -67,3 +67,20 @@ class RequirementRepository:
         if result:
             return Requirement(**result)
         return None
+
+    async def clone_project_requirements(self, source_project_id: str, target_project_id: str) -> List[Requirement]:
+        """Duplicate all requirements from one project to another."""
+        db = get_db()
+        cursor = db[self.collection_name].find({"project_id": source_project_id})
+        docs: List[dict] = []
+        async for doc in cursor:
+            new_doc = doc.copy()
+            new_doc["_id"] = f"req_{str(datetime.utcnow().timestamp()).replace('.', '')}"
+            new_doc["project_id"] = target_project_id
+            timestamp = datetime.utcnow()
+            new_doc["created_at"] = timestamp
+            new_doc["updated_at"] = timestamp
+            docs.append(new_doc)
+        if docs:
+            await db[self.collection_name].insert_many(docs)
+        return [Requirement(**doc) for doc in docs]

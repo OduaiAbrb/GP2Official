@@ -4,6 +4,7 @@ from typing import List, Dict, Any
 import logging
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 from config import settings
+from services.markdown_formatter import MarkdownFormatter
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +15,7 @@ class SRSGenerator:
     def __init__(self):
         self.api_key = settings.llm_api_key
         self.model = settings.llm_model_name
+        self.formatter = MarkdownFormatter()
     
     async def generate_complete_srs(self, project_data: Dict, requirements: List[Dict]) -> Dict[str, Any]:
         """Generate a comprehensive IEEE 830-compliant SRS document."""
@@ -41,10 +43,15 @@ class SRSGenerator:
         # 5. System Features
         sections['system_features'] = await self._generate_system_features(requirements)
         
+        formatted_sections = {
+            key: self.formatter.format(value, artifact_type=f"srs:{key}")
+            for key, value in sections.items()
+        }
+
         return {
             'title': f"Software Requirements Specification - {project_data.get('name')}",
             'version': '1.0',
-            'sections': sections,
+            'sections': formatted_sections,
             'metadata': {
                 'project_name': project_data.get('name'),
                 'requirements_count': len(requirements),

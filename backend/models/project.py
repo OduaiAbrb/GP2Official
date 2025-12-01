@@ -33,6 +33,8 @@ def default_phase_status() -> Dict[str, str]:
         "design": "locked",
         "development": "locked",
         "tasks": "locked",
+        "cost_benefit": "locked",
+        "risks": "locked",
         "summary": "locked",
     }
 
@@ -52,6 +54,11 @@ class ProjectBase(BaseModel):
     development_stack: Optional[List[Dict[str, Any]]] = None
     development_notes: Optional[Dict[str, Any]] = None
     feasibility_sections: Optional[List[Dict[str, Any]]] = None
+    parent_project_id: Optional[str] = None
+    scenario_label: Optional[str] = None
+    scenario_metadata: Optional[Dict[str, Any]] = None
+    ui_preferences: Optional[Dict[str, Any]] = None
+    team_members: List[Dict[str, Any]] = Field(default_factory=list)
 
 
 class ProjectCreate(ProjectBase):
@@ -73,6 +80,10 @@ class ProjectUpdate(BaseModel):
     feasibility_sections: Optional[List[Dict[str, Any]]] = None
     development_stack: Optional[List[Dict[str, Any]]] = None
     development_notes: Optional[Dict[str, Any]] = None
+    parent_project_id: Optional[str] = None
+    scenario_label: Optional[str] = None
+    scenario_metadata: Optional[Dict[str, Any]] = None
+    ui_preferences: Optional[Dict[str, Any]] = None
 
 
 class Project(ProjectBase):
@@ -107,5 +118,66 @@ class ProjectResponse(BaseModel):
     feasibility_sections: Optional[List[Dict[str, Any]]] = None
     development_stack: Optional[List[Dict[str, Any]]] = None
     development_notes: Optional[Dict[str, Any]] = None
+    parent_project_id: Optional[str] = None
+    scenario_label: Optional[str] = None
+    scenario_metadata: Optional[Dict[str, Any]] = None
+    ui_preferences: Optional[Dict[str, Any]] = None
+    team_members: List[Dict[str, Any]] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime
+
+
+class ScenarioBranchRequest(BaseModel):
+    """Request payload for scenario branching."""
+
+    label: str
+    description: Optional[str] = None
+    overrides: Optional[Dict[str, Any]] = None
+    include_tasks: bool = True
+    include_requirements: bool = True
+    include_artifacts: bool = True
+
+
+class ScenarioSnapshot(BaseModel):
+    """Snapshot of a scenario for comparison."""
+
+    project_id: str
+    name: str
+    status: str
+    phase_status: Dict[str, str]
+    requirements: int
+    tasks: int
+    risk_artifacts: int
+    cost_estimate: float
+
+
+class ScenarioDiffResponse(BaseModel):
+    """Response describing deltas between main and branch scenarios."""
+
+    baseline: ScenarioSnapshot
+    branch: ScenarioSnapshot
+    summary: Dict[str, Any]
+    phase_deltas: List[Dict[str, Any]]
+
+
+class GuidedWorkspaceRequest(BaseModel):
+    """Wizard questionnaire inputs."""
+
+    industry: str
+    team_size: str
+    compliance: List[str] = Field(default_factory=list)
+    ai_provider: str
+    delivery_model: str
+    collaboration_focus: str
+
+
+class GuidedWorkspaceResponse(BaseModel):
+    """Resolved template configuration."""
+
+    preset: str
+    recommended_phases: List[str]
+    required_artifacts: List[str]
+    ai_prompts: Dict[str, str]
+    risk_library: List[str]
+    integrations: List[str]
+    notes: List[str]

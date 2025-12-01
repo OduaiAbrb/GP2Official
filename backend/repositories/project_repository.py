@@ -1,6 +1,6 @@
 """Project repository."""
 
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 from database import get_db
 from models.project import Project, ProjectCreate, ProjectUpdate
 from datetime import datetime
@@ -12,7 +12,7 @@ class ProjectRepository:
     def __init__(self):
         self.collection_name = "projects"
     
-    async def create(self, project_data: ProjectCreate, user_id: str, organization: str) -> Project:
+    async def create(self, project_data: ProjectCreate, user_id: str, organization: str, owner_member: Optional[Dict[str, Any]] = None) -> Project:
         """Create a new project."""
         db = get_db()
         
@@ -32,9 +32,21 @@ class ProjectRepository:
             "roadmap_summary": project_data.__dict__.get('roadmap_summary') if hasattr(project_data, 'roadmap_summary') else None,
             "feasibility_studies": project_data.__dict__.get('feasibility_studies') if hasattr(project_data, 'feasibility_studies') else None,
             "feasibility_sections": project_data.__dict__.get('feasibility_sections') if hasattr(project_data, 'feasibility_sections') else None,
+            "parent_project_id": getattr(project_data, "parent_project_id", None),
+            "scenario_label": getattr(project_data, "scenario_label", None),
+            "scenario_metadata": getattr(project_data, "scenario_metadata", None),
+            "ui_preferences": getattr(project_data, "ui_preferences", None),
+            "team_members": [],
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow(),
         }
+
+        provided_team = getattr(project_data, "team_members", None) or []
+        if owner_member:
+            existing = [m for m in provided_team if m.get("user_id") != owner_member.get("user_id")]
+            project_doc["team_members"] = [owner_member, *existing]
+        else:
+            project_doc["team_members"] = provided_team
         
         await db[self.collection_name].insert_one(project_doc)
         return Project(**project_doc)
@@ -92,6 +104,14 @@ class ProjectRepository:
             update_doc["development_stack"] = update_data.development_stack
         if getattr(update_data, 'development_notes', None) is not None:
             update_doc["development_notes"] = update_data.development_notes
+        if getattr(update_data, "parent_project_id", None) is not None:
+            update_doc["parent_project_id"] = update_data.parent_project_id
+        if getattr(update_data, "scenario_label", None) is not None:
+            update_doc["scenario_label"] = update_data.scenario_label
+        if getattr(update_data, "scenario_metadata", None) is not None:
+            update_doc["scenario_metadata"] = update_data.scenario_metadata
+        if getattr(update_data, "ui_preferences", None) is not None:
+            update_doc["ui_preferences"] = update_data.ui_preferences
         
         result = await db[self.collection_name].find_one_and_update(
             {"_id": project_id, "organization": organization},
@@ -119,6 +139,23 @@ class ProjectRepository:
             {"_id": project_id, "organization": organization},
             {"$set": {"phase_status": phase_status, "updated_at": datetime.utcnow()}},
             return_document=True
+        )
+        if result:
+            return Project(**result)
+        return None
+
+    async def set_team_members(self, project_id: str, organization: str, members: List[Dict[str, Any]]) -> Optional[Project]:
+        """Replace the team member list for a project."""
+        db = get_db()
+        result = await db[self.collection_name].find_one_and_update(
+            {"_id": project_id, "organization": organization},
+            {
+                "$set": {
+                    "team_members": members,
+                    "updated_at": datetime.utcnow(),
+                }
+            },
+            return_document=True,
         )
         if result:
             return Project(**result)

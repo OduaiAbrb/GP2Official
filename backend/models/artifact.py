@@ -35,3 +35,11 @@ class ArtifactResponse(BaseModel):
     metadata: Dict[str, Any]
     created_at: datetime
     updated_at: datetime
+
+
+class ArtifactUpdateRequest(BaseModel):
+    """Payload for updating stored artifacts."""
+    title: Optional[str] = None
+    content_json: Optional[Dict[str, Any]] = None
+    metadata: Optional[Dict[str, Any]] = None
+    is_approved: Optional[bool] = None

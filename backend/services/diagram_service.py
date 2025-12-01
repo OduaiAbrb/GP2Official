@@ -82,6 +82,7 @@ class DiagramService:
             payload.edges,
             payload.title or f"{get_stage_label(stage)} Diagram",
             metadata=metadata,
+            frames=payload.frames if payload.frames is not None else existing.frames,
         )
 
     async def chat(self, project_id: str, stage: str, message: str) -> DiagramChatResponse:
@@ -100,6 +101,7 @@ class DiagramService:
             edges,
             diagram.title,
             metadata,
+            frames=diagram.frames,
         )
         return DiagramChatResponse(
             message=response_text,
@@ -119,6 +121,7 @@ class DiagramService:
             nodes=diagram.nodes,
             edges=diagram.edges,
             metadata=diagram.metadata,
+            frames=diagram.frames,
             created_at=diagram.created_at,
             updated_at=diagram.updated_at,
         )

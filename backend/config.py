@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     secret_key: str = os.environ.get("SECRET_KEY", "your-secret-key-change-in-production")
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 60 * 24  # 24 hours
+    refresh_token_expire_days: int = int(os.environ.get("REFRESH_TOKEN_EXPIRE_DAYS", "14"))
     
     # LLM
     llm_provider: str = os.environ.get("LLM_PROVIDER", "stub")
@@ -39,3 +40,18 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+
+def _resolve_llm_api_key(cfg: Settings) -> Optional[str]:
+    """Prefer provider-specific keys if generic one not supplied."""
+    if cfg.llm_api_key:
+        return cfg.llm_api_key
+    provider = (cfg.llm_provider or "").lower()
+    if provider in {"gemini", "google", "google_gemini"} and cfg.gemini_api_key:
+        return cfg.gemini_api_key
+    if provider in {"huggingface", "hf"} and cfg.huggingface_api_key:
+        return cfg.huggingface_api_key
+    return cfg.llm_api_key
+
+
+settings.llm_api_key = _resolve_llm_api_key(settings)

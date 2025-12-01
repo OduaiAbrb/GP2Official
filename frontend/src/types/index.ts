@@ -1,14 +1,30 @@
+export interface SocialLink {
+  label: string;
+  url: string;
+}
+
 export interface User {
-  user_id: string;
+  id: string;
   email: string;
-  username: string;
-  first_name: string;
-  last_name: string;
-  full_name: string;
+  full_name?: string;
+  organization?: string;
   role: string;
-  organization_id: string;
-  organization_name: string;
-  is_active: boolean;
+  role_label: string;
+  role_authority: number;
+  avatar_url?: string;
+  banner_url?: string;
+  bio?: string;
+  job_title?: string;
+  location?: string;
+  timezone?: string;
+  pronouns?: string;
+  availability?: string;
+  contact_email?: string;
+  phone?: string;
+  skills?: string[];
+  interests?: string[];
+  social_links?: SocialLink[];
+  created_at: string;
 }
 
 export interface Organization {
@@ -30,9 +46,26 @@ export interface LoginResponse {
 export interface RegisterRequest {
   email: string;
   password: string;
-  first_name: string;
-  last_name: string;
-  organization_name: string;
+  full_name: string;
+  organization: string;
+  role: string;
+}
+
+export interface UserProfileUpdatePayload {
+  full_name?: string;
+  job_title?: string;
+  bio?: string;
+  location?: string;
+  timezone?: string;
+  pronouns?: string;
+  avatar_url?: string;
+  banner_url?: string;
+  availability?: string;
+  contact_email?: string;
+  phone?: string;
+  skills?: string[];
+  interests?: string[];
+  social_links?: SocialLink[];
 }
 
 export interface Project {
@@ -54,6 +87,30 @@ export interface Project {
   created_at: string;
   updated_at: string;
   phase_status?: Record<string, string>;
+  parent_project_id?: string | null;
+  scenario_label?: string | null;
+  scenario_metadata?: Record<string, any> | null;
+  ui_preferences?: Record<string, any> | null;
+  team_members?: ProjectTeamMember[];
+}
+
+export interface ProjectTeamMember {
+  user_id: string;
+  full_name?: string;
+  email: string;
+  project_role: string;
+  role_label: string;
+  authority: number;
+  status?: string;
+  assigned_by?: string;
+  assigned_at?: string;
+  notes?: string;
+}
+
+export interface ArtifactContent {
+  markdown?: string;
+  raw_markdown?: string;
+  [key: string]: any;
 }
 
 export interface Requirement {
@@ -96,7 +153,7 @@ export interface Artifact {
   project_id: string;
   type: string;
   title: string;
-  content_json: Record<string, any>;
+  content_json: ArtifactContent;
   version: number;
   is_approved: boolean;
   metadata: Record<string, any>;
@@ -131,10 +188,7 @@ export interface UxFlowArtifact {
   project_id: string;
   type: string;
   title: string;
-  content_json: {
-    markdown: string;
-    [key: string]: any;
-  };
+  content_json: ArtifactContent;
   version: number;
   is_approved: boolean;
   metadata: Record<string, any>;
@@ -174,6 +228,7 @@ export interface DiagramWorkspace {
   nodes: DiagramNode[];
   edges: DiagramEdge[];
   metadata: Record<string, any>;
+  frames?: { id: string; timestamp: string; nodes: DiagramNode[]; edges?: DiagramEdge[] }[];
   created_at: string;
   updated_at: string;
 }
@@ -183,4 +238,71 @@ export interface DiagramChatResponse {
   nodes: DiagramNode[];
   edges: DiagramEdge[];
   stage: string;
+}
+
+export interface AiRun {
+  run_id: string;
+  project_id: string;
+  user_id?: string | null;
+  job_type: string;
+  phase?: string | null;
+  provider?: string | null;
+  model?: string | null;
+  status: string;
+  prompt_preview?: string | null;
+  response_preview?: string | null;
+  duration_ms?: number | null;
+  error_message?: string | null;
+  metadata: Record<string, any>;
+  created_at: string;
+  completed_at?: string | null;
+}
+
+export interface WorkspaceInvite {
+  id: string;
+  email: string;
+  role: string;
+  status: string;
+  invited_by: string;
+  organization: string;
+  message?: string | null;
+  created_at: string;
+  accepted_at?: string | null;
+  accepted_by?: string | null;
+}
+
+export interface ScenarioSnapshot {
+  project_id: string;
+  name: string;
+  status: string;
+  phase_status: Record<string, string>;
+  requirements: number;
+  tasks: number;
+  risk_artifacts: number;
+  cost_estimate: number;
+}
+
+export interface ScenarioDiff {
+  baseline: ScenarioSnapshot;
+  branch: ScenarioSnapshot;
+  summary: Record<string, number>;
+  phase_deltas: { phase: string; baseline: string; branch: string }[];
+}
+
+export interface GuidedWorkspaceConfig {
+  preset: string;
+  recommended_phases: string[];
+  required_artifacts: string[];
+  ai_prompts: Record<string, string>;
+  risk_library: string[];
+  integrations: string[];
+  notes: string[];
+}
+
+export interface SandboxRunResult {
+  language: string;
+  stdout: string;
+  stderr: string;
+  exit_code: number;
+  duration_ms: number;
 }

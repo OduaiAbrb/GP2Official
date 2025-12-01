@@ -46,16 +46,16 @@ cd GP2Official
 ```bash
 cd backend
 
-# Create virtual environment
-python -m venv venv
-
-# Activate virtual environment
-# On Windows:
-venv\Scripts\activate
-# On macOS/Linux:
+# Create & activate the virtual environment (choose your OS)
+# macOS / Linux
+python3 -m venv venv
 source venv/bin/activate
 
-# Install dependencies
+# Windows (PowerShell)
+py -3 -m venv venv
+.\venv\Scripts\Activate.ps1
+
+# Install dependencies once the venv is active
 pip install -r requirements.txt
 ```
 
@@ -70,6 +70,7 @@ SECRET_KEY=your-secret-key-here-change-this
 # Database (optional - uses in-memory if MongoDB unavailable)
 MONGO_URL=mongodb://localhost:27017
 DATABASE_NAME=architect_ai
+REFRESH_TOKEN_EXPIRE_DAYS=14
 
 # Or use in-memory database (no MongoDB needed)
 USE_IN_MEMORY_DB=true
@@ -120,8 +121,13 @@ For the fastest setup without MongoDB:
 ```bash
 # Terminal 1 - Backend
 cd backend
-python -m venv venv
-venv\Scripts\activate  # Windows
+
+# macOS / Linux
+python3 -m venv venv && source venv/bin/activate
+
+# Windows (PowerShell)
+py -3 -m venv venv ; .\venv\Scripts\Activate.ps1
+
 pip install -r requirements.txt
 echo USE_IN_MEMORY_DB=true > .env
 echo SECRET_KEY=dev-secret-key >> .env
