@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 import os
 
 from database import init_db, close_db
-from routes import auth, projects, generation, requirements, tasks, diagrams, ux_flow, phase_flow, sandbox, users, change_log
+from routes import auth, projects, generation, requirements, tasks, diagrams, ux_flow, phase_flow, sandbox, users, change_log, websocket, ai_pipeline
 from config import settings
 
 
@@ -15,9 +15,19 @@ async def lifespan(app: FastAPI):
     """Application lifespan manager."""
     # Startup
     await init_db()
+    
+    # Initialize Redis cache
+    from utils.cache import init_redis
+    await init_redis()
+    
     yield
+    
     # Shutdown
     await close_db()
+    
+    # Close Redis connection
+    from utils.cache import close_redis
+    await close_redis()
 
 
 app = FastAPI(
@@ -33,6 +43,7 @@ default_origins = [
     "http://127.0.0.1:3000",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "https://dazzling-sprinkles-ae0afa.netlify.app",
 ]
 if settings.frontend_origin:
     default_origins.append(settings.frontend_origin)
@@ -61,6 +72,8 @@ app.include_router(phase_flow.router, prefix="/api", tags=["Phases"])
 app.include_router(sandbox.router, prefix="/api/sandbox", tags=["Sandbox"])
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
 app.include_router(change_log.router, prefix="/api", tags=["ChangeLog"])
+app.include_router(websocket.router, prefix="/api/ws", tags=["WebSocket"])
+app.include_router(ai_pipeline.router, prefix="/api/ai", tags=["AI Pipeline"])
 
 
 @app.get("/api/health")
