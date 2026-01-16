@@ -169,7 +169,8 @@ async def init_db():
     """Initialize database connection with automatic in-memory fallback."""
     global client, db
     
-    # Debug: Log which database settings are active
+    # Debug: Print to ensure visibility in Render logs
+    print(f"[DB INIT] use_supabase={settings.use_supabase}, supabase_url={'SET' if settings.supabase_url else 'NOT SET'}, service_key={'SET' if settings.supabase_service_key else 'NOT SET'}")
     logger.info(f"Database config: use_supabase={settings.use_supabase}, supabase_url={'set' if settings.supabase_url else 'not set'}")
     
     # Check if using Supabase

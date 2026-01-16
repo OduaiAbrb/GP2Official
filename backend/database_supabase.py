@@ -17,7 +17,10 @@ async def init_supabase_db():
     """Initialize Supabase PostgreSQL connection pool."""
     global pool
     
+    print(f"[SUPABASE INIT] URL={'SET' if settings.supabase_url else 'NOT SET'}, SERVICE_KEY={'SET' if settings.supabase_service_key else 'NOT SET'}")
+    
     if not settings.supabase_url or not settings.supabase_service_key:
+        print("[SUPABASE ERROR] Missing Supabase URL or Service Key!")
         logger.error("Supabase URL and Service Key are required")
         raise ValueError("Missing Supabase configuration")
     
