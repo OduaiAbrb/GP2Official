@@ -11,42 +11,87 @@ class Settings(BaseSettings):
     # App
     app_name: str = "Architect AI"
     debug: bool = True
+    environment: str = "development"
     
     # Database / Frontend
-    mongo_url: str = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
+    mongo_url: str = "mongodb://localhost:27017"
     database_name: str = "architect_ai"
-    use_in_memory_db: bool = os.environ.get("USE_IN_MEMORY_DB", "").lower() == "true"
-    frontend_origin: str = os.environ.get("FRONTEND_ORIGIN", "http://localhost:3000")
+    use_in_memory_db: bool = False
+    frontend_origin: str = "http://localhost:3000"
     
-    # JWT
-    secret_key: str = os.environ.get("SECRET_KEY", "your-secret-key-change-in-production")
+    # JWT - Security critical: no defaults for production
+    secret_key: str = "your-secret-key-change-in-production"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 60 * 24  # 24 hours
-    refresh_token_expire_days: int = int(os.environ.get("REFRESH_TOKEN_EXPIRE_DAYS", "14"))
+    refresh_token_expire_days: int = 14
     
-    # LLM
-    llm_provider: str = os.environ.get("LLM_PROVIDER", "stub")
-    llm_api_key: Optional[str] = os.environ.get("LLM_API_KEY")
-    llm_model_name: str = os.environ.get("LLM_MODEL_NAME", "gpt-4")
-    huggingface_api_key: Optional[str] = os.environ.get("HUGGINGFACE_API_KEY")
-    gemini_api_key: Optional[str] = os.environ.get("GEMINI_API_KEY")
-
+    # AI / LLM Configuration
+    llm_provider: str = "openai"
+    llm_api_key: Optional[str] = None
+    llm_model_name: str = "gpt-4"
+    openai_api_key: Optional[str] = None
+    huggingface_api_key: Optional[str] = None
+    gemini_api_key: Optional[str] = None
+    
     # PlantUML / external services
-    plantuml_api_host: Optional[str] = os.environ.get("PLANTUML_API_HOST")
-    plantuml_api_key: Optional[str] = os.environ.get("PLANTUML_API_KEY")
+    plantuml_api_host: Optional[str] = None
+    plantuml_api_key: Optional[str] = None
+    
+    # Supabase Configuration
+    supabase_url: Optional[str] = None
+    supabase_anon_key: Optional[str] = None
+    supabase_service_key: Optional[str] = None
+    use_supabase: bool = False
+    
+    # Redis Cache
+    redis_url: Optional[str] = None
+    cache_ttl: int = 3600  # 1 hour default
+    
+    # Database Pool Settings
+    db_min_connections: int = 1
+    db_max_connections: int = 10
+    db_connect_timeout: int = 30
+    db_retry_attempts: int = 3
     
     class Config:
         env_file = ".env"
+        case_sensitive = False
+
+    def validate_production_config(self) -> None:
+        """Validate critical settings for production deployment."""
+        if self.environment == "production":
+            if self.secret_key == "your-secret-key-change-in-production":
+                raise ValueError("SECRET_KEY must be set for production!")
+            if len(self.secret_key) < 32:
+                raise ValueError("SECRET_KEY must be at least 32 characters long!")
+            if self.debug:
+                raise ValueError("DEBUG must be False in production!")
+
+    @property 
+    def is_production(self) -> bool:
+        """Check if running in production environment."""
+        return self.environment.lower() == "production"
+        
+    @property
+    def database_url(self) -> str:
+        """Get the appropriate database URL."""
+        if self.use_in_memory_db:
+            return "memory://localhost"
+        return self.mongo_url
 
 
 settings = Settings()
 
+# Validate production configuration at startup
+settings.validate_production_config()
 
 def _resolve_llm_api_key(cfg: Settings) -> Optional[str]:
     """Prefer provider-specific keys if generic one not supplied."""
     if cfg.llm_api_key:
         return cfg.llm_api_key
     provider = (cfg.llm_provider or "").lower()
+    if provider in {"openai", "gpt"} and cfg.openai_api_key:
+        return cfg.openai_api_key
     if provider in {"gemini", "google", "google_gemini"} and cfg.gemini_api_key:
         return cfg.gemini_api_key
     if provider in {"huggingface", "hf"} and cfg.huggingface_api_key:
