@@ -244,19 +244,20 @@ export const ProjectsPage: React.FC = () => {
             {viewMode === 'grid' ? (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredProjects.map((project, index) => {
+                  const projectId = project.id || project.project_id || '';
                   const statusConfig = getStatusConfig(project.status);
                   const StatusIcon = statusConfig.icon;
-                  const isHovered = hoveredProject === project.id;
+                  const isHovered = hoveredProject === projectId;
                   
                   return (
                     <div
-                      key={project.id}
+                      key={projectId}
                       className="group relative card-premium p-6 cursor-pointer"
-                      onClick={() => navigate(`/projects/${project.id}`)}
-                      onMouseEnter={() => setHoveredProject(project.id)}
+                      onClick={() => navigate(`/projects/${projectId}`)}
+                      onMouseEnter={() => setHoveredProject(projectId)}
                       onMouseLeave={() => setHoveredProject(null)}
                       style={{ animationDelay: `${index * 50}ms` }}
-                      data-testid={`project-card-${project.id}`}
+                      data-testid={`project-card-${projectId}`}
                     >
                       {/* Status Badge */}
                       <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${statusConfig.bgColor} ${statusConfig.color} border ${statusConfig.borderColor} mb-4`}>
