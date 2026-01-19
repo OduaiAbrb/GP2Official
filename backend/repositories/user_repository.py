@@ -69,10 +69,10 @@ class _SupabaseUserRepository:
         
         async with pool.acquire() as conn:
             await conn.execute('''
-                INSERT INTO users (id, email, full_name, organization, hashed_password, is_active, role, created_at, updated_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                INSERT INTO users (id, email, full_name, organization, hashed_password, role, created_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
             ''', user_id, user_data.email.lower(), user_data.full_name, 
-                user_data.organization or "Private Workspace", hashed_password, True, role_key, now, now)
+                user_data.organization or "Private Workspace", hashed_password, role_key, now)
         
         return User(
             id=user_id,
@@ -90,7 +90,9 @@ class _SupabaseUserRepository:
         async with pool.acquire() as conn:
             row = await conn.fetchrow('SELECT * FROM users WHERE email = $1', email.lower())
         if row:
-            return User(**dict(row))
+            data = dict(row)
+            data['id'] = str(data['id'])  # Convert UUID to string
+            return User(**data)
         return None
     
     async def get_by_id(self, user_id: str) -> Optional[User]:
@@ -98,7 +100,9 @@ class _SupabaseUserRepository:
         async with pool.acquire() as conn:
             row = await conn.fetchrow('SELECT * FROM users WHERE id = $1', user_id)
         if row:
-            return User(**dict(row))
+            data = dict(row)
+            data['id'] = str(data['id'])  # Convert UUID to string
+            return User(**data)
         return None
     
     async def update_profile(self, user_id: str, updates: Dict[str, Any]) -> Optional[User]:
@@ -111,7 +115,9 @@ class _SupabaseUserRepository:
         async with pool.acquire() as conn:
             row = await conn.fetchrow(query, user_id, *updates.values())
         if row:
-            return User(**dict(row))
+            data = dict(row)
+            data['id'] = str(data['id'])  # Convert UUID to string
+            return User(**data)
         return None
     
     async def update_workspace(self, user_id: str, organization: str, role: str) -> Optional[User]:

@@ -1,483 +1,440 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Sparkles,
-  Zap,
-  Target,
-  TrendingUp,
+import { 
+  FileText, 
+  Cpu, 
+  CheckCircle, 
   ArrowRight,
-  Check,
-  Cpu,
-  ShieldCheck,
-  Globe,
-  Users,
   Star,
-  Quote
+  Zap,
+  Shield,
+  BarChart3,
+  Menu,
+  X,
+  Sparkles,
+  Layers,
+  GitBranch,
+  Users,
+  Clock
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-
-const features = [
-  {
-    icon: Sparkles,
-    title: 'AI-Powered Analysis',
-    description: 'Transform project briefs into comprehensive requirements using advanced AI',
-    color: 'from-amber-500 to-orange-600'
-  },
-  {
-    icon: Target,
-    title: 'Stakeholder Ready Docs',
-    description: 'Generate professional SRS documents that meet industry expectations',
-    color: 'from-green-500 to-emerald-600'
-  },
-  {
-    icon: Zap,
-    title: 'Lightning Fast',
-    description: 'Reduce planning time from weeks to minutes with automated workflows',
-    color: 'from-blue-500 to-cyan-600'
-  },
-  {
-    icon: TrendingUp,
-    title: 'Smart Insights',
-    description: 'Get actionable recommendations and risk analysis for your projects',
-    color: 'from-purple-500 to-pink-600'
-  }
-];
-
-const benefits = [
-  'Automated Requirements Extraction',
-  'UML Diagram Generation',
-  'Task Breakdown & Planning',
-  'Risk Analysis & Mitigation',
-  'Cost Estimation',
-  'Team Collaboration Tools'
-];
-
-const workflowStages = [
-  {
-    title: 'Planning Seeds',
-    description: 'Capture briefs, upload artifacts, and let Acorn map the scope.',
-    icon: Target,
-    badge: 'Phase 01'
-  },
-  {
-    title: 'Design & Intelligence',
-    description: 'AI multi-agents generate requirements, UML, and tasks in sync.',
-    icon: Cpu,
-    badge: 'Phase 02'
-  },
-  {
-    title: 'Validation & Iteration',
-    description: 'Collaborate with Acorn Draft, refine diagrams, and approve.',
-    icon: ShieldCheck,
-    badge: 'Phase 03'
-  },
-  {
-    title: 'Launch & Share',
-    description: 'Export stakeholder-ready docs, Trello tasks, and Gantt timelines.',
-    icon: Globe,
-    badge: 'Phase 04'
-  }
-];
-
-const stats = [
-  { value: '95%', label: 'Faster planning cycles' },
-  { value: '40+', label: 'Diagrams per project' },
-  { value: '12x', label: 'Requirement coverage' },
-  { value: '500+', label: 'Teams scaling with Acorn' }
-];
-
-const testimonials = [
-  {
-    quote:
-      'Acorn feels like having a full requirements team on call. The AI understands context and keeps everyone aligned.',
-    author: 'Sofia Martins',
-    role: 'Head of Delivery, Northwind',
-    color: 'from-amber-500/80 to-orange-500/80'
-  },
-  {
-    quote:
-      'We replaced messy doc stacks with a living canvas + Draft workspace. Stakeholders finally see progress in real time.',
-    author: 'Noah Patel',
-    role: 'Program Director, Rivendell Labs',
-    color: 'from-purple-500/80 to-pink-500/80'
-  }
-];
-
-const logoMarquee = ['Trello', 'Linear', 'Jira', 'Notion', 'Slack'];
+import { AcornLogo } from '@/components/AcornLogo';
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrollY, setScrollY] = useState(0);
+  const [isVisible, setIsVisible] = useState<Record<string, boolean>>({});
+  const observerRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  useEffect(() => {
+    const handleScroll = () => setScrollY(window.scrollY);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible((prev) => ({ ...prev, [entry.target.id]: true }));
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    Object.values(observerRefs.current).forEach((ref) => {
+      if (ref) observer.observe(ref);
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 overflow-hidden">
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div
-          className="absolute w-[520px] h-[520px] bg-gradient-to-br from-amber-400/25 to-orange-500/25 rounded-full blur-3xl animate-orb"
-          style={{ top: '8%', left: '4%', animationDelay: '0s' }}
-        />
-        <div
-          className="absolute w-[420px] h-[420px] bg-gradient-to-br from-orange-400/25 to-red-500/25 rounded-full blur-3xl animate-orb"
-          style={{ top: '48%', right: '8%', animationDelay: '2s' }}
-        />
-        <div
-          className="absolute w-[360px] h-[360px] bg-gradient-to-br from-yellow-400/25 to-amber-500/25 rounded-full blur-3xl animate-orb"
-          style={{ bottom: '6%', left: '20%', animationDelay: '4s' }}
-        />
-      </div>
+    <div className="min-h-screen bg-white">
+      {/* Navigation */}
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        scrollY > 50 ? 'bg-white shadow-md' : 'bg-transparent'
+      }`}>
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <button onClick={() => navigate('/')} className="flex items-center gap-2">
+              <AcornLogo size={40} />
+              <span className="font-bold text-xl text-acorn-blue-600">Acorn</span>
+            </button>
 
-      <nav className="relative z-10 px-6 py-4 backdrop-blur-sm bg-white/30 border-b border-amber-200/50">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center space-x-3 group cursor-pointer" onClick={() => navigate('/') }>
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full blur-md opacity-50 group-hover:opacity-75 transition-opacity" />
-              <img
-                src="https://images.unsplash.com/photo-1569977562541-024dd41514fc?w=100&h=100&fit=crop"
-                alt="Acorn Logo"
-                className="relative w-12 h-12 rounded-full object-cover ring-2 ring-amber-400 group-hover:scale-110 transition-transform"
-              />
+            <div className="hidden md:flex items-center gap-8">
+              {['Features', 'How It Works', 'Testimonials'].map((item) => (
+                <a 
+                  key={item}
+                  href={`#${item.toLowerCase().replace(' ', '-')}`} 
+                  className="text-gray-700 hover:text-acorn-blue-600 font-medium transition-colors"
+                >
+                  {item}
+                </a>
+              ))}
             </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-amber-700 to-orange-600 bg-clip-text text-transparent group-hover:scale-105 transition-transform">
-              Acorn
-            </span>
-          </div>
-          <div className="flex gap-3">
-            <Button
-              variant="ghost"
-              onClick={() => navigate('/login')}
-              className="hover:bg-amber-100/50 text-amber-900 font-medium"
-            >
-              Sign In
-            </Button>
-            <Button
-              onClick={() => navigate('/register')}
-              className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-medium shadow-lg hover:shadow-xl transition-all hover:scale-105"
-            >
-              Get Started
-            </Button>
+
+            <div className="hidden md:flex items-center gap-4">
+              <Button 
+                variant="ghost" 
+                onClick={() => navigate('/login')} 
+                className="text-acorn-blue-600 font-medium"
+              >
+                Sign In
+              </Button>
+              <Button 
+                onClick={() => navigate('/register')} 
+                className="bg-acorn-orange-500 hover:bg-acorn-orange-600 text-white font-medium px-6"
+              >
+                Get Started Free
+              </Button>
+            </div>
+
+            <button className="md:hidden p-2" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-white border-t border-gray-100 p-4">
+            <div className="flex flex-col gap-4">
+              {['Features', 'How It Works', 'Testimonials'].map((item) => (
+                <a key={item} href={`#${item.toLowerCase().replace(' ', '-')}`} className="text-gray-700 font-medium py-2">
+                  {item}
+                </a>
+              ))}
+              <Button onClick={() => navigate('/login')} variant="outline" className="w-full">Sign In</Button>
+              <Button onClick={() => navigate('/register')} className="w-full bg-acorn-orange-500 text-white">Get Started</Button>
+            </div>
+          </div>
+        )}
       </nav>
 
-      <section className="relative z-10 px-6 py-20 max-w-7xl mx-auto">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-8 animate-slideInLeft">
-            <div className="inline-flex items-center px-4 py-2 bg-amber-100 rounded-full border border-amber-300 animate-pulse-slow">
-              <Sparkles className="w-4 h-4 text-amber-600 mr-2" />
-              <span className="text-sm font-medium text-amber-800">AI-Powered Planning Platform</span>
-            </div>
-
-            <h1 className="text-5xl lg:text-7xl font-bold leading-tight">
-              <span className="bg-gradient-to-r from-amber-700 via-orange-600 to-amber-700 bg-clip-text text-transparent animate-gradient">
-                Plant the Seeds
-              </span>
-              <br />
-              <span className="text-gray-800">of Perfect Projects</span>
-            </h1>
-
-            <p className="text-xl text-gray-600 leading-relaxed">
-              Transform your project ideas into comprehensive, production-ready plans with the power of AI.
-              From concept to execution, Acorn grows with your vision.
-            </p>
-
-            <div className="flex flex-wrap gap-4">
-              <Button
-                size="lg"
-                onClick={() => navigate('/register')}
-                className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold px-8 py-6 text-lg shadow-xl hover:shadow-2xl transition-all hover:scale-105 group"
-              >
-                Start Growing
-                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-2 border-amber-500 text-amber-700 hover:bg-amber-50 px-8 py-6 text-lg font-semibold"
-              >
-                Watch Demo
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 pt-6">
-              {stats.slice(0, 2).map((stat, index) => (
-                <div
-                  key={stat.label}
-                  className="bg-white/70 backdrop-blur rounded-2xl p-4 border border-amber-100 shadow-lg animate-fadeIn"
-                  style={{ animationDelay: `${index * 0.2}s` }}
-                >
-                  <p className="text-3xl font-bold text-amber-700">{stat.value}</p>
-                  <p className="text-sm text-gray-500">{stat.label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="relative animate-slideInRight">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-amber-400/30 to-orange-500/30 rounded-3xl blur-2xl animate-pulse-slow" />
-              <img
-                src="https://images.unsplash.com/photo-1581092335331-5e00ac65e934?w=800&h=600&fit=crop"
-                alt="Software Planning & Requirements"
-                className="relative rounded-3xl shadow-2xl hover:scale-105 transition-transform duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent rounded-3xl flex items-center justify-center">
-                <div className="text-white text-center p-6 bg-black/40 backdrop-blur-sm rounded-2xl">
-                  <Sparkles className="w-12 h-12 mx-auto mb-2 animate-pulse" />
-                  <p className="text-sm font-semibold">AI-Powered Requirements Analysis</p>
-                </div>
-              </div>
-              <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-white shadow-2xl rounded-2xl px-8 py-4 flex items-center gap-4 animate-float-delay">
-                <Users className="w-10 h-10 text-amber-600" />
-                <div>
-                  <p className="text-sm text-gray-500">Collaborators live</p>
-                  <p className="text-lg font-semibold text-gray-800">17 teams</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="relative z-10 px-6 py-20 max-w-7xl mx-auto">
-        <div className="text-center mb-16 space-y-4">
-          <h2 className="text-4xl lg:text-5xl font-bold text-gray-800">Why Choose Acorn?</h2>
-          <p className="text-xl text-gray-600">Powerful features that help your projects thrive</p>
-        </div>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {features.map((feature, index) => (
-            <div
-              key={index}
-              className="group relative bg-white/60 backdrop-blur-sm rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border border-amber-200/50 animate-fadeIn"
-              style={{ animationDelay: `${index * 0.1}s` }}
-            >
-              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                <feature.icon className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-2">{feature.title}</h3>
-              <p className="text-gray-600">{feature.description}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="relative z-10 px-6 py-20 max-w-7xl mx-auto">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-6">
-            <p className="text-sm font-semibold text-amber-600">IMMERSIVE JOURNEY</p>
-            <h2 className="text-4xl font-bold text-gray-900">Each phase unlocks the next level of clarity</h2>
-            <p className="text-lg text-gray-600">
-              Acorn orchestrates planning as a guided experience. Watch the canvas evolve from fuzzy briefs to crystal-clear delivery plans.
-            </p>
-            <div className="space-y-4 border-l-2 border-amber-300 pl-6">
-              {workflowStages.map((stage, idx) => (
-                <div key={stage.title} className="relative">
-                  <div className="absolute -left-[74px] top-1 text-xs font-semibold text-amber-500">{stage.badge}</div>
-                  <div className="flex items-start gap-4 animate-fadeIn" style={{ animationDelay: `${idx * 0.15}s` }}>
-                    <div className="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center text-amber-600">
-                      <stage.icon className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <p className="text-lg font-semibold text-gray-900">{stage.title}</p>
-                      <p className="text-gray-600 text-sm">{stage.description}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="relative">
-            <div className="bg-white/80 backdrop-blur rounded-3xl shadow-2xl border border-amber-100 p-8 space-y-6 animate-tilt">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">Live Requirements Canvas</p>
-                  <p className="text-3xl font-bold text-amber-700">54 nodes evolving</p>
-                </div>
-                <div className="px-4 py-2 rounded-full bg-amber-100 text-amber-700 text-sm font-semibold">Synced</div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                {stats.map((stat) => (
-                  <div key={stat.label} className="bg-amber-50 rounded-2xl p-4 border border-amber-100">
-                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                    <p className="text-xs uppercase tracking-wide text-gray-500">{stat.label}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="bg-gradient-to-r from-amber-500 to-orange-600 rounded-2xl p-5 text-white space-y-2 shadow-lg">
-                <p className="text-sm uppercase tracking-widest text-white/70">What-if Insight</p>
-                <p className="text-xl font-semibold">"Add mobile scope"</p>
-                <p className="text-white/90 text-sm">Impact: +2 sprints, +18% cost. Recommended to split backlog.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="relative z-10 px-6 py-20 max-w-7xl mx-auto">
-        <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-3xl p-12 shadow-2xl">
+      {/* Hero Section */}
+      <section className="pt-32 pb-20 bg-gradient-to-b from-gray-50 to-white">
+        <div className="max-w-7xl mx-auto px-6">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-6">
-              <h2 className="text-4xl lg:text-5xl font-bold text-white">Everything You Need to Succeed</h2>
-              <p className="text-xl text-amber-50">From initial concept to final delivery, Acorn provides all the tools you need.</p>
+            <div className="space-y-8">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-acorn-blue-50 text-acorn-blue-600 rounded-full text-sm font-medium">
+                <Sparkles className="w-4 h-4" />
+                AI-Powered Project Planning
+              </div>
 
-              <div className="grid gap-3">
-                {benefits.map((benefit, index) => (
-                  <div key={index} className="flex items-center gap-3 text-white">
-                    <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center">
-                      <Check className="w-4 h-4" />
-                    </div>
-                    <span>{benefit}</span>
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
+                Transform Ideas Into
+                <span className="text-acorn-orange-500 block">Production-Ready Plans</span>
+              </h1>
+
+              <p className="text-xl text-gray-600 leading-relaxed max-w-lg">
+                Acorn uses advanced AI to convert your project briefs into comprehensive 
+                requirements, UML diagrams, and stakeholder-ready documentation.
+              </p>
+
+              <div className="flex flex-wrap gap-4">
+                <Button 
+                  size="lg"
+                  onClick={() => navigate('/register')}
+                  className="bg-acorn-orange-500 hover:bg-acorn-orange-600 text-white font-bold px-8 py-4 text-lg"
+                >
+                  Start Building Free
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+                <Button 
+                  size="lg"
+                  variant="outline"
+                  onClick={() => navigate('/login')}
+                  className="border-2 border-acorn-blue-200 text-acorn-blue-600 px-8 py-4 text-lg font-medium"
+                >
+                  Sign In
+                </Button>
+              </div>
+
+              <div className="flex gap-8 pt-4">
+                {[
+                  { value: '10,000+', label: 'Projects' },
+                  { value: '500+', label: 'Teams' },
+                  { value: '70%', label: 'Time Saved' },
+                ].map((stat) => (
+                  <div key={stat.label}>
+                    <p className="text-2xl font-bold text-acorn-blue-600">{stat.value}</p>
+                    <p className="text-sm text-gray-500">{stat.label}</p>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="bg-white/10 rounded-2xl p-6 border border-amber-200/50">
-              <p className="text-amber-100 text-sm uppercase tracking-widest mb-4">HOW IT WORKS</p>
-              <div className="space-y-4">
-                {[
-                  { step: '01', title: 'Capture & Brief', text: 'Provide a short prompt or upload context files.' },
-                  { step: '02', title: 'AI Planning', text: 'Acorn orchestrates requirements, tasks, and diagrams.' },
-                  { step: '03', title: 'Human Review', text: 'Use Acorn Draft + diagram studio to refine outputs.' },
-                  { step: '04', title: 'Share & Ship', text: 'Export stakeholder-ready docs and traceability.' }
-                ].map((item) => (
-                  <div key={item.step} className="bg-white/5 rounded-xl px-4 py-3">
-                    <p className="text-amber-200 text-xs">{item.step}</p>
-                    <p className="text-white text-lg font-semibold">{item.title}</p>
-                    <p className="text-amber-50">{item.text}</p>
+            <div className="relative">
+              <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 overflow-hidden">
+                <div className="bg-gray-50 rounded-xl p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                    <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+                    <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                    <span className="ml-2 text-sm text-gray-500">requirements.srs</span>
                   </div>
-                ))}
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-32 h-16 bg-acorn-blue-100 border-2 border-acorn-blue-300 rounded-lg flex items-center justify-center text-sm font-medium text-acorn-blue-700">
+                        User
+                      </div>
+                      <ArrowRight className="w-6 h-6 text-gray-400" />
+                      <div className="w-32 h-16 bg-acorn-orange-100 border-2 border-acorn-orange-300 rounded-lg flex items-center justify-center text-sm font-medium text-acorn-orange-700">
+                        System
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-4 ml-8">
+                      <div className="w-28 h-12 bg-green-100 border-2 border-green-300 rounded-lg flex items-center justify-center text-xs font-medium text-green-700">
+                        Login
+                      </div>
+                      <div className="w-28 h-12 bg-green-100 border-2 border-green-300 rounded-lg flex items-center justify-center text-xs font-medium text-green-700">
+                        Dashboard
+                      </div>
+                      <div className="w-28 h-12 bg-green-100 border-2 border-green-300 rounded-lg flex items-center justify-center text-xs font-medium text-green-700">
+                        Reports
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      <div className="w-full h-12 bg-purple-100 border-2 border-purple-300 rounded-lg flex items-center justify-center text-sm font-medium text-purple-700">
+                        Database Layer
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="absolute -top-3 -right-3 bg-acorn-orange-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">
+                  AI Generated
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="relative z-10 px-6 py-20 max-w-7xl mx-auto">
-        <div className="grid lg:grid-cols-2 gap-10">
-          {testimonials.map((item, index) => (
-            <div
-              key={item.author}
-              className={`relative bg-gradient-to-br ${item.color} rounded-3xl p-8 text-white shadow-2xl overflow-hidden animate-fadeIn`}
-              style={{ animationDelay: `${index * 0.2}s` }}
-            >
-              <Quote className="w-10 h-10 mb-4 opacity-70" />
-              <p className="text-xl leading-relaxed mb-6">{item.quote}</p>
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-full bg-white/30 flex items-center justify-center">
-                  <Star className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="font-semibold">{item.author}</p>
-                  <p className="text-sm text-white/80">{item.role}</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* Features Section */}
+      <section id="features" className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-6">
+          <div 
+            id="features-header"
+            ref={(el) => (observerRefs.current['features-header'] = el)}
+            className={`text-center mb-16 transition-all duration-700 ${
+              isVisible['features-header'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+            }`}
+          >
+            <span className="inline-block px-4 py-2 bg-acorn-blue-50 text-acorn-blue-600 rounded-full text-sm font-medium mb-4">
+              Features
+            </span>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Everything You Need for Software Planning
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              From requirements to deployment, Acorn handles every phase of your project planning.
+            </p>
+          </div>
 
-      <section className="relative z-10 px-6 py-20 max-w-7xl mx-auto">
-        <p className="text-center text-sm font-semibold text-amber-600 mb-4">INTEGRATIONS & COMPANIONS</p>
-        <div className="overflow-hidden rounded-2xl border border-amber-100 bg-white/80">
-          <div className="flex items-center gap-12 py-8 animate-marquee">
-            {logoMarquee.map((logo) => (
-              <div key={logo} className="text-2xl font-semibold text-amber-500 tracking-wider">{logo}</div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {[
+              { icon: FileText, title: 'SRS Generation', desc: 'IEEE-compliant requirements documents generated automatically from your brief.' },
+              { icon: GitBranch, title: 'UML Diagrams', desc: 'Use case, class, sequence, and ERD diagrams created with AI precision.' },
+              { icon: BarChart3, title: 'Cost Analysis', desc: 'Detailed cost breakdowns, ROI projections, and budget planning.' },
+              { icon: Users, title: 'Team Collaboration', desc: 'Real-time collaboration with role-based access and version control.' },
+            ].map((feature, index) => (
+              <div
+                key={feature.title}
+                id={`feature-${index}`}
+                ref={(el) => (observerRefs.current[`feature-${index}`] = el)}
+                className={`bg-white rounded-xl p-6 border border-gray-100 hover:shadow-lg hover:border-acorn-blue-100 transition-all duration-300 ${
+                  isVisible[`feature-${index}`] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+                }`}
+                style={{ transitionDelay: `${index * 100}ms` }}
+              >
+                <div className="w-12 h-12 bg-acorn-blue-50 rounded-xl flex items-center justify-center mb-4">
+                  <feature.icon className="w-6 h-6 text-acorn-blue-600" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">{feature.title}</h3>
+                <p className="text-gray-600">{feature.desc}</p>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="relative z-10 px-6 pb-20 max-w-7xl mx-auto">
-        <div className="bg-white/80 backdrop-blur rounded-3xl shadow-2xl border border-amber-100 p-10 text-center space-y-6">
-          <p className="text-sm font-semibold text-amber-600">READY TO PLANT SOMETHING BIG?</p>
-          <h2 className="text-4xl font-bold text-gray-900">Launch your smartest project in minutes</h2>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-            Join product teams, consultancies, and innovation labs already using Acorn to deliver stakeholder-ready plans with confidence.
-          </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <Button
-              size="lg"
-              onClick={() => navigate('/register')}
-              className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold px-8 py-6 text-lg shadow-xl hover:shadow-2xl transition-all hover:scale-105"
-            >
-              Create an Account
-            </Button>
-            <Button
-              size="lg"
-              variant="ghost"
-              onClick={() => navigate('/projects')}
-              className="text-amber-700 hover:bg-amber-50 px-8 py-6 text-lg font-semibold"
-            >
-              Explore the Product
-            </Button>
+      {/* How It Works */}
+      <section id="how-it-works" className="py-24 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-6">
+          <div 
+            id="how-header"
+            ref={(el) => (observerRefs.current['how-header'] = el)}
+            className={`text-center mb-16 transition-all duration-700 ${
+              isVisible['how-header'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+            }`}
+          >
+            <span className="inline-block px-4 py-2 bg-acorn-orange-50 text-acorn-orange-600 rounded-full text-sm font-medium mb-4">
+              How It Works
+            </span>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Three Simple Steps
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              From idea to production-ready documentation in minutes.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              { step: 1, title: 'Input Your Brief', desc: 'Paste your project description or upload existing documents. Our AI understands natural language.', icon: FileText },
+              { step: 2, title: 'AI Generation', desc: 'Watch as our multi-agent AI analyzes, extracts entities, and generates comprehensive documentation.', icon: Cpu },
+              { step: 3, title: 'Review & Export', desc: 'Edit with inline tools, add explanations, and export to PDF, DOCX, or integrate with your tools.', icon: CheckCircle },
+            ].map((item, index) => (
+              <div
+                key={item.step}
+                id={`step-${index}`}
+                ref={(el) => (observerRefs.current[`step-${index}`] = el)}
+                className={`bg-white rounded-xl p-8 border border-gray-100 relative transition-all duration-700 ${
+                  isVisible[`step-${index}`] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+                }`}
+                style={{ transitionDelay: `${index * 150}ms` }}
+              >
+                <div className="absolute -top-4 left-8 w-8 h-8 bg-acorn-orange-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                  {item.step}
+                </div>
+                <div className="pt-4">
+                  <div className="w-12 h-12 bg-acorn-blue-50 rounded-xl flex items-center justify-center mb-4">
+                    <item.icon className="w-6 h-6 text-acorn-blue-600" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">{item.title}</h3>
+                  <p className="text-gray-600">{item.desc}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      <style>
-        {`
-          @keyframes orbFloat {
-            0% { transform: translate3d(0, 0, 0) scale(1); }
-            50% { transform: translate3d(0, -30px, 0) scale(1.05); }
-            100% { transform: translate3d(0, 0, 0) scale(1); }
-          }
-          .animate-orb {
-            animation: orbFloat 12s ease-in-out infinite;
-          }
-          @keyframes gradientMove {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-          }
-          .animate-gradient {
-            background-size: 200% 200%;
-            animation: gradientMove 6s ease infinite;
-          }
-          @keyframes pulseSlow {
-            0%, 100% { opacity: 0.8; }
-            50% { opacity: 1; }
-          }
-          .animate-pulse-slow {
-            animation: pulseSlow 4s ease-in-out infinite;
-          }
-          @keyframes slideInLeft {
-            from { opacity: 0; transform: translateX(-40px); }
-            to { opacity: 1; transform: translateX(0); }
-          }
-          .animate-slideInLeft { animation: slideInLeft 0.8s ease-out both; }
-          @keyframes slideInRight {
-            from { opacity: 0; transform: translateX(40px); }
-            to { opacity: 1; transform: translateX(0); }
-          }
-          .animate-slideInRight { animation: slideInRight 0.8s ease-out both; }
-          @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-          .animate-fadeIn { animation: fadeIn 0.8s ease-out both; }
-          @keyframes floatDelay {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-12px); }
-          }
-          .animate-float-delay { animation: floatDelay 5s ease-in-out infinite; }
-          @keyframes tilt {
-            0%, 100% { transform: rotate(-1deg); }
-            50% { transform: rotate(1deg); }
-          }
-          .animate-tilt { animation: tilt 10s ease-in-out infinite; }
-          @keyframes marquee {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
-          }
-          .animate-marquee {
-            width: max-content;
-            animation: marquee 15s linear infinite;
-          }
-        `}
-      </style>
+      {/* Testimonials */}
+      <section id="testimonials" className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-6">
+          <div 
+            id="testimonials-header"
+            ref={(el) => (observerRefs.current['testimonials-header'] = el)}
+            className={`text-center mb-16 transition-all duration-700 ${
+              isVisible['testimonials-header'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+            }`}
+          >
+            <span className="inline-block px-4 py-2 bg-acorn-blue-50 text-acorn-blue-600 rounded-full text-sm font-medium mb-4">
+              Testimonials
+            </span>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
+              Loved by Teams Worldwide
+            </h2>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              { quote: 'Acorn reduced our requirements gathering time by 70%. The AI suggestions are remarkably accurate.', author: 'Sarah Chen', role: 'VP of Engineering' },
+              { quote: 'Finally, a tool that understands software planning. Our stakeholders love the professional documentation.', author: 'Marcus Johnson', role: 'Product Director' },
+              { quote: 'The UML diagram generation alone is worth it. What used to take days now takes minutes.', author: 'Emily Rodriguez', role: 'Tech Lead' },
+            ].map((testimonial, index) => (
+              <div
+                key={testimonial.author}
+                id={`testimonial-${index}`}
+                ref={(el) => (observerRefs.current[`testimonial-${index}`] = el)}
+                className={`bg-white rounded-xl p-8 border border-gray-100 hover:shadow-lg transition-all duration-500 ${
+                  isVisible[`testimonial-${index}`] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+                }`}
+                style={{ transitionDelay: `${index * 100}ms` }}
+              >
+                <div className="flex gap-1 mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-5 h-5 fill-acorn-orange-400 text-acorn-orange-400" />
+                  ))}
+                </div>
+                <blockquote className="text-gray-700 mb-6 leading-relaxed">
+                  "{testimonial.quote}"
+                </blockquote>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-acorn-blue-100 rounded-full flex items-center justify-center text-acorn-blue-600 font-bold">
+                    {testimonial.author.charAt(0)}
+                  </div>
+                  <div>
+                    <p className="font-bold text-gray-900">{testimonial.author}</p>
+                    <p className="text-sm text-gray-500">{testimonial.role}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-24 bg-acorn-blue-600">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+            Ready to Transform Your Project Planning?
+          </h2>
+          <p className="text-xl text-acorn-blue-100 mb-8 max-w-2xl mx-auto">
+            Join thousands of teams already using Acorn to build better software, faster.
+          </p>
+          <Button 
+            size="lg"
+            onClick={() => navigate('/register')}
+            className="bg-acorn-orange-500 hover:bg-acorn-orange-600 text-white font-bold px-10 py-4 text-lg"
+          >
+            Start Building Free Today
+            <ArrowRight className="ml-2 w-5 h-5" />
+          </Button>
+          <p className="text-acorn-blue-200 mt-4 text-sm">No credit card required</p>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-gray-900 text-white py-16 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-4 gap-12 mb-12">
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <AcornLogo size={32} />
+                <span className="font-bold text-lg">Acorn</span>
+              </div>
+              <p className="text-gray-400">
+                AI-powered project planning for modern teams.
+              </p>
+            </div>
+            {[
+              { title: 'Product', links: ['Features', 'Pricing', 'Integrations'] },
+              { title: 'Company', links: ['About', 'Blog', 'Careers'] },
+              { title: 'Legal', links: ['Privacy', 'Terms', 'Security'] },
+            ].map((section) => (
+              <div key={section.title}>
+                <h4 className="font-bold mb-4">{section.title}</h4>
+                <ul className="space-y-2">
+                  {section.links.map((link) => (
+                    <li key={link}>
+                      <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                        {link}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+          <div className="border-t border-gray-800 pt-8 text-center text-gray-500">
+            <p>© 2024 Acorn. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
 
 export default LandingPage;
+export { LandingPage };

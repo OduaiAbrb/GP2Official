@@ -75,7 +75,10 @@ class _SupabaseRefreshTokenRepository:
                 WHERE token_hash = $1 AND revoked = false AND expires_at > $2
             ''', token_hash, datetime.utcnow())
         if row:
-            return RefreshToken(**dict(row))
+            data = dict(row)
+            data['id'] = str(data['id'])
+            data['user_id'] = str(data['user_id'])
+            return RefreshToken(**data)
         return None
 
     async def revoke_token(self, token_id: str) -> None:

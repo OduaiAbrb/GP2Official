@@ -62,8 +62,6 @@ Execute these commands in PowerShell:
 # Navigate to project
 cd C:\Acron\GP2Official
 
-# Set your OpenAI API key
-$env:OPENAI_API_KEY="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"
 
 # View the deployment guide
 type QUICK_DEPLOY.md
@@ -74,8 +72,5 @@ python scripts/test-your-supabase.py
 
 ## 📱 Need Your Supabase Credentials
 
-You still need to get from Supabase dashboard:
-1. **Database Password**: Settings → Database
-2. **Service Role Key**: Settings → API → service_role key
 
 Once you have these, you're ready to deploy! 🎉

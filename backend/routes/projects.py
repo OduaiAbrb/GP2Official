@@ -145,6 +145,7 @@ async def resolve_workspace_template(
     return await project_service.resolve_workspace_template(payload)
 
 @router.get("/{project_id}", response_model=ProjectResponse)
+@router.get("/{project_id}/", response_model=ProjectResponse, include_in_schema=False)
 async def get_project(
     project_id: str,
     current_user: User = Depends(get_current_user)

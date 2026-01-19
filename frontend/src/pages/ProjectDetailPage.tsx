@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/Button';
+import { ExportButtons } from '@/components/ExportButtons';
 import { api } from '@/lib/api';
 import type { Artifact, Project, Requirement, Task } from '@/types';
 import { phaseConfigs } from '@/constants/phases';

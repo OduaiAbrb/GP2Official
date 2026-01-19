@@ -32,6 +32,11 @@ class Settings(BaseSettings):
     openai_api_key: Optional[str] = None
     huggingface_api_key: Optional[str] = None
     gemini_api_key: Optional[str] = None
+    claude_api_key: Optional[str] = None
+    ollama_base_url: str = "http://localhost:11434"
+    
+    # Logo and Branding
+    logo_path: str = "../frontend/public/logo.png"
     
     # PlantUML / external services
     plantuml_api_host: Optional[str] = None

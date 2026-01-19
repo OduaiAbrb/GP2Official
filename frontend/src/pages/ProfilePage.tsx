@@ -1,64 +1,106 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Layout } from '@/components/Layout';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Badge } from '@/components/ui/Badge';
 import { useAuthStore } from '@/store/authStore';
 import { api } from '@/lib/api';
-import type { User, WorkspaceInvite, SocialLink } from '@/types';
-import { ROLE_OPTIONS } from '@/constants/roles';
-import { Loader2, Link as LinkIcon, Mail, MapPin, Briefcase, Shield, Send } from 'lucide-react';
+import type { User } from '@/types';
+import { 
+  User as UserIcon, 
+  Mail, 
+  Shield, 
+  Bell, 
+  Key,
+  Save,
+  Loader2,
+  CheckCircle,
+  ChevronDown,
+  ChevronUp,
+  CreditCard,
+  Activity,
+  Sparkles,
+  Camera,
+  Zap,
+  Star
+} from 'lucide-react';
 
-const socialFields = [
-  { key: 'website', placeholder: 'Personal website' },
-  { key: 'linkedin', placeholder: 'LinkedIn URL' },
-  { key: 'github', placeholder: 'GitHub URL' },
-  { key: 'twitter', placeholder: 'Twitter / X URL' },
-];
+interface CardSectionProps {
+  title: string;
+  icon: React.ElementType;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+  delay?: number;
+  isVisible?: boolean;
+}
 
-export const ProfilePage: React.FC = () => {
-  const { user, checkAuth } = useAuthStore();
+const CardSection: React.FC<CardSectionProps> = ({ title, icon: Icon, children, defaultOpen = true, delay = 0, isVisible = true }) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
+  return (
+    <div 
+      className={`bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 ${
+        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+      }`}
+      style={{ transitionDelay: `${delay}ms` }}
+    >
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between p-6 hover:bg-gray-50 transition-colors group"
+      >
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-gradient-to-br from-acorn-blue-100 to-acorn-orange-100 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+            <Icon className="w-6 h-6 text-acorn-blue-600" />
+          </div>
+          <h3 className="font-bold text-lg text-gray-900">{title}</h3>
+        </div>
+        <div className={`w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center transition-all duration-300 ${isOpen ? 'rotate-180 bg-acorn-blue-100' : ''}`}>
+          <ChevronDown className={`w-5 h-5 ${isOpen ? 'text-acorn-blue-600' : 'text-gray-400'}`} />
+        </div>
+      </button>
+      <div className={`overflow-hidden transition-all duration-500 ${isOpen ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+        <div className="px-6 pb-6 border-t border-gray-100">{children}</div>
+      </div>
+    </div>
+  );
+};
+
+const ProfilePage: React.FC = () => {
+  const { user } = useAuthStore();
   const [profile, setProfile] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [invitesLoading, setInvitesLoading] = useState(false);
-  const [invites, setInvites] = useState<WorkspaceInvite[]>([]);
-  const [inviteForm, setInviteForm] = useState({ email: '', role: 'program_manager', message: '' });
-  const [toast, setToast] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [isVisible, setIsVisible] = useState<Record<string, boolean>>({});
+  const observerRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const [form, setForm] = useState({
     full_name: '',
     job_title: '',
     bio: '',
-    location: '',
-    timezone: '',
-    pronouns: '',
-    avatar_url: '',
-    banner_url: '',
-    availability: '',
     contact_email: '',
-    phone: '',
-    skills: '',
-    interests: '',
-  });
-  const [social, setSocial] = useState<Record<string, string>>({
-    website: '',
-    linkedin: '',
-    github: '',
-    twitter: '',
   });
 
-  const userAuthority = user?.role_authority || 0;
-  const canInvite = userAuthority >= 4;
+  useEffect(() => {
+    loadProfile();
+  }, []);
 
-  const heroStyle = useMemo(
-    () =>
-      form.banner_url
-        ? { backgroundImage: `url(${form.banner_url})` }
-        : { backgroundImage: 'linear-gradient(135deg, #c084fc, #6366f1)' },
-    [form.banner_url]
-  );
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible((prev) => ({ ...prev, [entry.target.id]: true }));
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    Object.values(observerRefs.current).forEach((ref) => {
+      if (ref) observer.observe(ref);
+    });
+
+    return () => observer.disconnect();
+  }, [loading]);
 
   const loadProfile = async () => {
     try {
@@ -69,120 +111,41 @@ export const ProfilePage: React.FC = () => {
         full_name: data.full_name || '',
         job_title: data.job_title || '',
         bio: data.bio || '',
-        location: data.location || '',
-        timezone: data.timezone || '',
-        pronouns: data.pronouns || '',
-        avatar_url: data.avatar_url || '',
-        banner_url: data.banner_url || '',
-        availability: data.availability || '',
-        contact_email: data.contact_email || data.email,
-        phone: data.phone || '',
-        skills: (data.skills || []).join(', '),
-        interests: (data.interests || []).join(', '),
+        contact_email: data.contact_email || data.email || '',
       });
-      const links = data.social_links || [];
-      const nextSocial: Record<string, string> = {
-        website: '',
-        linkedin: '',
-        github: '',
-        twitter: '',
-      };
-      links.forEach((link) => {
-        const key = link.label.toLowerCase();
-        nextSocial[key] = link.url;
-      });
-      setSocial(nextSocial);
+    } catch (error) {
+      console.error('Failed to load profile:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const loadInvites = async () => {
-    if (!canInvite) return;
-    setInvitesLoading(true);
-    try {
-      const data = await api.getWorkspaceInvites();
-      setInvites(data);
-    } catch (err) {
-      console.error('Failed to load invites', err);
-    } finally {
-      setInvitesLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadProfile();
-    loadInvites();
-  }, []);
-
   const handleSave = async () => {
-    setSaving(true);
-    setToast(null);
     try {
-      const payload = {
-        ...form,
-        skills: form.skills
-          .split(',')
-          .map((skill) => skill.trim())
-          .filter(Boolean),
-        interests: form.interests
-          .split(',')
-          .map((interest) => interest.trim())
-          .filter(Boolean),
-        social_links: socialFields
-          .map(({ key }) => (social[key] ? { label: key, url: social[key] } : null))
-          .filter((link): link is SocialLink => Boolean(link)),
-      };
-      const updated = await api.updateProfile(payload);
-      setProfile(updated);
-      await checkAuth();
-      setToast('Profile updated successfully.');
-    } catch (err) {
-      console.error('Failed to update profile', err);
-      setToast('Unable to save changes right now.');
+      setSaving(true);
+      await api.updateProfile(form);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (error) {
+      console.error('Failed to save profile:', error);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleInvite = async () => {
-    if (!inviteForm.email.trim()) return;
-    setInvitesLoading(true);
-    setToast(null);
-    try {
-      await api.createWorkspaceInvite({
-        email: inviteForm.email.trim(),
-        role: inviteForm.role,
-        message: inviteForm.message.trim() || undefined,
-      });
-      setInviteForm({ email: '', role: inviteForm.role, message: '' });
-      await loadInvites();
-      setToast('Invite sent successfully.');
-    } catch (err: any) {
-      console.error('Invite failed', err);
-      setToast(err.response?.data?.detail || 'Unable to send invite.');
-    } finally {
-      setInvitesLoading(false);
-    }
-  };
-
-  const handleRevokeInvite = async (inviteId: string) => {
-    setInvitesLoading(true);
-    try {
-      await api.deleteWorkspaceInvite(inviteId);
-      await loadInvites();
-    } catch (err) {
-      console.error('Failed to revoke invite', err);
-    } finally {
-      setInvitesLoading(false);
-    }
-  };
-
-  if (loading && !profile) {
+  if (loading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center space-y-6">
+            <div className="relative w-24 h-24 mx-auto">
+              <div className="absolute inset-0 bg-gradient-to-r from-acorn-blue-500 to-acorn-orange-500 rounded-full animate-ping opacity-20" />
+              <div className="absolute inset-0 bg-gradient-to-r from-acorn-blue-500 to-acorn-orange-500 rounded-full animate-pulse flex items-center justify-center">
+                <UserIcon className="w-12 h-12 text-white" />
+              </div>
+            </div>
+            <p className="text-xl text-gray-600 animate-pulse">Loading your profile...</p>
+          </div>
         </div>
       </Layout>
     );
@@ -190,260 +153,270 @@ export const ProfilePage: React.FC = () => {
 
   return (
     <Layout>
-      <div className="max-w-6xl mx-auto space-y-6">
-        <div className="rounded-3xl border border-gray-200 bg-white overflow-hidden shadow-sm">
-          <div className="h-40 sm:h-56 w-full bg-cover bg-center" style={heroStyle} />
-          <div className="px-6 sm:px-8 pb-6 -mt-16">
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="w-28 h-28 rounded-3xl border-4 border-white shadow-lg overflow-hidden bg-white">
-                {form.avatar_url ? (
-                  <img src={form.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-500 text-white text-3xl font-semibold">
-                    {profile?.full_name?.charAt(0) || profile?.email.charAt(0)}
-                  </div>
-                )}
+      <div className="max-w-4xl mx-auto space-y-8 relative">
+        {/* Animated Background */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute w-96 h-96 rounded-full bg-acorn-blue-100/20 blur-3xl -top-48 -right-48 animate-float" />
+          <div className="absolute w-72 h-72 rounded-full bg-acorn-orange-100/20 blur-3xl -bottom-36 -left-36 animate-float" style={{ animationDelay: '3s' }} />
+          <div className="absolute w-64 h-64 rounded-full bg-purple-100/20 blur-3xl top-1/2 right-1/4 animate-float" style={{ animationDelay: '6s' }} />
+        </div>
+
+        {/* Header */}
+        <div 
+          id="header"
+          ref={(el) => (observerRefs.current['header'] = el)}
+          className={`flex items-center justify-between transition-all duration-700 ${
+            isVisible['header'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+          }`}
+        >
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-acorn-blue-600 to-acorn-orange-500 bg-clip-text text-transparent">
+              Profile Settings
+            </h1>
+            <p className="text-gray-500 mt-1">Manage your account and preferences</p>
+          </div>
+          <Button
+            onClick={handleSave}
+            disabled={saving}
+            className={`font-bold shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 ${
+              saved 
+                ? 'bg-green-500 hover:bg-green-600' 
+                : 'bg-gradient-to-r from-acorn-orange-500 to-acorn-orange-600 hover:from-acorn-orange-600 hover:to-acorn-orange-700'
+            } text-white`}
+          >
+            {saving ? (
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+            ) : saved ? (
+              <CheckCircle className="w-5 h-5 mr-2" />
+            ) : (
+              <Save className="w-5 h-5 mr-2" />
+            )}
+            {saved ? 'Saved!' : 'Save Changes'}
+          </Button>
+        </div>
+
+        {/* Profile Card */}
+        <div 
+          id="profile-card"
+          ref={(el) => (observerRefs.current['profile-card'] = el)}
+          className={`bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-xl transition-all duration-700 ${
+            isVisible['profile-card'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+          }`}
+          style={{ transitionDelay: '100ms' }}
+        >
+          {/* Banner */}
+          <div className="h-32 bg-gradient-to-r from-acorn-blue-500 via-acorn-blue-600 to-acorn-orange-500 relative overflow-hidden">
+            <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1920&q=80')] bg-cover bg-center opacity-20" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              {[...Array(5)].map((_, i) => (
+                <Star 
+                  key={i} 
+                  className="w-6 h-6 text-white/20 absolute animate-float" 
+                  style={{ 
+                    left: `${20 + i * 15}%`, 
+                    top: `${30 + (i % 2) * 20}%`,
+                    animationDelay: `${i * 0.5}s` 
+                  }} 
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Profile Info */}
+          <div className="px-8 pb-8 -mt-16 relative">
+            <div className="flex flex-col sm:flex-row items-center sm:items-end gap-6">
+              {/* Avatar */}
+              <div className="relative group">
+                <div className="w-32 h-32 bg-gradient-to-br from-acorn-blue-400 to-acorn-orange-400 rounded-full flex items-center justify-center text-4xl font-bold text-white ring-4 ring-white shadow-xl group-hover:scale-105 transition-transform duration-300">
+                  {(profile?.full_name || profile?.email || 'U').charAt(0).toUpperCase()}
+                </div>
+                <button className="absolute bottom-2 right-2 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors group-hover:scale-110">
+                  <Camera className="w-5 h-5 text-gray-600" />
+                </button>
               </div>
-              <div className="flex-1 min-w-[200px]">
-                <h1 className="text-2xl font-semibold text-gray-900">{form.full_name || profile?.email}</h1>
-                <p className="text-sm text-gray-500 flex items-center gap-2 flex-wrap">
-                  {form.job_title && (
-                    <span className="inline-flex items-center gap-1">
-                      <Briefcase className="h-3.5 w-3.5" /> {form.job_title}
-                    </span>
-                  )}
-                  {profile?.organization && (
-                    <span className="inline-flex items-center gap-1">
-                      <Shield className="h-3.5 w-3.5" /> {profile.organization}
-                    </span>
-                  )}
-                  {form.location && (
-                    <span className="inline-flex items-center gap-1">
-                      <MapPin className="h-3.5 w-3.5" /> {form.location}
-                    </span>
-                  )}
-                </p>
-                {form.bio && <p className="mt-2 text-sm text-gray-600 max-w-2xl">{form.bio}</p>}
-              </div>
-              <div className="flex flex-col gap-2">
-                {form.skills && (
-                  <div className="flex flex-wrap gap-2">
-                    {form.skills
-                      .split(',')
-                      .map((skill) => skill.trim())
-                      .filter(Boolean)
-                      .slice(0, 3)
-                      .map((skill) => (
-                        <Badge key={skill} variant="secondary">
-                          {skill}
-                        </Badge>
-                      ))}
-                  </div>
-                )}
+
+              {/* Info */}
+              <div className="flex-1 text-center sm:text-left">
+                <h2 className="text-2xl font-bold text-gray-900">{profile?.full_name || 'User'}</h2>
+                <p className="text-gray-500">{profile?.email}</p>
+                <div className="flex flex-wrap justify-center sm:justify-start gap-3 mt-3">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-acorn-blue-100 text-acorn-blue-700 rounded-full text-sm font-medium">
+                    <Shield className="w-4 h-4" />
+                    {user?.role_label || 'Member'}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-acorn-orange-100 text-acorn-orange-700 rounded-full text-sm font-medium">
+                    <Zap className="w-4 h-4" />
+                    Pro Plan
+                  </span>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {toast && (
-          <div className="rounded-xl border border-indigo-100 bg-indigo-50 text-indigo-800 px-4 py-2 text-sm">
-            {toast}
-          </div>
-        )}
-
-        <div className="grid lg:grid-cols-[2fr,1fr] gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Profile Details</CardTitle>
-              <CardDescription>Tell teammates how you prefer to collaborate.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs text-gray-500 uppercase">Full name</label>
-                  <Input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
+        {/* Settings Sections */}
+        <div 
+          id="sections"
+          ref={(el) => (observerRefs.current['sections'] = el)}
+          className="space-y-4"
+        >
+          <CardSection title="Personal Information" icon={UserIcon} isVisible={isVisible['sections']} delay={200}>
+            <div className="pt-6 space-y-5">
+              <div className="grid md:grid-cols-2 gap-5">
+                <div className="group">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                  <input
+                    type="text"
+                    value={form.full_name}
+                    onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-acorn-blue-500 focus:ring-4 focus:ring-acorn-blue-100 transition-all"
+                    placeholder="Your full name"
+                  />
                 </div>
-                <div>
-                  <label className="text-xs text-gray-500 uppercase">Job title</label>
-                  <Input value={form.job_title} onChange={(e) => setForm({ ...form, job_title: e.target.value })} />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 uppercase">Location</label>
-                  <Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 uppercase">Time zone</label>
-                  <Input value={form.timezone} onChange={(e) => setForm({ ...form, timezone: e.target.value })} />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 uppercase">Pronouns</label>
-                  <Input value={form.pronouns} onChange={(e) => setForm({ ...form, pronouns: e.target.value })} />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 uppercase">Availability</label>
-                  <Input value={form.availability} onChange={(e) => setForm({ ...form, availability: e.target.value })} />
+                <div className="group">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Job Title</label>
+                  <input
+                    type="text"
+                    value={form.job_title}
+                    onChange={(e) => setForm({ ...form, job_title: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-acorn-blue-500 focus:ring-4 focus:ring-acorn-blue-100 transition-all"
+                    placeholder="e.g. Product Manager"
+                  />
                 </div>
               </div>
               <div>
-                <label className="text-xs text-gray-500 uppercase">Bio</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
                 <textarea
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
-                  rows={4}
                   value={form.bio}
                   onChange={(e) => setForm({ ...form, bio: e.target.value })}
+                  rows={3}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-acorn-blue-500 focus:ring-4 focus:ring-acorn-blue-100 transition-all resize-none"
+                  placeholder="Tell us about yourself..."
                 />
               </div>
-              <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Contact Email</label>
+                <input
+                  type="email"
+                  value={form.contact_email}
+                  onChange={(e) => setForm({ ...form, contact_email: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-acorn-blue-500 focus:ring-4 focus:ring-acorn-blue-100 transition-all"
+                  placeholder="your@email.com"
+                />
+              </div>
+            </div>
+          </CardSection>
+
+          <CardSection title="Security & Password" icon={Key} defaultOpen={false} isVisible={isVisible['sections']} delay={300}>
+            <div className="pt-6 space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
+                <input
+                  type="password"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-acorn-blue-500 focus:ring-4 focus:ring-acorn-blue-100 transition-all"
+                  placeholder="Enter current password"
+                />
+              </div>
+              <div className="grid md:grid-cols-2 gap-5">
                 <div>
-                  <label className="text-xs text-gray-500 uppercase">Avatar URL</label>
-                  <Input value={form.avatar_url} onChange={(e) => setForm({ ...form, avatar_url: e.target.value })} />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 uppercase">Banner URL</label>
-                  <Input value={form.banner_url} onChange={(e) => setForm({ ...form, banner_url: e.target.value })} />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 uppercase">Primary contact email</label>
-                  <Input
-                    value={form.contact_email}
-                    onChange={(e) => setForm({ ...form, contact_email: e.target.value })}
+                  <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+                  <input
+                    type="password"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-acorn-blue-500 focus:ring-4 focus:ring-acorn-blue-100 transition-all"
+                    placeholder="Enter new password"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 uppercase">Phone</label>
-                  <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+                  <input
+                    type="password"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-acorn-blue-500 focus:ring-4 focus:ring-acorn-blue-100 transition-all"
+                    placeholder="Confirm new password"
+                  />
                 </div>
               </div>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs text-gray-500 uppercase">Skills (comma separated)</label>
-                  <Input value={form.skills} onChange={(e) => setForm({ ...form, skills: e.target.value })} />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 uppercase">Interests (comma separated)</label>
-                  <Input value={form.interests} onChange={(e) => setForm({ ...form, interests: e.target.value })} />
-                </div>
-              </div>
-              <div className="grid md:grid-cols-2 gap-4">
-                {socialFields.map(({ key, placeholder }) => (
-                  <div key={key}>
-                    <label className="text-xs text-gray-500 uppercase">{placeholder}</label>
-                    <Input value={social[key]} onChange={(e) => setSocial({ ...social, [key]: e.target.value })} />
+              <Button variant="outline" className="border-2 border-acorn-blue-200 text-acorn-blue-600 hover:bg-acorn-blue-50">
+                Update Password
+              </Button>
+            </div>
+          </CardSection>
+
+          <CardSection title="Notification Preferences" icon={Bell} defaultOpen={false} isVisible={isVisible['sections']} delay={400}>
+            <div className="pt-6 space-y-4">
+              {[
+                { label: 'Email notifications for project updates', checked: true },
+                { label: 'Email notifications for AI generation complete', checked: true },
+                { label: 'Weekly digest of project activity', checked: false },
+                { label: 'Marketing and product updates', checked: false },
+              ].map((item, index) => (
+                <label key={index} className="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer group">
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      defaultChecked={item.checked}
+                      className="w-5 h-5 text-acorn-blue-600 border-2 border-gray-300 rounded focus:ring-acorn-blue-500 transition-all"
+                    />
                   </div>
-                ))}
-              </div>
-              <div className="flex justify-end">
-                <Button onClick={handleSave} disabled={saving}>
-                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save changes'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+                  <span className="text-gray-700 group-hover:text-gray-900 transition-colors">{item.label}</span>
+                </label>
+              ))}
+            </div>
+          </CardSection>
 
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Workspace invites</CardTitle>
-                <CardDescription>Invite teammates by email to join {profile?.organization || 'your workspace'}.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {canInvite ? (
-                  <>
-                    <Input
-                      placeholder="Email"
-                      value={inviteForm.email}
-                      onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
-                    />
-                    <select
-                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm"
-                      value={inviteForm.role}
-                      onChange={(e) => setInviteForm({ ...inviteForm, role: e.target.value })}
-                    >
-                      {ROLE_OPTIONS.map((role) => (
-                        <option key={role.id} value={role.id}>
-                          {role.label}
-                        </option>
-                      ))}
-                    </select>
-                    <textarea
-                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm"
-                      rows={2}
-                      placeholder="Message (optional)"
-                      value={inviteForm.message}
-                      onChange={(e) => setInviteForm({ ...inviteForm, message: e.target.value })}
-                    />
-                    <Button onClick={handleInvite} disabled={!inviteForm.email.trim() || invitesLoading}>
-                      {invitesLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Send className="h-4 w-4 mr-2" />Send invite</>}
-                    </Button>
-                  </>
-                ) : (
-                  <p className="text-sm text-gray-500 flex items-center gap-2">
-                    <Shield className="h-4 w-4" />
-                    Only Program Managers or admins can send workspace invites.
-                  </p>
-                )}
-                <div className="mt-4 space-y-3">
-                  {invitesLoading && canInvite && <Loader2 className="h-4 w-4 animate-spin text-indigo-600" />}
-                  {!invitesLoading && invites.length === 0 && canInvite && (
-                    <p className="text-sm text-gray-500">No pending invites.</p>
-                  )}
-                  {invites.map((invite) => (
-                    <div
-                      key={invite.id}
-                      className="border border-gray-100 rounded-xl px-4 py-3 flex items-center justify-between gap-3"
-                    >
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{invite.email}</p>
-                        <p className="text-xs text-gray-500 capitalize">{invite.role.replace('_', ' ')} • {invite.status}</p>
-                      </div>
-                      {invite.status === 'pending' && canInvite && (
-                        <Button variant="ghost" size="sm" onClick={() => handleRevokeInvite(invite.id)}>
-                          Remove
-                        </Button>
-                      )}
+          <CardSection title="Subscription & Billing" icon={CreditCard} defaultOpen={false} isVisible={isVisible['sections']} delay={500}>
+            <div className="pt-6">
+              <div className="bg-gradient-to-r from-acorn-blue-500 to-acorn-orange-500 rounded-2xl p-6 text-white relative overflow-hidden">
+                <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1920&q=80')] bg-cover bg-center opacity-10" />
+                <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Sparkles className="w-5 h-5" />
+                      <span className="font-bold text-lg">Pro Plan</span>
                     </div>
-                  ))}
+                    <p className="text-white/80">Unlimited projects, advanced AI features, priority support</p>
+                  </div>
+                  <Button className="bg-white text-acorn-blue-600 hover:bg-gray-100 font-bold shadow-lg">
+                    Manage Plan
+                  </Button>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
+          </CardSection>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Contact & social</CardTitle>
-                <CardDescription>Ways teammates can reach out.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm text-gray-600">
-                {form.contact_email && (
-                  <p className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-indigo-500" /> {form.contact_email}
-                  </p>
-                )}
-                {form.phone && (
-                  <p className="flex items-center gap-2">
-                    <span className="text-indigo-500 font-semibold">☎</span> {form.phone}
-                  </p>
-                )}
-                {socialFields
-                  .filter(({ key }) => social[key])
-                  .map(({ key, placeholder }) => (
-                    <a
-                      key={key}
-                      href={social[key]}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700"
-                    >
-                      <LinkIcon className="h-4 w-4" />
-                      {placeholder}
-                    </a>
-                  ))}
-              </CardContent>
-            </Card>
-          </div>
+          <CardSection title="Recent Activity" icon={Activity} defaultOpen={false} isVisible={isVisible['sections']} delay={600}>
+            <div className="pt-6 space-y-3">
+              {[
+                { action: 'Created project "E-commerce Platform"', time: '2 hours ago', icon: '🚀' },
+                { action: 'Generated SRS document', time: '5 hours ago', icon: '📄' },
+                { action: 'Updated profile settings', time: '1 day ago', icon: '⚙️' },
+                { action: 'Logged in from new device', time: '3 days ago', icon: '🔐' },
+              ].map((item, index) => (
+                <div 
+                  key={index} 
+                  className="flex items-center justify-between p-4 rounded-xl hover:bg-gray-50 transition-colors group"
+                >
+                  <div className="flex items-center gap-4">
+                    <span className="text-2xl">{item.icon}</span>
+                    <span className="text-gray-700 group-hover:text-gray-900 transition-colors">{item.action}</span>
+                  </div>
+                  <span className="text-sm text-gray-500">{item.time}</span>
+                </div>
+              ))}
+            </div>
+          </CardSection>
         </div>
       </div>
+
+      <style>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0) rotate(0deg); }
+          50% { transform: translateY(-20px) rotate(3deg); }
+        }
+        .animate-float { animation: float 8s ease-in-out infinite; }
+      `}</style>
     </Layout>
   );
 };
 
 export default ProfilePage;
+export { ProfilePage };
