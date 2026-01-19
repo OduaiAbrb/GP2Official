@@ -19,7 +19,7 @@ from models.user import User
 from services.project_service import ProjectService
 from routes.auth import get_current_user
 from models.generation import GenerationRequest, GenerationResponse
-from models.requirement import RequirementResponse
+from models.requirement import RequirementResponse, RequirementCreate
 from models.task import TaskResponse, TaskCreate
 from models.artifact import ArtifactResponse, ArtifactUpdateRequest
 from models.ai_run import AiRunResponse
