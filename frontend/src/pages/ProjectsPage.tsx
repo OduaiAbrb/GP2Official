@@ -69,39 +69,34 @@ export const ProjectsPage: React.FC = () => {
 
   return (
     <Layout>
-      <div className="space-y-8 animate-fadeIn">
-        {/* Header with floating animation */}
-        <div className="relative">
-          <div className="absolute -top-20 -left-20 w-40 h-40 bg-amber-200/30 rounded-full blur-3xl animate-float"></div>
-          <div className="absolute -top-10 right-0 w-32 h-32 bg-orange-200/30 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }}></div>
-          
-          <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-4 animate-slideDown">
-            <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-700 via-orange-600 to-amber-700 bg-clip-text text-transparent mb-2">
-                Your Projects
-              </h1>
-              <p className="text-gray-600 flex items-center gap-2">
-                <FolderOpen className="w-5 h-5" />
-                {projects.length} {projects.length === 1 ? 'project' : 'projects'} growing
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <Button
-                onClick={() => navigate('/projects/new/wizard')}
-                variant="outline"
-                className="border-amber-300 text-amber-700 hover:bg-amber-50"
-              >
-                <Sparkles className="w-4 h-4 mr-2" />
-                Guided Builder
-              </Button>
-              <Button
-                onClick={() => navigate('/projects/new')}
-                className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-105 group"
-              >
-                <Plus className="w-5 h-5 mr-2 group-hover:rotate-90 transition-transform duration-300" />
-                Plant New Project
-              </Button>
-            </div>
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 mb-1">
+              Projects
+            </h1>
+            <p className="text-slate-500 flex items-center gap-2">
+              <FolderOpen className="w-4 h-4" />
+              {projects.length} {projects.length === 1 ? 'project' : 'projects'}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Button
+              onClick={() => navigate('/projects/new/wizard')}
+              variant="outline"
+              className="border-slate-300 text-slate-700 hover:bg-slate-50"
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Guided Builder
+            </Button>
+            <Button
+              onClick={() => navigate('/projects/new')}
+              className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all group"
+            >
+              <Plus className="w-5 h-5 mr-2 group-hover:rotate-90 transition-transform duration-300" />
+              New Project
+            </Button>
           </div>
         </div>
 

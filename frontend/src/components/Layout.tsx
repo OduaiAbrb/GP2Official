@@ -2,74 +2,80 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { Button } from './ui/Button';
-import { LogOut, MessageCircle, UserCircle2 } from 'lucide-react';
+import { MessageCircle, Menu } from 'lucide-react';
 import { ConversationalDock } from '@/components/ConversationalDock';
+import { AppSidebar } from '@/components/AppSidebar';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const { user, logout } = useAuthStore();
-  const navigate = useNavigate();
+  const { user } = useAuthStore();
   const location = useLocation();
   const [assistantOpen, setAssistantOpen] = useState(false);
-
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
-  };
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    const saved = localStorage.getItem('sidebar_collapsed');
+    return saved === 'true';
+  });
 
   const projectMatch = useMemo(() => location.pathname.match(/\/projects\/([^/]+)/), [location.pathname]);
   const activeProjectId = projectMatch && projectMatch[1]?.length > 6 ? projectMatch[1] : null;
+  
   useEffect(() => {
     if (!activeProjectId) {
       setAssistantOpen(false);
     }
   }, [activeProjectId]);
 
+  const toggleSidebar = () => {
+    setSidebarCollapsed(prev => {
+      const newState = !prev;
+      localStorage.setItem('sidebar_collapsed', String(newState));
+      return newState;
+    });
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 relative">
-      {/* Header */}
-      <header className="bg-white/70 backdrop-blur-sm border-b border-amber-200/50">
-        <div className="w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link to="/projects" className="flex items-center space-x-3 group">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full blur-md opacity-50 group-hover:opacity-75 transition-opacity" />
-                <img 
-                  src="https://images.unsplash.com/photo-1569977562541-024dd41514fc?w=100&h=100&fit=crop" 
-                  alt="Acorn" 
-                  className="relative w-10 h-10 rounded-full object-cover ring-2 ring-amber-400 group-hover:scale-110 transition-transform"
-                />
-              </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-amber-700 to-orange-600 bg-clip-text text-transparent group-hover:scale-105 transition-transform">Acorn</span>
-            </Link>
+    <div className="min-h-screen bg-slate-50">
+      {/* Sidebar */}
+      <AppSidebar collapsed={sidebarCollapsed} onToggleCollapse={toggleSidebar} />
 
-            {user && (
-              <div className="flex items-center space-x-4">
-                <div className="text-sm">
-                  <p className="font-medium text-gray-900">{user.full_name || user.email}</p>
-                  <p className="text-gray-500 text-xs uppercase tracking-wide">
-                    {user.role_label} · {user.organization || 'Private workspace'}
-                  </p>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => navigate('/profile')}>
-                  <UserCircle2 className="h-4 w-4 mr-2" />
-                  Profile
-                </Button>
-                <Button variant="ghost" size="sm" onClick={handleLogout}>
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Logout
-                </Button>
+      {/* Main Content Area */}
+      <div
+        className={`min-h-screen transition-all duration-300 ${
+          sidebarCollapsed ? 'ml-16' : 'ml-64'
+        }`}
+      >
+        {/* Top Bar */}
+        <header className="sticky top-0 z-40 h-14 bg-white/80 backdrop-blur-md border-b border-slate-200/50 flex items-center px-6">
+          <button
+            onClick={toggleSidebar}
+            className="p-2 -ml-2 rounded-lg hover:bg-slate-100 transition-colors lg:hidden"
+          >
+            <Menu className="w-5 h-5 text-slate-600" />
+          </button>
+          
+          <div className="flex-1" />
+          
+          {user && (
+            <div className="flex items-center gap-4">
+              <div className="text-right hidden sm:block">
+                <p className="text-sm font-medium text-slate-900">{user.full_name || user.email}</p>
+                <p className="text-xs text-slate-500">
+                  {user.organization || 'Personal workspace'}
+                </p>
               </div>
-            )}
-          </div>
-        </div>
-      </header>
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white font-medium text-sm">
+                {user.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
+              </div>
+            </div>
+          )}
+        </header>
 
-      {/* Main Content */}
-      <main className="w-full px-3 sm:px-5 lg:px-8 py-6">{children}</main>
+        {/* Page Content */}
+        <main className="p-6">{children}</main>
+      </div>
 
       {/* Persistent assistant bubble */}
       <div className="fixed bottom-6 right-6 flex flex-col items-end gap-3 z-40">
@@ -89,7 +95,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           />
         )}
       </div>
-
     </div>
   );
 };
