@@ -1545,13 +1545,14 @@ export const PhaseDetailPage: React.FC = () => {
                           key={action.id}
                           onClick={action.onClick}
                           disabled={action.disabled}
-                          className={`group flex h-14 w-14 items-center justify-center rounded-2xl border border-navy-800 bg-navy-900 text-gray-400 shadow-lg transition hover:shadow-xl hover:border-gold-500/50 hover:text-gold-500 ${
-                            action.disabled ? 'opacity-50 cursor-not-allowed' : 'hover:-translate-y-0.5'
+                          className={`group flex h-14 w-14 items-center justify-center rounded-2xl text-gray-400 shadow-lg transition ${
+                            action.disabled ? 'opacity-50 cursor-not-allowed' : 'hover:-translate-y-0.5 hover:text-amber-400'
                           }`}
+                          style={{ backgroundColor: '#0d1525', border: '1px solid #1e3a5f' }}
                           aria-label={action.label}
                         >
                           <Icon className="h-5 w-5" />
-                          <span className="absolute right-full mr-2 whitespace-nowrap rounded-lg bg-navy-800 border border-navy-700 px-3 py-1.5 text-xs text-white opacity-0 transition group-hover:opacity-100">
+                          <span className="absolute right-full mr-2 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs text-white opacity-0 transition group-hover:opacity-100" style={{ backgroundColor: '#152238', border: '1px solid #1e3a5f' }}>
                             {action.label}
                           </span>
                         </button>
