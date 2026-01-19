@@ -7,9 +7,6 @@ import {
   MessageCircle, 
   Home,
   FolderKanban,
-  Cpu,
-  FileText,
-  BarChart3,
   Settings,
   Bell,
   Search,
@@ -25,11 +22,8 @@ interface LayoutProps {
 }
 
 const navItems = [
-  { icon: Home, label: 'Home', path: '/projects' },
+  { icon: Home, label: 'Dashboard', path: '/projects' },
   { icon: FolderKanban, label: 'Projects', path: '/projects' },
-  { icon: Cpu, label: 'AI Generation', path: '/projects' },
-  { icon: FileText, label: 'Documents', path: '/projects' },
-  { icon: BarChart3, label: 'Reports', path: '/projects' },
   { icon: Settings, label: 'Settings', path: '/profile' },
 ];
 
