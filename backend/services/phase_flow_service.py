@@ -125,6 +125,13 @@ class PhaseFlowService:
         await self.project_repo.update_phase_status(project_id, organization, status)
 
         raw_content = await self._run_phase_prompt(project.id, project.name, phase, prompt, user_id)
+        
+        # Debug logging to track content generation
+        logger.info(f"Generated content for phase {phase}: {len(raw_content)} characters")
+        if not raw_content or raw_content.strip() == "":
+            logger.error(f"Empty content generated for phase {phase}")
+            raw_content = f"# {PHASE_TITLES[phase]}\n\nError: No content was generated for this phase."
+            
         formatted_content = self.markdown_formatter.format(raw_content, artifact_type=f"phase:{phase}")
 
         artifact_type = f"PHASE_{phase.upper()}"
@@ -166,6 +173,13 @@ class PhaseFlowService:
         user_id: Optional[str] = None,
     ) -> str:
         llm_requires_key = self.provider not in {"stub", "mock"}
+        
+        # Always use placeholder content if no API key is configured
+        if not self.api_key or self.api_key == "":
+            logger.info(f"No API key configured, using placeholder content for phase {phase}")
+            placeholder = await self._generate_placeholder_content(phase, user_prompt)
+            return placeholder
+            
         system_message = (
             "You are Athena, an expert AI program manager inside the Acorn platform. "
             "You help users through sequential software planning phases. "
@@ -493,7 +507,7 @@ High-level architecture for: {user_prompt}
 - AWS/Vercel: Cloud hosting and deployment
 - GitHub Actions: CI/CD pipeline
 
-## Flow
+## Development Flow
 1. User authentication: Login/signup with JWT tokens
 2. Request routing: Frontend makes API calls to backend
 3. Business logic: Backend processes requests and validates data
@@ -501,29 +515,108 @@ High-level architecture for: {user_prompt}
 5. Response formatting: API returns structured JSON responses
 6. UI updates: Frontend updates interface based on responses
 
-## Folder Structure
-```
-project/
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── services/
-│   │   └── utils/
-│   └── package.json
-├── backend/
-│   ├── src/
-│   │   ├── controllers/
-│   │   ├── models/
-│   │   ├── routes/
-│   │   └── services/
-│   └── package.json
-└── database/
-    ├── migrations/
-    └── seeds/
-```
+## Implementation Steps
+1. Set up development environment
+2. Create database schema and models
+3. Implement authentication system
+4. Build core API endpoints
+5. Develop frontend components
+6. Add testing and deployment
 
-*Note: This is placeholder content. Configure LLM API keys for detailed development guidance.*"""
+*Note: This is placeholder content. Configure LLM API keys for detailed development guidance.*""",
+
+            "tasks": """# Task Planning
+
+## Development Tasks
+Based on project requirements: {user_prompt}
+
+### Phase 1: Foundation
+- [ ] Project setup and environment configuration
+- [ ] Database design and setup
+- [ ] Authentication system implementation
+- [ ] Basic API structure
+
+### Phase 2: Core Features
+- [ ] Core functionality implementation
+- [ ] User interface development  
+- [ ] Data management systems
+- [ ] Integration points
+
+### Phase 3: Enhancement
+- [ ] Advanced features
+- [ ] Performance optimization
+- [ ] Security hardening
+- [ ] User experience improvements
+
+### Phase 4: Deployment
+- [ ] Testing and quality assurance
+- [ ] Production deployment setup
+- [ ] Monitoring and logging
+- [ ] Documentation completion
+
+## Resource Allocation
+- **Development**: 60% of effort
+- **Testing**: 20% of effort
+- **Documentation**: 10% of effort
+- **Deployment**: 10% of effort
+
+*Note: This is placeholder content. Configure LLM API keys for detailed task planning.*""",
+
+            "cost_benefit": """# Cost-Benefit Analysis
+
+## Development Costs
+Based on project scope: {user_prompt}
+
+### Initial Development
+- **Development Team**: 3-6 months
+- **Infrastructure Setup**: Initial setup costs
+- **Third-party Services**: API integrations and licenses
+- **Total Estimated Cost**: $XX,XXX - $XX,XXX
+
+### Ongoing Costs
+- **Hosting and Infrastructure**: Monthly operational costs
+- **Maintenance**: Bug fixes and updates
+- **Support**: User support and documentation
+- **Scaling**: Growth-related infrastructure costs
+
+## Expected Benefits
+- **Efficiency Gains**: Estimated time savings
+- **Revenue Opportunities**: Potential income streams  
+- **User Value**: Improved experience and satisfaction
+- **Competitive Advantage**: Market positioning benefits
+
+## ROI Analysis
+- **Break-even Point**: X-X months
+- **Expected ROI**: XX% over X years
+- **Risk Assessment**: Medium risk, high reward potential
+
+*Note: This is placeholder content. Configure LLM API keys for detailed analysis.*""",
+
+            "risks": """# Risk Analysis and Mitigation
+
+## Technical Risks
+- **Scalability**: System may not handle expected load
+  - *Mitigation*: Performance testing and scalable architecture
+- **Security**: Data breaches or unauthorized access
+  - *Mitigation*: Security audits and best practices implementation
+- **Integration**: Third-party service dependencies
+  - *Mitigation*: Fallback systems and multiple provider options
+
+## Business Risks  
+- **Market Competition**: Similar solutions entering market
+  - *Mitigation*: Unique value proposition and rapid iteration
+- **User Adoption**: Low engagement or retention
+  - *Mitigation*: User research and iterative improvements
+- **Budget Overrun**: Development costs exceeding estimates
+  - *Mitigation*: Phased development and regular budget reviews
+
+## Operational Risks
+- **Team Changes**: Key personnel leaving project
+  - *Mitigation*: Documentation and knowledge sharing
+- **Timeline Delays**: Development taking longer than expected
+  - *Mitigation*: Buffer time and parallel development tracks
+
+*Note: This is placeholder content. Configure LLM API keys for comprehensive risk analysis.*"""
         }
         
         template = phase_templates.get(phase, f"""# {PHASE_TITLES.get(phase, phase.title())}
