@@ -1267,8 +1267,11 @@ export const PhaseDetailPage: React.FC = () => {
   if (isLoading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <div className="flex items-center justify-center h-64 bg-navy-950">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-10 w-10 animate-spin text-gold-500" />
+            <span className="text-gray-400 text-sm">Loading phase...</span>
+          </div>
         </div>
       </Layout>
     );
@@ -1277,9 +1280,9 @@ export const PhaseDetailPage: React.FC = () => {
   if (!project || !phaseConfig) {
     return (
       <Layout>
-        <div className="text-center py-16">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Phase not found</h2>
-          <Button onClick={() => navigate(`/projects/${id}`)}>Back to Project</Button>
+        <div className="text-center py-16 bg-navy-950">
+          <h2 className="text-2xl font-bold text-white mb-4">Phase not found</h2>
+          <Button onClick={() => navigate(`/projects/${id}`)} className="bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950 font-semibold">Back to Project</Button>
         </div>
       </Layout>
     );
