@@ -1,91 +1,87 @@
-# Acorn - AI Project Planning Platform
+# Acorn - Enterprise AI Project Planning Platform
 
 ## Overview
-Acorn is an AI-powered project planning platform that transforms ideas into actionable project plans. It generates comprehensive documentation, roadmaps, and feasibility studies automatically.
+Acorn is an enterprise-grade AI-powered project planning platform that transforms complex requirements into actionable project plans, comprehensive documentation, and compliance-ready specifications.
 
 ## Architecture
-- **Frontend**: React + TypeScript + Vite + TailwindCSS
+- **Frontend**: React + TypeScript + Vite + TailwindCSS (Navy & Gold Corporate Theme)
 - **Backend**: FastAPI (Python)
 - **Database**: Supabase PostgreSQL (primary) with MongoDB fallback
 - **Deployment**: Frontend on Netlify, Backend on Render
 
-## Core Requirements
+## Design System
+- **Theme**: Corporate Professional - Navy & Gold
+- **Primary Colors**: Navy (#0a0f1a, #0d1525, #1e3a5f) + Gold (#d4af37, #e6c358)
+- **Typography**: Inter (sans-serif), JetBrains Mono (code)
+- **Animations**: Impressive page transitions, staggered reveals, floating effects
 
-### User Authentication
-- JWT-based authentication with refresh tokens
-- User registration and login
-- Profile management
+## Core Features
 
-### Project Management
-- Create, read, update, delete projects
-- Multiple project templates (Web App, Mobile App, SaaS, etc.)
-- Project status tracking (draft, planning, active, completed)
+### Implemented
+- [x] User Authentication (JWT + refresh tokens)
+- [x] Project CRUD operations
+- [x] AI-powered phase generation (Planning, Requirements, Feasibility)
+- [x] Artifact storage and versioning
+- [x] Corporate Professional UI with impressive animations
+- [x] Responsive sidebar with collapse functionality
+- [x] Project search and filtering
+- [x] Grid/List view toggle
 
-### AI-Powered Generation
-- Planning phase generation
-- Requirements extraction
-- Feasibility studies
-- Roadmap generation
-- Task breakdown
-
-### Documentation
-- Markdown-based artifact storage
-- Version history
-- Export capabilities
+### Planned Features
+- [ ] **Persona Generation** - Create detailed user personas and stories
+- [ ] **SRS Audit** - Automated compliance and quality checks
+- [ ] **Stakeholder Negotiation** - Impact analysis and tracking
+- [ ] **Analytics Dashboard** - Project progress, AI stats, time tracking
+- [ ] **Team Collaboration** - Invite members, permissions, comments
+- [ ] **Export Center** - PDF, DOCX, PowerPoint exports
+- [ ] **Kanban Board** - Visual task management with drag-and-drop
+- [ ] **Notifications System** - Real-time alerts for updates
+- [ ] **Payment Gateway** - Subscription management (fake for demo)
+- [ ] **New Business Model** - Tiered pricing structure
 
 ## What's Been Implemented
 
-### Jan 19, 2025
+### Jan 19, 2025 - Database Migration & UI Overhaul
 - **Database Migration to Supabase**
-  - Fixed UUID column type error (changed to TEXT for custom IDs)
-  - Updated all repositories: Artifact, Task, Requirement, AiRun
-  - Added automatic table creation on startup
-  - Proper fallback to MongoDB/in-memory when Supabase unavailable
+  - Fixed UUID → TEXT column type issue
+  - Added FORCE_RECREATE_TABLES option for production
+  - Intelligent column type detection
+  - All repositories now support Supabase
 
-- **Complete UI Overhaul**
-  - New premium design system with Outfit font
-  - Custom CSS animations (fade-in, scale, slide, float, pulse)
-  - Professional color scheme (amber/orange gradients)
-  - Glass-morphism effects
-  - Responsive sidebar with collapse functionality
-  - Enhanced landing page with animated features
-  - Premium login/register pages with split-screen design
-  - Projects page with grid/list views and search
+- **Complete UI Overhaul - Corporate Professional**
+  - Navy & Gold color scheme
+  - Inter + JetBrains Mono typography
+  - Impressive animations:
+    - `revealUp`, `revealDown` - Blur + translate reveals
+    - `dramaticEntrance` - Scale + blur dramatic entry
+    - `slideInBounce` - Elastic sliding
+    - `flipIn` - 3D flip animation
+    - `elasticPop` - Bouncy scale
+    - `float` - Gentle floating
+    - `glow` - Gold pulse glow
+    - `morph` - Shape morphing backgrounds
+  - Glass-morphism cards
+  - Gradient borders with animation
+  - Professional enterprise feel
 
-### Testing Results (Jan 19, 2025)
-- Backend: 87.5% success rate
-- Frontend: 100% success rate
-- Integration: 95% success rate
+## Database Fix for Production
 
-## Prioritized Backlog
+To fix the UUID error on Render:
+1. Add environment variable: `FORCE_RECREATE_TABLES=true`
+2. Redeploy
+3. After successful deploy, set `FORCE_RECREATE_TABLES=false`
 
-### P0 (Critical)
-- [ ] Verify Supabase production connection
-- [ ] Test AI generation with persistent storage
+⚠️ This will clear existing data. Contact support for migration script if data preservation needed.
 
-### P1 (High Priority)
-- [ ] Fix PUT /api/projects/{id}/ routing
-- [ ] Add project update UI
-- [ ] Implement artifact editing
-
-### P2 (Medium Priority)
-- [ ] Add collaborative features (team members)
-- [ ] Implement notification system
-- [ ] Add export to PDF/Word
-
-### P3 (Nice to Have)
-- [ ] Dark/light theme toggle
-- [ ] Custom branding
-- [ ] API rate limiting
-
-## Next Tasks
-1. Push code to GitHub for deployment
-2. Test Supabase connection in production
-3. Verify AI generation flow end-to-end
-4. Test phase navigation and content display
+## Next Steps
+1. Push to GitHub
+2. Deploy database fix to Render
+3. Implement remaining features (Persona, SRS Audit, etc.)
+4. Add export functionality
+5. Implement team collaboration
 
 ## User Personas
-1. **Project Manager**: Needs quick project setup and documentation
-2. **Product Owner**: Needs feasibility analysis and roadmaps
-3. **Developer**: Needs technical requirements and task breakdowns
-4. **Stakeholder**: Needs executive summaries and status updates
+1. **Enterprise PM**: Needs comprehensive project documentation and compliance
+2. **Product Owner**: Needs feasibility analysis and stakeholder tracking
+3. **Technical Lead**: Needs requirements breakdown and task estimation
+4. **Executive**: Needs high-level summaries and ROI analysis
