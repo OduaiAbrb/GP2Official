@@ -223,45 +223,28 @@ async def ensure_tables_exist():
                     updated_at TIMESTAMPTZ DEFAULT NOW()
                 )
             ''')
-        
-        # Create refresh_tokens table
-        await conn.execute('''
-            CREATE TABLE IF NOT EXISTS refresh_tokens (
-                id TEXT PRIMARY KEY,
-                user_id TEXT NOT NULL,
-                token_hash TEXT UNIQUE NOT NULL,
-                user_agent TEXT,
-                ip_address TEXT,
-                created_at TIMESTAMPTZ DEFAULT NOW(),
-                expires_at TIMESTAMPTZ NOT NULL,
-                revoked BOOLEAN DEFAULT false,
-                revoked_at TIMESTAMPTZ
-            )
-        ''')
-        
-        # Create ai_runs table
-        await conn.execute('''
-            CREATE TABLE ai_runs (
-                id TEXT PRIMARY KEY,
-                project_id TEXT NOT NULL,
-                user_id TEXT,
-                job_type TEXT,
-                phase TEXT,
-                provider TEXT,
-                model TEXT,
-                status TEXT DEFAULT 'pending',
-                prompt TEXT,
-                response_excerpt TEXT,
-                duration_ms INTEGER,
-                error_message TEXT,
-                metadata JSONB,
-                created_at TIMESTAMPTZ DEFAULT NOW(),
-                completed_at TIMESTAMPTZ
-            )
-        ''')
-        
-        # Create indexes only if tables were just created
-        if not tables_ok:
+            
+            # Create ai_runs table
+            await conn.execute('''
+                CREATE TABLE ai_runs (
+                    id TEXT PRIMARY KEY,
+                    project_id TEXT NOT NULL,
+                    user_id TEXT,
+                    job_type TEXT,
+                    phase TEXT,
+                    provider TEXT,
+                    model TEXT,
+                    status TEXT DEFAULT 'pending',
+                    prompt TEXT,
+                    response_excerpt TEXT,
+                    duration_ms INTEGER,
+                    error_message TEXT,
+                    metadata JSONB,
+                    created_at TIMESTAMPTZ DEFAULT NOW(),
+                    completed_at TIMESTAMPTZ
+                )
+            ''')
+            
             print("[SUPABASE] Creating indexes...")
             await conn.execute('CREATE INDEX IF NOT EXISTS idx_projects_organization ON projects(organization)')
             await conn.execute('CREATE INDEX IF NOT EXISTS idx_projects_owner ON projects(owner_id)')
