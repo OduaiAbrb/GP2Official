@@ -242,6 +242,38 @@ async def project_requirements(
     ]
 
 
+@router.post("/{project_id}/requirements/", response_model=RequirementResponse)
+async def create_requirement(
+    project_id: str,
+    requirement_data: RequirementCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Create a new requirement for a project."""
+    await project_service.get_project(project_id, current_user)
+    req = await requirement_repo.create(
+        project_id=project_id,
+        type=requirement_data.type.value,
+        title=requirement_data.title,
+        description=requirement_data.description,
+        priority=requirement_data.priority.value,
+        status=requirement_data.status,
+        confidence_score=requirement_data.confidence_score,
+    )
+    return RequirementResponse(
+        id=req.id,
+        requirement_id=req.id,
+        project_id=req.project_id,
+        type=req.type,
+        title=req.title,
+        description=req.description,
+        priority=req.priority,
+        status=req.status,
+        confidence_score=req.confidence_score,
+        created_at=req.created_at,
+        updated_at=req.updated_at,
+    )
+
+
 @router.put("/{project_id}/requirements/bulk/", response_model=List[RequirementResponse])
 async def replace_project_requirements(
     project_id: str,
