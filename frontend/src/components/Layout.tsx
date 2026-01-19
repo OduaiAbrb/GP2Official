@@ -2,7 +2,21 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { Button } from './ui/Button';
-import { LogOut, MessageCircle, UserCircle2 } from 'lucide-react';
+import { 
+  LogOut, 
+  MessageCircle, 
+  Home,
+  FolderKanban,
+  Cpu,
+  FileText,
+  BarChart3,
+  Settings,
+  Bell,
+  Search,
+  Menu,
+  X,
+  ChevronRight
+} from 'lucide-react';
 import { ConversationalDock } from '@/components/ConversationalDock';
 import { AcornLogo } from '@/components/AcornLogo';
 
@@ -10,11 +24,22 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
+const navItems = [
+  { icon: Home, label: 'Home', path: '/projects' },
+  { icon: FolderKanban, label: 'Projects', path: '/projects' },
+  { icon: Cpu, label: 'AI Generation', path: '/projects' },
+  { icon: FileText, label: 'Documents', path: '/projects' },
+  { icon: BarChart3, label: 'Reports', path: '/projects' },
+  { icon: Settings, label: 'Settings', path: '/profile' },
+];
+
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
   const [assistantOpen, setAssistantOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     await logout();
@@ -23,66 +48,177 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const projectMatch = useMemo(() => location.pathname.match(/\/projects\/([^/]+)/), [location.pathname]);
   const activeProjectId = projectMatch && projectMatch[1]?.length > 6 ? projectMatch[1] : null;
+  
   useEffect(() => {
     if (!activeProjectId) {
       setAssistantOpen(false);
     }
   }, [activeProjectId]);
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 relative">
-      {/* Header */}
-      <header className="bg-white/70 backdrop-blur-sm border-b border-amber-200/50">
-        <div className="w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link to="/projects" className="hover:scale-105 transition-transform">
-              <AcornLogo size={40} />
-            </Link>
+  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
 
+  return (
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar - Desktop */}
+      <aside className={`hidden lg:flex flex-col bg-acorn-blue-600 text-white transition-all duration-300 ${
+        sidebarOpen ? 'w-64' : 'w-20'
+      }`}>
+        {/* Logo */}
+        <div className="p-4 border-b border-acorn-blue-500">
+          <Link to="/projects" className="flex items-center gap-3">
+            <AcornLogo size={36} />
+            {sidebarOpen && <span className="font-bold text-lg">Acorn</span>}
+          </Link>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 py-4">
+          {navItems.map((item) => (
+            <Link
+              key={item.label}
+              to={item.path}
+              className={`flex items-center gap-3 px-4 py-3 mx-2 rounded-lg transition-all ${
+                isActive(item.path)
+                  ? 'bg-acorn-orange-500 text-white'
+                  : 'text-acorn-blue-100 hover:bg-acorn-blue-500'
+              }`}
+            >
+              <item.icon className="w-5 h-5 flex-shrink-0" />
+              {sidebarOpen && <span className="font-medium">{item.label}</span>}
+            </Link>
+          ))}
+        </nav>
+
+        {/* Collapse Button */}
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="p-4 border-t border-acorn-blue-500 text-acorn-blue-200 hover:text-white transition-colors flex items-center justify-center"
+        >
+          <ChevronRight className={`w-5 h-5 transition-transform ${sidebarOpen ? 'rotate-180' : ''}`} />
+        </button>
+      </aside>
+
+      {/* Mobile Sidebar Overlay */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setMobileMenuOpen(false)} />
+          <aside className="absolute left-0 top-0 bottom-0 w-64 bg-acorn-blue-600 text-white animate-slideIn">
+            <div className="p-4 border-b border-acorn-blue-500 flex items-center justify-between">
+              <Link to="/projects" className="flex items-center gap-3">
+                <AcornLogo size={36} />
+                <span className="font-bold text-lg">Acorn</span>
+              </Link>
+              <button onClick={() => setMobileMenuOpen(false)}>
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <nav className="py-4">
+              {navItems.map((item) => (
+                <Link
+                  key={item.label}
+                  to={item.path}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3 mx-2 rounded-lg transition-all ${
+                    isActive(item.path)
+                      ? 'bg-acorn-orange-500 text-white'
+                      : 'text-acorn-blue-100 hover:bg-acorn-blue-500'
+                  }`}
+                >
+                  <item.icon className="w-5 h-5" />
+                  <span className="font-medium">{item.label}</span>
+                </Link>
+              ))}
+            </nav>
+          </aside>
+        </div>
+      )}
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-h-screen">
+        {/* Top Bar */}
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
+          <div className="flex items-center justify-between h-16 px-4 lg:px-6">
+            {/* Left - Mobile Menu & Search */}
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setMobileMenuOpen(true)}
+                className="lg:hidden p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <Menu className="w-6 h-6 text-gray-600" />
+              </button>
+
+              <div className="hidden sm:flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2 w-64">
+                <Search className="w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search projects..."
+                  className="bg-transparent border-none outline-none text-sm flex-1"
+                />
+              </div>
+            </div>
+
+            {/* Right - User Actions */}
             {user && (
-              <div className="flex items-center space-x-4">
-                <div className="text-sm">
-                  <p className="font-medium text-gray-900">{user.full_name || user.email}</p>
-                  <p className="text-gray-500 text-xs uppercase tracking-wide">
-                    {user.role_label} · {user.organization || 'Private workspace'}
-                  </p>
+              <div className="flex items-center gap-3">
+                <button className="p-2 hover:bg-gray-100 rounded-lg relative">
+                  <Bell className="w-5 h-5 text-gray-600" />
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-acorn-orange-500 rounded-full"></span>
+                </button>
+
+                <div className="hidden sm:block text-right">
+                  <p className="text-sm font-medium text-gray-900">{user.full_name || user.email}</p>
+                  <p className="text-xs text-gray-500">{user.organization || 'Personal'}</p>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => navigate('/profile')}>
-                  <UserCircle2 className="h-4 w-4 mr-2" />
-                  Profile
-                </Button>
-                <Button variant="ghost" size="sm" onClick={handleLogout}>
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Logout
-                </Button>
+
+                <button
+                  onClick={() => navigate('/profile')}
+                  className="w-9 h-9 bg-acorn-blue-100 text-acorn-blue-600 rounded-full flex items-center justify-center font-bold text-sm"
+                >
+                  {(user.full_name || user.email || 'U').charAt(0).toUpperCase()}
+                </button>
+
+                <button
+                  onClick={handleLogout}
+                  className="p-2 hover:bg-gray-100 rounded-lg text-gray-600"
+                  title="Logout"
+                >
+                  <LogOut className="w-5 h-5" />
+                </button>
               </div>
             )}
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Main Content */}
-      <main className="w-full px-3 sm:px-5 lg:px-8 py-6">{children}</main>
-
-      {/* Persistent assistant bubble */}
-      <div className="fixed bottom-6 right-6 flex flex-col items-end gap-3 z-40">
-        <Button
-          className="shadow-xl bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600"
-          onClick={() => activeProjectId && setAssistantOpen(true)}
-          disabled={!activeProjectId}
-        >
-          <MessageCircle className="h-4 w-4 mr-2" />
-          Project Assistant
-        </Button>
-        {assistantOpen && activeProjectId && (
-          <ConversationalDock
-            projectId={activeProjectId}
-            open={assistantOpen}
-            onClose={() => setAssistantOpen(false)}
-          />
-        )}
+        {/* Main Content */}
+        <main className="flex-1 p-4 lg:p-6">{children}</main>
       </div>
 
+      {/* Persistent Assistant Bubble */}
+      {activeProjectId && (
+        <div className="fixed bottom-6 right-6 z-40">
+          <Button
+            className="shadow-xl bg-acorn-blue-500 hover:bg-acorn-blue-600 text-white rounded-full w-14 h-14 p-0"
+            onClick={() => setAssistantOpen(true)}
+          >
+            <MessageCircle className="w-6 h-6" />
+          </Button>
+          {assistantOpen && (
+            <ConversationalDock
+              projectId={activeProjectId}
+              open={assistantOpen}
+              onClose={() => setAssistantOpen(false)}
+            />
+          )}
+        </div>
+      )}
+
+      <style>{`
+        @keyframes slideIn {
+          from { transform: translateX(-100%); }
+          to { transform: translateX(0); }
+        }
+        .animate-slideIn { animation: slideIn 0.3s ease-out; }
+      `}</style>
     </div>
   );
 };

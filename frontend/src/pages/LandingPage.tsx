@@ -1,275 +1,241 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Sparkles,
-  Zap,
-  Target,
-  TrendingUp,
+import { 
+  FileText, 
+  Cpu, 
+  CheckCircle, 
+  Download,
   ArrowRight,
-  Check,
-  Cpu,
-  ShieldCheck,
-  Globe,
-  Users,
+  Play,
   Star,
-  Quote,
+  Zap,
+  Shield,
+  Users,
+  BarChart3,
   Menu,
-  X,
-  Play
+  X
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { AcornLogo } from '@/components/AcornLogo';
 
-const features = [
+const valueProps = [
   {
-    icon: Sparkles,
-    title: 'AI-Powered Analysis',
-    description: 'Transform project briefs into comprehensive requirements using advanced AI',
-    color: 'from-amber-500 to-orange-600'
+    icon: FileText,
+    title: 'Smart Requirements',
+    description: 'Transform unstructured briefs into IEEE-compliant SRS documents automatically.',
+    color: 'bg-acorn-blue-500'
   },
   {
-    icon: Target,
-    title: 'Stakeholder Ready Docs',
-    description: 'Generate professional SRS documents that meet industry expectations',
-    color: 'from-green-500 to-emerald-600'
-  },
-  {
-    icon: Zap,
-    title: 'Lightning Fast',
-    description: 'Reduce planning time from weeks to minutes with automated workflows',
-    color: 'from-blue-500 to-cyan-600'
-  },
-  {
-    icon: TrendingUp,
-    title: 'Smart Insights',
-    description: 'Get actionable recommendations and risk analysis for your projects',
-    color: 'from-purple-500 to-pink-600'
-  }
-];
-
-const benefits = [
-  'Automated Requirements Extraction',
-  'UML Diagram Generation',
-  'Task Breakdown & Planning',
-  'Risk Analysis & Mitigation',
-  'Cost Estimation',
-  'Team Collaboration Tools'
-];
-
-const workflowStages = [
-  {
-    title: 'Planning Seeds',
-    description: 'Capture briefs, upload artifacts, and let Acorn map the scope.',
-    icon: Target,
-    badge: 'Phase 01'
-  },
-  {
-    title: 'Design & Intelligence',
-    description: 'AI multi-agents generate requirements, UML, and tasks in sync.',
     icon: Cpu,
-    badge: 'Phase 02'
+    title: 'AI-Powered Analysis',
+    description: 'Extract entities, identify risks, and generate comprehensive project plans.',
+    color: 'bg-acorn-orange-500'
   },
   {
-    title: 'Validation & Iteration',
-    description: 'Collaborate with Acorn Draft, refine diagrams, and approve.',
-    icon: ShieldCheck,
-    badge: 'Phase 03'
+    icon: BarChart3,
+    title: 'Visual Diagrams',
+    description: 'Auto-generate UML diagrams, flowcharts, and architecture visualizations.',
+    color: 'bg-acorn-blue-500'
   },
   {
-    title: 'Launch & Share',
-    description: 'Export stakeholder-ready docs, Trello tasks, and Gantt timelines.',
-    icon: Globe,
-    badge: 'Phase 04'
+    icon: Shield,
+    title: 'Enterprise Ready',
+    description: 'Role-based access, audit trails, and compliance-ready documentation.',
+    color: 'bg-acorn-orange-500'
   }
 ];
 
-const stats = [
-  { value: '95%', label: 'Faster planning cycles' },
-  { value: '40+', label: 'Diagrams per project' },
-  { value: '12x', label: 'Requirement coverage' },
-  { value: '500+', label: 'Teams scaling with Acorn' }
+const processSteps = [
+  {
+    step: 1,
+    title: 'Input Brief',
+    description: 'Paste your project brief or upload existing documents. Use templates for guidance.',
+    details: 'Supports plain text, PDF, DOCX, and markdown formats. AI extracts key information automatically.'
+  },
+  {
+    step: 2,
+    title: 'AI Generation',
+    description: 'Watch as AI analyzes your input and generates structured requirements.',
+    details: 'Multi-agent system creates requirements, user stories, UML diagrams, and task breakdowns.'
+  },
+  {
+    step: 3,
+    title: 'Review & Export',
+    description: 'Edit, refine, and export stakeholder-ready documentation.',
+    details: 'Export to PDF, DOCX, or integrate directly with Jira, Trello, and other tools.'
+  }
 ];
 
 const testimonials = [
   {
-    quote:
-      'Acorn feels like having a full requirements team on call. The AI understands context and keeps everyone aligned.',
-    author: 'Sofia Martins',
-    role: 'Head of Delivery, Northwind',
-    color: 'from-amber-500/80 to-orange-500/80'
+    quote: 'Acorn reduced our requirements gathering time by 70%. The AI suggestions are remarkably accurate.',
+    author: 'Sarah Chen',
+    role: 'VP of Engineering, TechFlow',
+    rating: 5
   },
   {
-    quote:
-      'We replaced messy doc stacks with a living canvas + Draft workspace. Stakeholders finally see progress in real time.',
-    author: 'Noah Patel',
-    role: 'Program Director, Rivendell Labs',
-    color: 'from-purple-500/80 to-pink-500/80'
+    quote: 'Finally, a tool that understands software planning. Our stakeholders love the professional documentation.',
+    author: 'Marcus Johnson',
+    role: 'Product Director, Innovate Labs',
+    rating: 5
   }
 ];
 
-const logoMarquee = ['Trello', 'Linear', 'Jira', 'Notion', 'Slack'];
+const integrations = ['Jira', 'Trello', 'Slack', 'GitHub', 'Notion', 'Linear'];
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const scrollToDemo = () => {
-    const demoSection = document.getElementById('demo-section');
-    if (demoSection) {
-      demoSection.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
+  const [activeStep, setActiveStep] = useState<number | null>(null);
+  const [currentTestimonial, setCurrentTestimonial] = useState(0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-acorn-blue-50 via-white to-acorn-orange-50 overflow-hidden">
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div
-          className="absolute w-[520px] h-[520px] bg-gradient-to-br from-acorn-blue-400/25 to-acorn-blue-500/25 rounded-full blur-3xl animate-orb"
-          style={{ top: '8%', left: '4%', animationDelay: '0s' }}
-        />
-        <div
-          className="absolute w-[420px] h-[420px] bg-gradient-to-br from-acorn-orange-400/25 to-acorn-orange-500/25 rounded-full blur-3xl animate-orb"
-          style={{ top: '48%', right: '8%', animationDelay: '2s' }}
-        />
-        <div
-          className="absolute w-[360px] h-[360px] bg-gradient-to-br from-acorn-blue-300/25 to-acorn-orange-400/25 rounded-full blur-3xl animate-orb"
-          style={{ bottom: '6%', left: '20%', animationDelay: '4s' }}
-        />
-      </div>
+    <div className="min-h-screen bg-white">
+      {/* Navigation */}
+      <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <button onClick={() => navigate('/')} className="hover:opacity-80 transition-opacity">
+              <AcornLogo size={44} />
+            </button>
 
-      <nav className="relative z-10 px-6 py-4 backdrop-blur-sm bg-white/80 border-b border-acorn-blue-200/50">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="cursor-pointer group-hover:scale-105 transition-transform" onClick={() => navigate('/') }>
-            <AcornLogo size={48} />
-          </div>
-          
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex gap-3">
-            <Button
-              variant="ghost"
-              onClick={() => navigate('/login')}
-              className="hover:bg-acorn-blue-100/50 text-acorn-blue-700 font-medium"
-            >
-              Sign In
-            </Button>
-            <Button
-              onClick={() => navigate('/register')}
-              className="bg-gradient-to-r from-acorn-blue-500 to-acorn-orange-500 hover:from-acorn-blue-600 hover:to-acorn-orange-600 text-white font-medium shadow-lg hover:shadow-xl transition-all hover:scale-105"
-            >
-              Get Started
-            </Button>
-          </div>
+            {/* Desktop Nav */}
+            <div className="hidden md:flex items-center gap-8">
+              <a href="#features" className="text-gray-600 hover:text-acorn-blue-600 font-medium transition-colors">Features</a>
+              <a href="#how-it-works" className="text-gray-600 hover:text-acorn-blue-600 font-medium transition-colors">How It Works</a>
+              <a href="#testimonials" className="text-gray-600 hover:text-acorn-blue-600 font-medium transition-colors">Testimonials</a>
+            </div>
 
-          {/* Mobile Menu Button */}
-          <button 
-            className="md:hidden p-2 rounded-lg hover:bg-acorn-blue-100/50 transition-colors"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle menu"
-          >
-            {mobileMenuOpen ? (
-              <X className="w-6 h-6 text-acorn-blue-700" />
-            ) : (
-              <Menu className="w-6 h-6 text-acorn-blue-700" />
-            )}
-          </button>
-        </div>
-
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 right-0 bg-white/95 backdrop-blur-lg border-b border-acorn-blue-200/50 shadow-lg animate-slideDown">
-            <div className="flex flex-col p-4 gap-3">
-              <Button
-                variant="ghost"
-                onClick={() => { navigate('/login'); setMobileMenuOpen(false); }}
-                className="w-full justify-center hover:bg-acorn-blue-100/50 text-acorn-blue-700 font-medium"
-              >
+            <div className="hidden md:flex items-center gap-4">
+              <Button variant="ghost" onClick={() => navigate('/login')} className="text-acorn-blue-600 font-medium">
                 Sign In
               </Button>
-              <Button
-                onClick={() => { navigate('/register'); setMobileMenuOpen(false); }}
-                className="w-full justify-center bg-gradient-to-r from-acorn-blue-500 to-acorn-orange-500 hover:from-acorn-blue-600 hover:to-acorn-orange-600 text-white font-medium shadow-lg"
+              <Button 
+                onClick={() => navigate('/register')} 
+                className="bg-acorn-orange-500 hover:bg-acorn-orange-600 text-white font-medium px-6"
               >
-                Get Started
+                Get Started Free
               </Button>
             </div>
+
+            {/* Mobile Menu Button */}
+            <button 
+              className="md:hidden p-2"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
           </div>
-        )}
+
+          {/* Mobile Menu */}
+          {mobileMenuOpen && (
+            <div className="md:hidden pt-4 pb-2 border-t border-gray-100 mt-4 animate-fadeIn">
+              <div className="flex flex-col gap-4">
+                <a href="#features" className="text-gray-600 font-medium py-2">Features</a>
+                <a href="#how-it-works" className="text-gray-600 font-medium py-2">How It Works</a>
+                <Button variant="ghost" onClick={() => navigate('/login')} className="justify-start">Sign In</Button>
+                <Button onClick={() => navigate('/register')} className="bg-acorn-orange-500 text-white">Get Started Free</Button>
+              </div>
+            </div>
+          )}
+        </div>
       </nav>
 
-      <section className="relative z-10 px-6 py-20 max-w-7xl mx-auto">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-8 animate-slideInLeft">
-            <div className="inline-flex items-center px-4 py-2 bg-acorn-blue-100 rounded-full border border-acorn-blue-300 animate-pulse-slow">
-              <Sparkles className="w-4 h-4 text-acorn-orange-500 mr-2" />
-              <span className="text-sm font-medium text-acorn-blue-700">AI-Powered Planning Platform</span>
-            </div>
+      {/* Hero Section */}
+      <section className="py-20 lg:py-32 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            {/* Left - Content */}
+            <div className="space-y-8 animate-slideUp">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-acorn-blue-50 rounded-full">
+                <Zap className="w-4 h-4 text-acorn-orange-500" />
+                <span className="text-sm font-medium text-acorn-blue-700">AI-Powered Project Planning</span>
+              </div>
 
-            <h1 className="text-5xl lg:text-7xl font-bold leading-tight">
-              <span className="bg-gradient-to-r from-acorn-blue-600 via-acorn-orange-500 to-acorn-blue-600 bg-clip-text text-transparent animate-gradient">
-                Plant the Seeds
-              </span>
-              <br />
-              <span className="text-gray-800">of Perfect Projects</span>
-            </h1>
+              <h1 className="text-4xl lg:text-6xl font-bold text-acorn-blue-600 leading-tight">
+                Transform Briefs Into
+                <span className="block text-gray-900">Production-Ready Plans</span>
+              </h1>
 
-            <p className="text-xl text-gray-600 leading-relaxed">
-              Transform your project ideas into comprehensive, production-ready plans with the power of AI.
-              From concept to execution, Acorn grows with your vision.
-            </p>
+              <p className="text-xl text-gray-600 leading-relaxed max-w-lg">
+                Acorn uses AI to convert your project ideas into comprehensive requirements, 
+                UML diagrams, and stakeholder-ready documentation in minutes.
+              </p>
 
-            <div className="flex flex-wrap gap-4">
-              <Button
-                size="lg"
-                onClick={() => navigate('/register')}
-                className="bg-gradient-to-r from-acorn-blue-500 to-acorn-orange-500 hover:from-acorn-blue-600 hover:to-acorn-orange-600 text-white font-semibold px-8 py-6 text-lg shadow-xl hover:shadow-2xl transition-all hover:scale-105 group"
-              >
-                Start Growing
-                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={scrollToDemo}
-                className="border-2 border-acorn-blue-500 text-acorn-blue-700 hover:bg-acorn-blue-50 px-8 py-6 text-lg font-semibold group"
-              >
-                <Play className="mr-2 w-5 h-5 group-hover:scale-110 transition-transform" />
-                Watch Demo
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 pt-6">
-              {stats.slice(0, 2).map((stat, index) => (
-                <div
-                  key={stat.label}
-                  className="bg-white/70 backdrop-blur rounded-2xl p-4 border border-acorn-blue-100 shadow-lg animate-fadeIn"
-                  style={{ animationDelay: `${index * 0.2}s` }}
+              <div className="flex flex-wrap gap-4">
+                <Button 
+                  size="lg"
+                  onClick={() => navigate('/register')}
+                  className="bg-acorn-orange-500 hover:bg-acorn-orange-600 text-white font-semibold px-8 py-4 text-lg shadow-lg hover:shadow-xl transition-all group"
                 >
-                  <p className="text-3xl font-bold text-acorn-blue-600">{stat.value}</p>
-                  <p className="text-sm text-gray-500">{stat.label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="relative animate-slideInRight">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-acorn-blue-400/30 to-acorn-orange-500/30 rounded-3xl blur-2xl animate-pulse-slow" />
-              <img
-                src="https://images.unsplash.com/photo-1581092335331-5e00ac65e934?w=800&h=600&fit=crop"
-                alt="Software Planning & Requirements"
-                className="relative rounded-3xl shadow-2xl hover:scale-105 transition-transform duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent rounded-3xl flex items-center justify-center">
-                <div className="text-white text-center p-6 bg-black/40 backdrop-blur-sm rounded-2xl">
-                  <Sparkles className="w-12 h-12 mx-auto mb-2 animate-pulse" />
-                  <p className="text-sm font-semibold">AI-Powered Requirements Analysis</p>
-                </div>
+                  Start Building Free
+                  <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </Button>
+                <Button 
+                  size="lg"
+                  variant="outline"
+                  className="border-2 border-acorn-blue-200 text-acorn-blue-600 hover:bg-acorn-blue-50 px-8 py-4 text-lg font-medium group"
+                >
+                  <Play className="mr-2 w-5 h-5" />
+                  Watch Demo
+                </Button>
               </div>
-              <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-white shadow-2xl rounded-2xl px-8 py-4 flex items-center gap-4 animate-float-delay">
-                <Users className="w-10 h-10 text-acorn-orange-500" />
+
+              {/* Stats */}
+              <div className="flex gap-12 pt-4">
                 <div>
-                  <p className="text-sm text-gray-500">Collaborators live</p>
-                  <p className="text-lg font-semibold text-gray-800">17 teams</p>
+                  <p className="text-3xl font-bold text-acorn-blue-600">10K+</p>
+                  <p className="text-sm text-gray-500">Projects Created</p>
+                </div>
+                <div>
+                  <p className="text-3xl font-bold text-acorn-blue-600">500+</p>
+                  <p className="text-sm text-gray-500">Teams Trust Us</p>
+                </div>
+                <div>
+                  <p className="text-3xl font-bold text-acorn-blue-600">70%</p>
+                  <p className="text-sm text-gray-500">Time Saved</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Right - Illustration */}
+            <div className="relative animate-slideUp" style={{ animationDelay: '0.2s' }}>
+              <div className="bg-gradient-to-br from-acorn-blue-50 to-acorn-orange-50 rounded-3xl p-8 lg:p-12">
+                <div className="bg-white rounded-2xl shadow-xl p-6 space-y-4">
+                  {/* Mock UI */}
+                  <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
+                    <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                    <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+                    <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                    <span className="ml-4 text-sm text-gray-400">Acorn AI</span>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-acorn-blue-100 flex items-center justify-center">
+                        <FileText className="w-4 h-4 text-acorn-blue-600" />
+                      </div>
+                      <div className="flex-1 h-3 bg-gray-100 rounded animate-pulse"></div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-acorn-orange-100 flex items-center justify-center">
+                        <Cpu className="w-4 h-4 text-acorn-orange-600" />
+                      </div>
+                      <div className="flex-1 h-3 bg-gray-100 rounded w-3/4 animate-pulse" style={{ animationDelay: '0.1s' }}></div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                      </div>
+                      <div className="flex-1 h-3 bg-gray-100 rounded w-5/6 animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 flex gap-2">
+                    <div className="px-3 py-1 bg-acorn-blue-100 text-acorn-blue-700 rounded-full text-xs font-medium">SRS Ready</div>
+                    <div className="px-3 py-1 bg-acorn-orange-100 text-acorn-orange-700 rounded-full text-xs font-medium">UML Generated</div>
+                    <div className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">Tasks Created</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -277,298 +243,194 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      <section className="relative z-10 px-6 py-20 max-w-7xl mx-auto">
-        <div className="text-center mb-16 space-y-4">
-          <h2 className="text-4xl lg:text-5xl font-bold text-gray-800">Why Choose Acorn?</h2>
-          <p className="text-xl text-gray-600">Powerful features that help your projects thrive</p>
-        </div>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {features.map((feature, index) => (
-            <div
-              key={index}
-              className="group relative bg-white/60 backdrop-blur-sm rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border border-acorn-blue-200/50 animate-fadeIn"
-              style={{ animationDelay: `${index * 0.1}s` }}
-            >
-              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                <feature.icon className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-2">{feature.title}</h3>
-              <p className="text-gray-600">{feature.description}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Demo Section */}
-      <section id="demo-section" className="relative z-10 px-6 py-20 max-w-7xl mx-auto">
-        <div className="text-center mb-12 space-y-4">
-          <p className="text-sm font-semibold text-acorn-orange-500 uppercase tracking-widest">See It In Action</p>
-          <h2 className="text-4xl lg:text-5xl font-bold text-gray-800">Watch Acorn Transform Ideas Into Plans</h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            From a simple project brief to comprehensive requirements, UML diagrams, and task breakdowns in minutes.
-          </p>
-        </div>
-
-        <div className="relative group max-w-4xl mx-auto">
-          <div className="absolute -inset-1 bg-gradient-to-r from-acorn-blue-500 via-acorn-orange-500 to-acorn-blue-500 rounded-3xl blur-lg opacity-30 group-hover:opacity-50 transition"></div>
-          <div className="relative bg-gray-900 rounded-3xl overflow-hidden shadow-2xl aspect-video flex items-center justify-center">
-            {/* Video placeholder - replace with actual video embed */}
-            <div className="text-center p-8">
-              <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-acorn-blue-500 to-acorn-orange-500 flex items-center justify-center cursor-pointer hover:scale-110 transition-transform shadow-xl">
-                <Play className="w-12 h-12 text-white ml-1" />
-              </div>
-              <p className="text-white/80 text-lg mb-2">Product Demo</p>
-              <p className="text-white/50 text-sm">2:30 min · See how Acorn works</p>
-            </div>
-            {/* Uncomment to embed actual video:
-            <iframe 
-              className="w-full h-full"
-              src="https://www.youtube.com/embed/YOUR_VIDEO_ID"
-              title="Acorn Demo"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
-            */}
-          </div>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-6 mt-12 max-w-4xl mx-auto">
-          {[
-            { title: 'Input Brief', desc: 'Describe your project in plain language', time: '0:00' },
-            { title: 'AI Generation', desc: 'Watch requirements & diagrams emerge', time: '0:45' },
-            { title: 'Export & Share', desc: 'Get stakeholder-ready documentation', time: '1:50' },
-          ].map((step, idx) => (
-            <div key={step.title} className="bg-white/70 backdrop-blur rounded-xl p-4 border border-acorn-blue-100 text-center">
-              <p className="text-xs text-acorn-orange-500 font-semibold mb-1">{step.time}</p>
-              <p className="font-bold text-gray-800">{step.title}</p>
-              <p className="text-sm text-gray-600">{step.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="relative z-10 px-6 py-20 max-w-7xl mx-auto">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-6">
-            <p className="text-sm font-semibold text-acorn-orange-500">IMMERSIVE JOURNEY</p>
-            <h2 className="text-4xl font-bold text-gray-900">Each phase unlocks the next level of clarity</h2>
-            <p className="text-lg text-gray-600">
-              Acorn orchestrates planning as a guided experience. Watch the canvas evolve from fuzzy briefs to crystal-clear delivery plans.
+      {/* Value Proposition Cards */}
+      <section id="features" className="py-20 px-6 bg-gray-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
+              Everything You Need for Software Planning
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              From initial concept to stakeholder-ready documentation, Acorn handles it all.
             </p>
-            <div className="space-y-4 border-l-2 border-acorn-blue-300 pl-6">
-              {workflowStages.map((stage, idx) => (
-                <div key={stage.title} className="relative">
-                  <div className="absolute -left-[74px] top-1 text-xs font-semibold text-acorn-orange-500">{stage.badge}</div>
-                  <div className="flex items-start gap-4 animate-fadeIn" style={{ animationDelay: `${idx * 0.15}s` }}>
-                    <div className="w-12 h-12 rounded-2xl bg-acorn-blue-100 flex items-center justify-center text-acorn-blue-600">
-                      <stage.icon className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <p className="text-lg font-semibold text-gray-900">{stage.title}</p>
-                      <p className="text-gray-600 text-sm">{stage.description}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
 
-          <div className="relative">
-            <div className="bg-white/80 backdrop-blur rounded-3xl shadow-2xl border border-acorn-blue-100 p-8 space-y-6 animate-tilt">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">Live Requirements Canvas</p>
-                  <p className="text-3xl font-bold text-acorn-blue-600">54 nodes evolving</p>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {valueProps.map((prop, index) => (
+              <div 
+                key={prop.title}
+                className="bg-white rounded-xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 animate-fadeIn"
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                <div className={`w-12 h-12 ${prop.color} rounded-xl flex items-center justify-center mb-4`}>
+                  <prop.icon className="w-6 h-6 text-white" />
                 </div>
-                <div className="px-4 py-2 rounded-full bg-acorn-blue-100 text-acorn-blue-700 text-sm font-semibold">Synced</div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">{prop.title}</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">{prop.description}</p>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                {stats.map((stat) => (
-                  <div key={stat.label} className="bg-acorn-blue-50 rounded-2xl p-4 border border-acorn-blue-100">
-                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                    <p className="text-xs uppercase tracking-wide text-gray-500">{stat.label}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="bg-gradient-to-r from-acorn-blue-500 to-acorn-orange-500 rounded-2xl p-5 text-white space-y-2 shadow-lg">
-                <p className="text-sm uppercase tracking-widest text-white/70">What-if Insight</p>
-                <p className="text-xl font-semibold">"Add mobile scope"</p>
-                <p className="text-white/90 text-sm">Impact: +2 sprints, +18% cost. Recommended to split backlog.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="relative z-10 px-6 py-20 max-w-7xl mx-auto">
-        <div className="bg-gradient-to-br from-acorn-blue-500 to-acorn-orange-500 rounded-3xl p-12 shadow-2xl">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-6">
-              <h2 className="text-4xl lg:text-5xl font-bold text-white">Everything You Need to Succeed</h2>
-              <p className="text-xl text-white/90">From initial concept to final delivery, Acorn provides all the tools you need.</p>
-
-              <div className="grid gap-3">
-                {benefits.map((benefit, index) => (
-                  <div key={index} className="flex items-center gap-3 text-white">
-                    <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center">
-                      <Check className="w-4 h-4" />
-                    </div>
-                    <span>{benefit}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-white/10 rounded-2xl p-6 border border-white/20">
-              <p className="text-white/80 text-sm uppercase tracking-widest mb-4">HOW IT WORKS</p>
-              <div className="space-y-4">
-                {[
-                  { step: '01', title: 'Capture & Brief', text: 'Provide a short prompt or upload context files.' },
-                  { step: '02', title: 'AI Planning', text: 'Acorn orchestrates requirements, tasks, and diagrams.' },
-                  { step: '03', title: 'Human Review', text: 'Use Acorn Draft + diagram studio to refine outputs.' },
-                  { step: '04', title: 'Share & Ship', text: 'Export stakeholder-ready docs and traceability.' }
-                ].map((item) => (
-                  <div key={item.step} className="bg-white/5 rounded-xl px-4 py-3">
-                    <p className="text-acorn-orange-300 text-xs">{item.step}</p>
-                    <p className="text-white text-lg font-semibold">{item.title}</p>
-                    <p className="text-white/80">{item.text}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="relative z-10 px-6 py-20 max-w-7xl mx-auto">
-        <div className="grid lg:grid-cols-2 gap-10">
-          {testimonials.map((item, index) => (
-            <div
-              key={item.author}
-              className={`relative bg-gradient-to-br ${item.color} rounded-3xl p-8 text-white shadow-2xl overflow-hidden animate-fadeIn`}
-              style={{ animationDelay: `${index * 0.2}s` }}
-            >
-              <Quote className="w-10 h-10 mb-4 opacity-70" />
-              <p className="text-xl leading-relaxed mb-6">{item.quote}</p>
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-full bg-white/30 flex items-center justify-center">
-                  <Star className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="font-semibold">{item.author}</p>
-                  <p className="text-sm text-white/80">{item.role}</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="relative z-10 px-6 py-20 max-w-7xl mx-auto">
-        <p className="text-center text-sm font-semibold text-acorn-orange-500 mb-4">INTEGRATIONS & COMPANIONS</p>
-        <div className="overflow-hidden rounded-2xl border border-acorn-blue-100 bg-white/80">
-          <div className="flex items-center gap-12 py-8 animate-marquee">
-            {logoMarquee.map((logo) => (
-              <div key={logo} className="text-2xl font-semibold text-acorn-blue-500 tracking-wider">{logo}</div>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="relative z-10 px-6 pb-20 max-w-7xl mx-auto">
-        <div className="bg-white/80 backdrop-blur rounded-3xl shadow-2xl border border-acorn-blue-100 p-10 text-center space-y-6">
-          <p className="text-sm font-semibold text-acorn-orange-500">READY TO PLANT SOMETHING BIG?</p>
-          <h2 className="text-4xl font-bold text-gray-900">Launch your smartest project in minutes</h2>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-            Join product teams, consultancies, and innovation labs already using Acorn to deliver stakeholder-ready plans with confidence.
-          </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <Button
-              size="lg"
-              onClick={() => navigate('/register')}
-              className="bg-gradient-to-r from-acorn-blue-500 to-acorn-orange-500 hover:from-acorn-blue-600 hover:to-acorn-orange-600 text-white font-semibold px-8 py-6 text-lg shadow-xl hover:shadow-2xl transition-all hover:scale-105"
-            >
-              Create an Account
-            </Button>
-            <Button
-              size="lg"
-              variant="ghost"
-              onClick={() => navigate('/projects')}
-              className="text-acorn-blue-700 hover:bg-acorn-blue-50 px-8 py-6 text-lg font-semibold"
-            >
-              Explore the Product
-            </Button>
+      {/* Process Timeline */}
+      <section id="how-it-works" className="py-20 px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
+              How Acorn Works
+            </h2>
+            <p className="text-xl text-gray-600">
+              Three simple steps to transform your ideas into action.
+            </p>
+          </div>
+
+          <div className="relative">
+            {/* Timeline Line */}
+            <div className="hidden md:block absolute top-8 left-0 right-0 h-0.5 bg-gray-200"></div>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              {processSteps.map((step, index) => (
+                <div 
+                  key={step.step}
+                  className="relative animate-fadeIn"
+                  style={{ animationDelay: `${index * 0.15}s` }}
+                >
+                  {/* Step Number */}
+                  <button
+                    onClick={() => setActiveStep(activeStep === step.step ? null : step.step)}
+                    className={`w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold mb-6 mx-auto transition-all cursor-pointer ${
+                      activeStep === step.step 
+                        ? 'bg-acorn-orange-500 text-white scale-110' 
+                        : 'bg-acorn-blue-500 text-white hover:bg-acorn-blue-600'
+                    }`}
+                  >
+                    {step.step}
+                  </button>
+
+                  <div className="text-center">
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">{step.title}</h3>
+                    <p className="text-gray-600 mb-4">{step.description}</p>
+                    
+                    {/* Expandable Details */}
+                    {activeStep === step.step && (
+                      <div className="bg-acorn-blue-50 rounded-lg p-4 text-sm text-acorn-blue-700 animate-fadeIn">
+                        {step.details}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      <style>
-        {`
-          @keyframes orbFloat {
-            0% { transform: translate3d(0, 0, 0) scale(1); }
-            50% { transform: translate3d(0, -30px, 0) scale(1.05); }
-            100% { transform: translate3d(0, 0, 0) scale(1); }
-          }
-          .animate-orb {
-            animation: orbFloat 12s ease-in-out infinite;
-          }
-          @keyframes gradientMove {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-          }
-          .animate-gradient {
-            background-size: 200% 200%;
-            animation: gradientMove 6s ease infinite;
-          }
-          @keyframes pulseSlow {
-            0%, 100% { opacity: 0.8; }
-            50% { opacity: 1; }
-          }
-          .animate-pulse-slow {
-            animation: pulseSlow 4s ease-in-out infinite;
-          }
-          @keyframes slideInLeft {
-            from { opacity: 0; transform: translateX(-40px); }
-            to { opacity: 1; transform: translateX(0); }
-          }
-          .animate-slideInLeft { animation: slideInLeft 0.8s ease-out both; }
-          @keyframes slideInRight {
-            from { opacity: 0; transform: translateX(40px); }
-            to { opacity: 1; transform: translateX(0); }
-          }
-          .animate-slideInRight { animation: slideInRight 0.8s ease-out both; }
-          @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-          .animate-fadeIn { animation: fadeIn 0.8s ease-out both; }
-          @keyframes floatDelay {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-12px); }
-          }
-          .animate-float-delay { animation: floatDelay 5s ease-in-out infinite; }
-          @keyframes tilt {
-            0%, 100% { transform: rotate(-1deg); }
-            50% { transform: rotate(1deg); }
-          }
-          .animate-tilt { animation: tilt 10s ease-in-out infinite; }
-          @keyframes marquee {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
-          }
-          .animate-marquee {
-            width: max-content;
-            animation: marquee 15s linear infinite;
-          }
-          @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-          .animate-slideDown { animation: slideDown 0.3s ease-out both; }
-        `}
-      </style>
+      {/* Social Proof */}
+      <section id="testimonials" className="py-20 px-6 bg-gray-50">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
+              Trusted by Leading Teams
+            </h2>
+          </div>
+
+          {/* Testimonial Slider */}
+          <div className="bg-white rounded-2xl shadow-lg p-8 lg:p-12 mb-12">
+            <div className="max-w-3xl mx-auto text-center">
+              <div className="flex justify-center gap-1 mb-6">
+                {[...Array(testimonials[currentTestimonial].rating)].map((_, i) => (
+                  <Star key={i} className="w-5 h-5 fill-acorn-orange-500 text-acorn-orange-500" />
+                ))}
+              </div>
+              <blockquote className="text-2xl text-acorn-blue-600 font-medium mb-6 leading-relaxed">
+                "{testimonials[currentTestimonial].quote}"
+              </blockquote>
+              <div>
+                <p className="font-bold text-gray-900">{testimonials[currentTestimonial].author}</p>
+                <p className="text-gray-500">{testimonials[currentTestimonial].role}</p>
+              </div>
+
+              {/* Dots */}
+              <div className="flex justify-center gap-2 mt-8">
+                {testimonials.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentTestimonial(index)}
+                    className={`w-2 h-2 rounded-full transition-all ${
+                      index === currentTestimonial ? 'bg-acorn-orange-500 w-6' : 'bg-gray-300'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Integrations Grid */}
+          <div className="text-center">
+            <p className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-6">
+              Integrates With Your Favorite Tools
+            </p>
+            <div className="flex flex-wrap justify-center gap-8">
+              {integrations.map((name) => (
+                <div key={name} className="px-6 py-3 bg-white rounded-lg shadow-sm text-gray-600 font-medium">
+                  {name}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="py-20 px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-6">
+            Start Building Smarter Projects Today
+          </h2>
+          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+            Join thousands of teams using Acorn to streamline their software planning process.
+          </p>
+          <Button 
+            size="lg"
+            onClick={() => navigate('/register')}
+            className="bg-acorn-orange-500 hover:bg-acorn-orange-600 text-white font-bold px-12 py-5 text-lg shadow-xl hover:shadow-2xl transition-all hover:scale-105"
+          >
+            Get Started Free
+            <ArrowRight className="ml-2 w-5 h-5" />
+          </Button>
+          <p className="text-sm text-gray-500 mt-4">No credit card required • Free 14-day trial</p>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-acorn-blue-600 text-white py-12 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+            <AcornLogo size={40} />
+            <div className="flex gap-8 text-sm">
+              <a href="#" className="hover:text-acorn-orange-300 transition-colors">Privacy</a>
+              <a href="#" className="hover:text-acorn-orange-300 transition-colors">Terms</a>
+              <a href="#" className="hover:text-acorn-orange-300 transition-colors">Contact</a>
+            </div>
+            <p className="text-sm text-acorn-blue-200">© 2024 Acorn. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
+
+      {/* Animations */}
+      <style>{`
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(30px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        .animate-slideUp { animation: slideUp 0.6s ease-out forwards; }
+        .animate-fadeIn { animation: fadeIn 0.6s ease-out forwards; }
+      `}</style>
     </div>
   );
 };
