@@ -9,7 +9,7 @@ from database import init_db, close_db
 from routes import (
     auth, projects, generation, requirements, tasks, diagrams, ux_flow, phase_flow, 
     sandbox, users, change_log, websocket, ai_pipeline, personas, srs_audit, billing, export,
-    negotiation, payment, version, notifications, traceability, templates, explainability
+    negotiation, payment, version, notifications, traceability, templates, explainability, utils
 )
 from config import settings
 

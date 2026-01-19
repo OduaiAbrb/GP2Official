@@ -121,23 +121,23 @@ const LandingPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-acorn-blue-50 via-white to-acorn-orange-50 overflow-hidden">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div
-          className="absolute w-[520px] h-[520px] bg-gradient-to-br from-amber-400/25 to-orange-500/25 rounded-full blur-3xl animate-orb"
+          className="absolute w-[520px] h-[520px] bg-gradient-to-br from-acorn-blue-400/25 to-acorn-blue-500/25 rounded-full blur-3xl animate-orb"
           style={{ top: '8%', left: '4%', animationDelay: '0s' }}
         />
         <div
-          className="absolute w-[420px] h-[420px] bg-gradient-to-br from-orange-400/25 to-red-500/25 rounded-full blur-3xl animate-orb"
+          className="absolute w-[420px] h-[420px] bg-gradient-to-br from-acorn-orange-400/25 to-acorn-orange-500/25 rounded-full blur-3xl animate-orb"
           style={{ top: '48%', right: '8%', animationDelay: '2s' }}
         />
         <div
-          className="absolute w-[360px] h-[360px] bg-gradient-to-br from-yellow-400/25 to-amber-500/25 rounded-full blur-3xl animate-orb"
+          className="absolute w-[360px] h-[360px] bg-gradient-to-br from-acorn-blue-300/25 to-acorn-orange-400/25 rounded-full blur-3xl animate-orb"
           style={{ bottom: '6%', left: '20%', animationDelay: '4s' }}
         />
       </div>
 
-      <nav className="relative z-10 px-6 py-4 backdrop-blur-sm bg-white/30 border-b border-amber-200/50">
+      <nav className="relative z-10 px-6 py-4 backdrop-blur-sm bg-white/80 border-b border-acorn-blue-200/50">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="cursor-pointer group-hover:scale-105 transition-transform" onClick={() => navigate('/') }>
             <AcornLogo size={48} />
@@ -148,13 +148,13 @@ const LandingPage: React.FC = () => {
             <Button
               variant="ghost"
               onClick={() => navigate('/login')}
-              className="hover:bg-amber-100/50 text-amber-900 font-medium"
+              className="hover:bg-acorn-blue-100/50 text-acorn-blue-700 font-medium"
             >
               Sign In
             </Button>
             <Button
               onClick={() => navigate('/register')}
-              className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-medium shadow-lg hover:shadow-xl transition-all hover:scale-105"
+              className="bg-gradient-to-r from-acorn-blue-500 to-acorn-orange-500 hover:from-acorn-blue-600 hover:to-acorn-orange-600 text-white font-medium shadow-lg hover:shadow-xl transition-all hover:scale-105"
             >
               Get Started
             </Button>
@@ -162,32 +162,32 @@ const LandingPage: React.FC = () => {
 
           {/* Mobile Menu Button */}
           <button 
-            className="md:hidden p-2 rounded-lg hover:bg-amber-100/50 transition-colors"
+            className="md:hidden p-2 rounded-lg hover:bg-acorn-blue-100/50 transition-colors"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Toggle menu"
           >
             {mobileMenuOpen ? (
-              <X className="w-6 h-6 text-amber-900" />
+              <X className="w-6 h-6 text-acorn-blue-700" />
             ) : (
-              <Menu className="w-6 h-6 text-amber-900" />
+              <Menu className="w-6 h-6 text-acorn-blue-700" />
             )}
           </button>
         </div>
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 right-0 bg-white/95 backdrop-blur-lg border-b border-amber-200/50 shadow-lg animate-slideDown">
+          <div className="md:hidden absolute top-full left-0 right-0 bg-white/95 backdrop-blur-lg border-b border-acorn-blue-200/50 shadow-lg animate-slideDown">
             <div className="flex flex-col p-4 gap-3">
               <Button
                 variant="ghost"
                 onClick={() => { navigate('/login'); setMobileMenuOpen(false); }}
-                className="w-full justify-center hover:bg-amber-100/50 text-amber-900 font-medium"
+                className="w-full justify-center hover:bg-acorn-blue-100/50 text-acorn-blue-700 font-medium"
               >
                 Sign In
               </Button>
               <Button
                 onClick={() => { navigate('/register'); setMobileMenuOpen(false); }}
-                className="w-full justify-center bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-medium shadow-lg"
+                className="w-full justify-center bg-gradient-to-r from-acorn-blue-500 to-acorn-orange-500 hover:from-acorn-blue-600 hover:to-acorn-orange-600 text-white font-medium shadow-lg"
               >
                 Get Started
               </Button>
@@ -199,13 +199,13 @@ const LandingPage: React.FC = () => {
       <section className="relative z-10 px-6 py-20 max-w-7xl mx-auto">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-8 animate-slideInLeft">
-            <div className="inline-flex items-center px-4 py-2 bg-amber-100 rounded-full border border-amber-300 animate-pulse-slow">
-              <Sparkles className="w-4 h-4 text-amber-600 mr-2" />
-              <span className="text-sm font-medium text-amber-800">AI-Powered Planning Platform</span>
+            <div className="inline-flex items-center px-4 py-2 bg-acorn-blue-100 rounded-full border border-acorn-blue-300 animate-pulse-slow">
+              <Sparkles className="w-4 h-4 text-acorn-orange-500 mr-2" />
+              <span className="text-sm font-medium text-acorn-blue-700">AI-Powered Planning Platform</span>
             </div>
 
             <h1 className="text-5xl lg:text-7xl font-bold leading-tight">
-              <span className="bg-gradient-to-r from-amber-700 via-orange-600 to-amber-700 bg-clip-text text-transparent animate-gradient">
+              <span className="bg-gradient-to-r from-acorn-blue-600 via-acorn-orange-500 to-acorn-blue-600 bg-clip-text text-transparent animate-gradient">
                 Plant the Seeds
               </span>
               <br />
@@ -221,7 +221,7 @@ const LandingPage: React.FC = () => {
               <Button
                 size="lg"
                 onClick={() => navigate('/register')}
-                className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold px-8 py-6 text-lg shadow-xl hover:shadow-2xl transition-all hover:scale-105 group"
+                className="bg-gradient-to-r from-acorn-blue-500 to-acorn-orange-500 hover:from-acorn-blue-600 hover:to-acorn-orange-600 text-white font-semibold px-8 py-6 text-lg shadow-xl hover:shadow-2xl transition-all hover:scale-105 group"
               >
                 Start Growing
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -230,7 +230,7 @@ const LandingPage: React.FC = () => {
                 size="lg"
                 variant="outline"
                 onClick={scrollToDemo}
-                className="border-2 border-amber-500 text-amber-700 hover:bg-amber-50 px-8 py-6 text-lg font-semibold group"
+                className="border-2 border-acorn-blue-500 text-acorn-blue-700 hover:bg-acorn-blue-50 px-8 py-6 text-lg font-semibold group"
               >
                 <Play className="mr-2 w-5 h-5 group-hover:scale-110 transition-transform" />
                 Watch Demo
@@ -241,10 +241,10 @@ const LandingPage: React.FC = () => {
               {stats.slice(0, 2).map((stat, index) => (
                 <div
                   key={stat.label}
-                  className="bg-white/70 backdrop-blur rounded-2xl p-4 border border-amber-100 shadow-lg animate-fadeIn"
+                  className="bg-white/70 backdrop-blur rounded-2xl p-4 border border-acorn-blue-100 shadow-lg animate-fadeIn"
                   style={{ animationDelay: `${index * 0.2}s` }}
                 >
-                  <p className="text-3xl font-bold text-amber-700">{stat.value}</p>
+                  <p className="text-3xl font-bold text-acorn-blue-600">{stat.value}</p>
                   <p className="text-sm text-gray-500">{stat.label}</p>
                 </div>
               ))}
@@ -253,7 +253,7 @@ const LandingPage: React.FC = () => {
 
           <div className="relative animate-slideInRight">
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-amber-400/30 to-orange-500/30 rounded-3xl blur-2xl animate-pulse-slow" />
+              <div className="absolute inset-0 bg-gradient-to-br from-acorn-blue-400/30 to-acorn-orange-500/30 rounded-3xl blur-2xl animate-pulse-slow" />
               <img
                 src="https://images.unsplash.com/photo-1581092335331-5e00ac65e934?w=800&h=600&fit=crop"
                 alt="Software Planning & Requirements"
@@ -266,7 +266,7 @@ const LandingPage: React.FC = () => {
                 </div>
               </div>
               <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-white shadow-2xl rounded-2xl px-8 py-4 flex items-center gap-4 animate-float-delay">
-                <Users className="w-10 h-10 text-amber-600" />
+                <Users className="w-10 h-10 text-acorn-orange-500" />
                 <div>
                   <p className="text-sm text-gray-500">Collaborators live</p>
                   <p className="text-lg font-semibold text-gray-800">17 teams</p>
@@ -287,7 +287,7 @@ const LandingPage: React.FC = () => {
           {features.map((feature, index) => (
             <div
               key={index}
-              className="group relative bg-white/60 backdrop-blur-sm rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border border-amber-200/50 animate-fadeIn"
+              className="group relative bg-white/60 backdrop-blur-sm rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border border-acorn-blue-200/50 animate-fadeIn"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
@@ -303,7 +303,7 @@ const LandingPage: React.FC = () => {
       {/* Demo Section */}
       <section id="demo-section" className="relative z-10 px-6 py-20 max-w-7xl mx-auto">
         <div className="text-center mb-12 space-y-4">
-          <p className="text-sm font-semibold text-amber-600 uppercase tracking-widest">See It In Action</p>
+          <p className="text-sm font-semibold text-acorn-orange-500 uppercase tracking-widest">See It In Action</p>
           <h2 className="text-4xl lg:text-5xl font-bold text-gray-800">Watch Acorn Transform Ideas Into Plans</h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             From a simple project brief to comprehensive requirements, UML diagrams, and task breakdowns in minutes.
@@ -311,11 +311,11 @@ const LandingPage: React.FC = () => {
         </div>
 
         <div className="relative group max-w-4xl mx-auto">
-          <div className="absolute -inset-1 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 rounded-3xl blur-lg opacity-30 group-hover:opacity-50 transition"></div>
+          <div className="absolute -inset-1 bg-gradient-to-r from-acorn-blue-500 via-acorn-orange-500 to-acorn-blue-500 rounded-3xl blur-lg opacity-30 group-hover:opacity-50 transition"></div>
           <div className="relative bg-gray-900 rounded-3xl overflow-hidden shadow-2xl aspect-video flex items-center justify-center">
             {/* Video placeholder - replace with actual video embed */}
             <div className="text-center p-8">
-              <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center cursor-pointer hover:scale-110 transition-transform shadow-xl">
+              <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-acorn-blue-500 to-acorn-orange-500 flex items-center justify-center cursor-pointer hover:scale-110 transition-transform shadow-xl">
                 <Play className="w-12 h-12 text-white ml-1" />
               </div>
               <p className="text-white/80 text-lg mb-2">Product Demo</p>
@@ -339,8 +339,8 @@ const LandingPage: React.FC = () => {
             { title: 'AI Generation', desc: 'Watch requirements & diagrams emerge', time: '0:45' },
             { title: 'Export & Share', desc: 'Get stakeholder-ready documentation', time: '1:50' },
           ].map((step, idx) => (
-            <div key={step.title} className="bg-white/70 backdrop-blur rounded-xl p-4 border border-amber-100 text-center">
-              <p className="text-xs text-amber-600 font-semibold mb-1">{step.time}</p>
+            <div key={step.title} className="bg-white/70 backdrop-blur rounded-xl p-4 border border-acorn-blue-100 text-center">
+              <p className="text-xs text-acorn-orange-500 font-semibold mb-1">{step.time}</p>
               <p className="font-bold text-gray-800">{step.title}</p>
               <p className="text-sm text-gray-600">{step.desc}</p>
             </div>
@@ -351,17 +351,17 @@ const LandingPage: React.FC = () => {
       <section className="relative z-10 px-6 py-20 max-w-7xl mx-auto">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
-            <p className="text-sm font-semibold text-amber-600">IMMERSIVE JOURNEY</p>
+            <p className="text-sm font-semibold text-acorn-orange-500">IMMERSIVE JOURNEY</p>
             <h2 className="text-4xl font-bold text-gray-900">Each phase unlocks the next level of clarity</h2>
             <p className="text-lg text-gray-600">
               Acorn orchestrates planning as a guided experience. Watch the canvas evolve from fuzzy briefs to crystal-clear delivery plans.
             </p>
-            <div className="space-y-4 border-l-2 border-amber-300 pl-6">
+            <div className="space-y-4 border-l-2 border-acorn-blue-300 pl-6">
               {workflowStages.map((stage, idx) => (
                 <div key={stage.title} className="relative">
-                  <div className="absolute -left-[74px] top-1 text-xs font-semibold text-amber-500">{stage.badge}</div>
+                  <div className="absolute -left-[74px] top-1 text-xs font-semibold text-acorn-orange-500">{stage.badge}</div>
                   <div className="flex items-start gap-4 animate-fadeIn" style={{ animationDelay: `${idx * 0.15}s` }}>
-                    <div className="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center text-amber-600">
+                    <div className="w-12 h-12 rounded-2xl bg-acorn-blue-100 flex items-center justify-center text-acorn-blue-600">
                       <stage.icon className="w-6 h-6" />
                     </div>
                     <div>
@@ -375,23 +375,23 @@ const LandingPage: React.FC = () => {
           </div>
 
           <div className="relative">
-            <div className="bg-white/80 backdrop-blur rounded-3xl shadow-2xl border border-amber-100 p-8 space-y-6 animate-tilt">
+            <div className="bg-white/80 backdrop-blur rounded-3xl shadow-2xl border border-acorn-blue-100 p-8 space-y-6 animate-tilt">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500">Live Requirements Canvas</p>
-                  <p className="text-3xl font-bold text-amber-700">54 nodes evolving</p>
+                  <p className="text-3xl font-bold text-acorn-blue-600">54 nodes evolving</p>
                 </div>
-                <div className="px-4 py-2 rounded-full bg-amber-100 text-amber-700 text-sm font-semibold">Synced</div>
+                <div className="px-4 py-2 rounded-full bg-acorn-blue-100 text-acorn-blue-700 text-sm font-semibold">Synced</div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 {stats.map((stat) => (
-                  <div key={stat.label} className="bg-amber-50 rounded-2xl p-4 border border-amber-100">
+                  <div key={stat.label} className="bg-acorn-blue-50 rounded-2xl p-4 border border-acorn-blue-100">
                     <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
                     <p className="text-xs uppercase tracking-wide text-gray-500">{stat.label}</p>
                   </div>
                 ))}
               </div>
-              <div className="bg-gradient-to-r from-amber-500 to-orange-600 rounded-2xl p-5 text-white space-y-2 shadow-lg">
+              <div className="bg-gradient-to-r from-acorn-blue-500 to-acorn-orange-500 rounded-2xl p-5 text-white space-y-2 shadow-lg">
                 <p className="text-sm uppercase tracking-widest text-white/70">What-if Insight</p>
                 <p className="text-xl font-semibold">"Add mobile scope"</p>
                 <p className="text-white/90 text-sm">Impact: +2 sprints, +18% cost. Recommended to split backlog.</p>
@@ -402,11 +402,11 @@ const LandingPage: React.FC = () => {
       </section>
 
       <section className="relative z-10 px-6 py-20 max-w-7xl mx-auto">
-        <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-3xl p-12 shadow-2xl">
+        <div className="bg-gradient-to-br from-acorn-blue-500 to-acorn-orange-500 rounded-3xl p-12 shadow-2xl">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
               <h2 className="text-4xl lg:text-5xl font-bold text-white">Everything You Need to Succeed</h2>
-              <p className="text-xl text-amber-50">From initial concept to final delivery, Acorn provides all the tools you need.</p>
+              <p className="text-xl text-white/90">From initial concept to final delivery, Acorn provides all the tools you need.</p>
 
               <div className="grid gap-3">
                 {benefits.map((benefit, index) => (
@@ -420,8 +420,8 @@ const LandingPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-white/10 rounded-2xl p-6 border border-amber-200/50">
-              <p className="text-amber-100 text-sm uppercase tracking-widest mb-4">HOW IT WORKS</p>
+            <div className="bg-white/10 rounded-2xl p-6 border border-white/20">
+              <p className="text-white/80 text-sm uppercase tracking-widest mb-4">HOW IT WORKS</p>
               <div className="space-y-4">
                 {[
                   { step: '01', title: 'Capture & Brief', text: 'Provide a short prompt or upload context files.' },
@@ -430,9 +430,9 @@ const LandingPage: React.FC = () => {
                   { step: '04', title: 'Share & Ship', text: 'Export stakeholder-ready docs and traceability.' }
                 ].map((item) => (
                   <div key={item.step} className="bg-white/5 rounded-xl px-4 py-3">
-                    <p className="text-amber-200 text-xs">{item.step}</p>
+                    <p className="text-acorn-orange-300 text-xs">{item.step}</p>
                     <p className="text-white text-lg font-semibold">{item.title}</p>
-                    <p className="text-amber-50">{item.text}</p>
+                    <p className="text-white/80">{item.text}</p>
                   </div>
                 ))}
               </div>
@@ -466,19 +466,19 @@ const LandingPage: React.FC = () => {
       </section>
 
       <section className="relative z-10 px-6 py-20 max-w-7xl mx-auto">
-        <p className="text-center text-sm font-semibold text-amber-600 mb-4">INTEGRATIONS & COMPANIONS</p>
-        <div className="overflow-hidden rounded-2xl border border-amber-100 bg-white/80">
+        <p className="text-center text-sm font-semibold text-acorn-orange-500 mb-4">INTEGRATIONS & COMPANIONS</p>
+        <div className="overflow-hidden rounded-2xl border border-acorn-blue-100 bg-white/80">
           <div className="flex items-center gap-12 py-8 animate-marquee">
             {logoMarquee.map((logo) => (
-              <div key={logo} className="text-2xl font-semibold text-amber-500 tracking-wider">{logo}</div>
+              <div key={logo} className="text-2xl font-semibold text-acorn-blue-500 tracking-wider">{logo}</div>
             ))}
           </div>
         </div>
       </section>
 
       <section className="relative z-10 px-6 pb-20 max-w-7xl mx-auto">
-        <div className="bg-white/80 backdrop-blur rounded-3xl shadow-2xl border border-amber-100 p-10 text-center space-y-6">
-          <p className="text-sm font-semibold text-amber-600">READY TO PLANT SOMETHING BIG?</p>
+        <div className="bg-white/80 backdrop-blur rounded-3xl shadow-2xl border border-acorn-blue-100 p-10 text-center space-y-6">
+          <p className="text-sm font-semibold text-acorn-orange-500">READY TO PLANT SOMETHING BIG?</p>
           <h2 className="text-4xl font-bold text-gray-900">Launch your smartest project in minutes</h2>
           <p className="text-lg text-gray-600 max-w-3xl mx-auto">
             Join product teams, consultancies, and innovation labs already using Acorn to deliver stakeholder-ready plans with confidence.
@@ -487,7 +487,7 @@ const LandingPage: React.FC = () => {
             <Button
               size="lg"
               onClick={() => navigate('/register')}
-              className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold px-8 py-6 text-lg shadow-xl hover:shadow-2xl transition-all hover:scale-105"
+              className="bg-gradient-to-r from-acorn-blue-500 to-acorn-orange-500 hover:from-acorn-blue-600 hover:to-acorn-orange-600 text-white font-semibold px-8 py-6 text-lg shadow-xl hover:shadow-2xl transition-all hover:scale-105"
             >
               Create an Account
             </Button>
@@ -495,7 +495,7 @@ const LandingPage: React.FC = () => {
               size="lg"
               variant="ghost"
               onClick={() => navigate('/projects')}
-              className="text-amber-700 hover:bg-amber-50 px-8 py-6 text-lg font-semibold"
+              className="text-acorn-blue-700 hover:bg-acorn-blue-50 px-8 py-6 text-lg font-semibold"
             >
               Explore the Product
             </Button>

@@ -22,18 +22,18 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-acorn-blue-50 via-white to-acorn-orange-50 flex items-center justify-center p-4 relative overflow-hidden">
       {/* Animated Background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute w-[500px] h-[500px] bg-gradient-to-br from-amber-400/20 to-orange-500/20 rounded-full blur-3xl animate-float" style={{ top: '15%', left: '5%' }} />
-        <div className="absolute w-[400px] h-[400px] bg-gradient-to-br from-orange-400/20 to-red-500/20 rounded-full blur-3xl animate-float" style={{ top: '60%', right: '10%', animationDelay: '2s' }} />
-        <div className="absolute w-[350px] h-[350px] bg-gradient-to-br from-yellow-400/20 to-amber-500/20 rounded-full blur-3xl animate-float" style={{ bottom: '20%', left: '40%', animationDelay: '4s' }} />
+        <div className="absolute w-[500px] h-[500px] bg-gradient-to-br from-acorn-blue-400/20 to-acorn-blue-500/20 rounded-full blur-3xl animate-float" style={{ top: '15%', left: '5%' }} />
+        <div className="absolute w-[400px] h-[400px] bg-gradient-to-br from-acorn-orange-400/20 to-acorn-orange-500/20 rounded-full blur-3xl animate-float" style={{ top: '60%', right: '10%', animationDelay: '2s' }} />
+        <div className="absolute w-[350px] h-[350px] bg-gradient-to-br from-acorn-blue-300/20 to-acorn-orange-400/20 rounded-full blur-3xl animate-float" style={{ bottom: '20%', left: '40%', animationDelay: '4s' }} />
       </div>
       
       {/* Animated Grid Pattern */}
       <div className="fixed inset-0 opacity-[0.03] pointer-events-none">
         <div className="absolute inset-0" style={{
-          backgroundImage: 'linear-gradient(rgba(251, 146, 60, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(251, 146, 60, 0.3) 1px, transparent 1px)',
+          backgroundImage: 'linear-gradient(rgba(13, 59, 102, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(13, 59, 102, 0.3) 1px, transparent 1px)',
           backgroundSize: '50px 50px',
           animation: 'gridMove 20s linear infinite'
         }}></div>
@@ -52,7 +52,7 @@ export const LoginPage: React.FC = () => {
             
             {/* Architecture Image */}
             <div className="relative group animate-fadeIn" style={{ animationDelay: '0.2s' }}>
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-orange-600 rounded-2xl blur opacity-30 group-hover:opacity-60 transition duration-500"></div>
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-acorn-blue-500 to-acorn-orange-500 rounded-2xl blur opacity-30 group-hover:opacity-60 transition duration-500"></div>
               <div className="relative overflow-hidden rounded-2xl shadow-2xl">
                 <img 
                   src="https://images.unsplash.com/photo-1664526937033-fe2c11f1be25?w=600&h=400&fit=crop" 
@@ -70,9 +70,9 @@ export const LoginPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 border-2 border-amber-200 animate-fadeIn" style={{ animationDelay: '0.4s' }}>
+            <div className="bg-gradient-to-br from-acorn-blue-50 to-acorn-orange-50 rounded-2xl p-6 border-2 border-acorn-blue-200 animate-fadeIn" style={{ animationDelay: '0.4s' }}>
               <div className="flex items-start gap-4">
-                <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center animate-bounce-slow">
+                <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-acorn-blue-500 to-acorn-orange-500 rounded-xl flex items-center justify-center animate-bounce-slow">
                   <Zap className="w-6 h-6 text-white" />
                 </div>
                 <div>
@@ -94,11 +94,11 @@ export const LoginPage: React.FC = () => {
 
             {/* Login Card */}
             <div className="relative group">
-              <div className="absolute -inset-1 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 rounded-3xl blur-lg opacity-20 group-hover:opacity-40 animate-gradient-shift transition"></div>
+              <div className="absolute -inset-1 bg-gradient-to-r from-acorn-blue-500 via-acorn-orange-500 to-acorn-blue-500 rounded-3xl blur-lg opacity-20 group-hover:opacity-40 animate-gradient-shift transition"></div>
               
-              <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-amber-100">
+              <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-acorn-blue-100">
                 <div className="text-center mb-6">
-                  <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl mb-4 animate-bounce-slow">
+                  <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-acorn-blue-500 to-acorn-orange-500 rounded-2xl mb-4 animate-bounce-slow">
                     <Lock className="w-7 h-7 text-white" />
                   </div>
                   <h1 className="text-2xl font-bold text-gray-900">Welcome Back</h1>
@@ -139,7 +139,7 @@ export const LoginPage: React.FC = () => {
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold py-3 shadow-lg hover:shadow-xl transition-all"
+              className="w-full bg-gradient-to-r from-acorn-blue-500 to-acorn-orange-500 hover:from-acorn-blue-600 hover:to-acorn-orange-600 text-white font-semibold py-3 shadow-lg hover:shadow-xl transition-all"
             >
               {isLoading ? 'Signing in...' : (
                 <>
@@ -153,14 +153,14 @@ export const LoginPage: React.FC = () => {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Don't have an account?{' '}
-              <Link to="/register" className="text-amber-600 hover:text-amber-700 font-semibold">
+              <Link to="/register" className="text-acorn-orange-500 hover:text-acorn-orange-600 font-semibold">
                 Get Started Free
               </Link>
             </p>
           </div>
 
           <div className="text-center mt-4">
-            <Link to="/" className="text-sm text-gray-600 hover:text-amber-600 transition-colors inline-flex items-center gap-1 group">
+            <Link to="/" className="text-sm text-gray-600 hover:text-acorn-blue-600 transition-colors inline-flex items-center gap-1 group">
               <span className="group-hover:-translate-x-1 transition-transform">←</span>
               Back to Home
             </Link>

@@ -48,18 +48,18 @@ export const RegisterPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-acorn-blue-50 via-white to-acorn-orange-50 flex items-center justify-center p-4 relative overflow-hidden">
       {/* Animated Background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute w-[500px] h-[500px] bg-gradient-to-br from-amber-400/20 to-orange-500/20 rounded-full blur-3xl animate-float" style={{ top: '10%', right: '10%' }} />
-        <div className="absolute w-[400px] h-[400px] bg-gradient-to-br from-orange-400/20 to-red-500/20 rounded-full blur-3xl animate-float" style={{ bottom: '10%', left: '15%', animationDelay: '3s' }} />
-        <div className="absolute w-[300px] h-[300px] bg-gradient-to-br from-yellow-400/20 to-amber-500/20 rounded-full blur-3xl animate-float" style={{ top: '50%', left: '50%', animationDelay: '1.5s' }} />
+        <div className="absolute w-[500px] h-[500px] bg-gradient-to-br from-acorn-blue-400/20 to-acorn-blue-500/20 rounded-full blur-3xl animate-float" style={{ top: '10%', right: '10%' }} />
+        <div className="absolute w-[400px] h-[400px] bg-gradient-to-br from-acorn-orange-400/20 to-acorn-orange-500/20 rounded-full blur-3xl animate-float" style={{ bottom: '10%', left: '15%', animationDelay: '3s' }} />
+        <div className="absolute w-[300px] h-[300px] bg-gradient-to-br from-acorn-blue-300/20 to-acorn-orange-400/20 rounded-full blur-3xl animate-float" style={{ top: '50%', left: '50%', animationDelay: '1.5s' }} />
       </div>
 
       {/* Animated Grid Pattern */}
       <div className="fixed inset-0 opacity-[0.03] pointer-events-none">
         <div className="absolute inset-0" style={{
-          backgroundImage: 'linear-gradient(rgba(251, 146, 60, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(251, 146, 60, 0.3) 1px, transparent 1px)',
+          backgroundImage: 'linear-gradient(rgba(13, 59, 102, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(13, 59, 102, 0.3) 1px, transparent 1px)',
           backgroundSize: '50px 50px',
           animation: 'gridMove 20s linear infinite'
         }}></div>
@@ -77,7 +77,7 @@ export const RegisterPage: React.FC = () => {
 
             {/* Software Architecture Image */}
             <div className="relative group animate-fadeIn" style={{ animationDelay: '0.2s' }}>
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-orange-600 rounded-2xl blur opacity-30 group-hover:opacity-60 transition duration-500"></div>
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-acorn-blue-500 to-acorn-orange-500 rounded-2xl blur opacity-30 group-hover:opacity-60 transition duration-500"></div>
               <div className="relative overflow-hidden rounded-2xl shadow-2xl">
                 <img 
                   src="https://images.unsplash.com/photo-1576153192396-180ecef2a715?w=600&h=400&fit=crop" 
@@ -111,12 +111,12 @@ export const RegisterPage: React.FC = () => {
                   style={{ animationDelay: benefit.delay }}
                 >
                   <div className="relative flex-shrink-0">
-                    <div className="absolute inset-0 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full blur-md opacity-0 group-hover:opacity-50 transition-opacity"></div>
-                    <div className="relative w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full flex items-center justify-center transform group-hover:scale-110 group-hover:rotate-12 transition-all">
+                    <div className="absolute inset-0 bg-gradient-to-br from-acorn-blue-500 to-acorn-orange-500 rounded-full blur-md opacity-0 group-hover:opacity-50 transition-opacity"></div>
+                    <div className="relative w-10 h-10 bg-gradient-to-br from-acorn-blue-500 to-acorn-orange-500 rounded-full flex items-center justify-center transform group-hover:scale-110 group-hover:rotate-12 transition-all">
                       <benefit.icon className="w-5 h-5 text-white" />
                     </div>
                   </div>
-                  <span className="text-gray-700 font-medium group-hover:text-amber-700 transition-colors">{benefit.text}</span>
+                  <span className="text-gray-700 font-medium group-hover:text-acorn-blue-700 transition-colors">{benefit.text}</span>
                 </div>
               ))}
             </div>
@@ -131,11 +131,11 @@ export const RegisterPage: React.FC = () => {
             </div>
 
             <div className="relative group">
-              <div className="absolute -inset-1 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 rounded-3xl blur-lg opacity-20 group-hover:opacity-40 animate-gradient-shift transition"></div>
+              <div className="absolute -inset-1 bg-gradient-to-r from-acorn-blue-500 via-acorn-orange-500 to-acorn-blue-500 rounded-3xl blur-lg opacity-20 group-hover:opacity-40 animate-gradient-shift transition"></div>
               
-              <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-amber-100">
+              <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-acorn-blue-100">
                 <div className="text-center mb-6">
-                  <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl mb-4 animate-bounce-slow">
+                  <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-acorn-blue-500 to-acorn-orange-500 rounded-2xl mb-4 animate-bounce-slow">
                     <Sparkles className="w-7 h-7 text-white" />
                   </div>
                   <h1 className="text-2xl font-bold text-gray-900">Create Your Account</h1>
@@ -157,9 +157,9 @@ export const RegisterPage: React.FC = () => {
                       onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                       placeholder="John Doe"
                       required
-                      className="border-2 border-amber-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all"
+                      className="border-2 border-acorn-blue-200 focus:border-acorn-blue-500 focus:ring-2 focus:ring-acorn-blue-200 transition-all"
                     />
-                    <div className="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-amber-500 to-orange-600 w-0 group-focus-within:w-full transition-all duration-500"></div>
+                    <div className="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-acorn-blue-500 to-acorn-orange-500 w-0 group-focus-within:w-full transition-all duration-500"></div>
                   </div>
 
                   <div className="relative group">
@@ -170,9 +170,9 @@ export const RegisterPage: React.FC = () => {
                       onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
                       placeholder="Your Company"
                       required
-                      className="border-2 border-amber-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all"
+                      className="border-2 border-acorn-blue-200 focus:border-acorn-blue-500 focus:ring-2 focus:ring-acorn-blue-200 transition-all"
                     />
-                    <div className="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-amber-500 to-orange-600 w-0 group-focus-within:w-full transition-all duration-500"></div>
+                    <div className="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-acorn-blue-500 to-acorn-orange-500 w-0 group-focus-within:w-full transition-all duration-500"></div>
                   </div>
 
                   <div className="relative group">
@@ -180,7 +180,7 @@ export const RegisterPage: React.FC = () => {
                     <select
                       value={formData.role}
                       onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                      className="w-full border-2 border-amber-200 rounded-lg px-3 py-2 text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all bg-white"
+                      className="w-full border-2 border-acorn-blue-200 rounded-lg px-3 py-2 text-sm focus:border-acorn-blue-500 focus:ring-2 focus:ring-acorn-blue-200 transition-all bg-white"
                     >
                       {ROLE_OPTIONS.map((role) => (
                         <option key={role.id} value={role.id}>
@@ -201,9 +201,9 @@ export const RegisterPage: React.FC = () => {
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       placeholder="you@example.com"
                       required
-                      className="border-2 border-amber-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all"
+                      className="border-2 border-acorn-blue-200 focus:border-acorn-blue-500 focus:ring-2 focus:ring-acorn-blue-200 transition-all"
                     />
-                    <div className="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-amber-500 to-orange-600 w-0 group-focus-within:w-full transition-all duration-500"></div>
+                    <div className="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-acorn-blue-500 to-acorn-orange-500 w-0 group-focus-within:w-full transition-all duration-500"></div>
                   </div>
 
                   <div className="relative group">
@@ -214,7 +214,7 @@ export const RegisterPage: React.FC = () => {
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       placeholder="Create a strong password"
                       required
-                      className={`border-2 ${formData.password && !isPasswordValid ? 'border-red-300' : 'border-amber-200'} focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all`}
+                      className={`border-2 ${formData.password && !isPasswordValid ? 'border-red-300' : 'border-acorn-blue-200'} focus:border-acorn-blue-500 focus:ring-2 focus:ring-acorn-blue-200 transition-all`}
                     />
                     {formData.password && (
                       <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
@@ -245,9 +245,9 @@ export const RegisterPage: React.FC = () => {
                   <Button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold py-3 shadow-lg hover:shadow-2xl transition-all hover:scale-[1.02] group relative overflow-hidden"
+                    className="w-full bg-gradient-to-r from-acorn-blue-500 to-acorn-orange-500 hover:from-acorn-blue-600 hover:to-acorn-orange-600 text-white font-semibold py-3 shadow-lg hover:shadow-2xl transition-all hover:scale-[1.02] group relative overflow-hidden"
                   >
-                    <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-amber-400 to-orange-500 opacity-0 group-hover:opacity-20 transition-opacity"></span>
+                    <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-acorn-blue-400 to-acorn-orange-500 opacity-0 group-hover:opacity-20 transition-opacity"></span>
                     {isLoading ? (
                       <>
                         <div className="w-5 h-5 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin inline-block"></div>
@@ -266,7 +266,7 @@ export const RegisterPage: React.FC = () => {
                 <div className="mt-6 text-center">
                   <p className="text-sm text-gray-600">
                     Already have an account?{' '}
-                    <Link to="/login" className="text-amber-600 hover:text-amber-700 font-semibold hover:underline transition-all">
+                    <Link to="/login" className="text-acorn-orange-500 hover:text-acorn-orange-600 font-semibold hover:underline transition-all">
                       Sign In
                     </Link>
                   </p>
@@ -275,7 +275,7 @@ export const RegisterPage: React.FC = () => {
             </div>
 
             <div className="text-center mt-4">
-              <Link to="/" className="text-sm text-gray-600 hover:text-amber-600 transition-colors inline-flex items-center gap-1 group">
+              <Link to="/" className="text-sm text-gray-600 hover:text-acorn-blue-600 transition-colors inline-flex items-center gap-1 group">
                 <span className="group-hover:-translate-x-1 transition-transform">←</span>
                 Back to Home
               </Link>
