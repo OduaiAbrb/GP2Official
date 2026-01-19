@@ -28,11 +28,12 @@ class Settings(BaseSettings):
     # AI / LLM Configuration
     llm_provider: str = "openai"
     llm_api_key: Optional[str] = None
-    llm_model_name: str = "gpt-4"
+    llm_model_name: str = "gpt-5.2"
     openai_api_key: Optional[str] = None
     huggingface_api_key: Optional[str] = None
     gemini_api_key: Optional[str] = None
     claude_api_key: Optional[str] = None
+    emergent_llm_key: Optional[str] = None  # Universal key for OpenAI/Anthropic/Gemini
     ollama_base_url: str = "http://localhost:11434"
     
     # Logo and Branding
