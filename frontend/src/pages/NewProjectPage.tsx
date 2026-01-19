@@ -36,10 +36,21 @@ export const NewProjectPage: React.FC = () => {
     setLoading(true);
     try {
       const project = await api.createProject(formData);
+      if (!project || !project.id) {
+        throw new Error('Invalid response from server');
+      }
       navigate(`/projects/${project.id}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create project:', error);
-      alert('Failed to create project. Please try again.');
+      let message = 'Failed to create project. Please try again.';
+      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        message = 'Server is waking up. Please wait a moment and try again.';
+      } else if (!error.response) {
+        message = 'Unable to connect to server. Please check your connection.';
+      } else if (error.response?.data?.detail) {
+        message = error.response.data.detail;
+      }
+      alert(message);
     } finally {
       setLoading(false);
     }
