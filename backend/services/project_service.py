@@ -73,7 +73,7 @@ class ProjectService:
             "role_label": meta.get("label"),
             "authority": int(meta.get("authority", 1)),
             "assigned_by": assigned_by,
-            "assigned_at": datetime.utcnow(),
+            "assigned_at": datetime.utcnow().isoformat(),
             "status": "active",
             "notes": notes,
         }
