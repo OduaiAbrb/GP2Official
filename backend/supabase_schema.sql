@@ -3,7 +3,7 @@
 
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id TEXT PRIMARY KEY,
     email TEXT UNIQUE NOT NULL,
     full_name TEXT,
     organization TEXT DEFAULT 'Private Workspace',
@@ -57,11 +57,15 @@ CREATE TABLE IF NOT EXISTS projects (
 
 -- Refresh tokens table
 CREATE TABLE IF NOT EXISTS refresh_tokens (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
-    token TEXT UNIQUE NOT NULL,
+    token_hash TEXT UNIQUE NOT NULL,
+    user_agent TEXT,
+    ip_address TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
     expires_at TIMESTAMPTZ NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    revoked BOOLEAN DEFAULT false,
+    revoked_at TIMESTAMPTZ
 );
 
 -- Workspace invites table
