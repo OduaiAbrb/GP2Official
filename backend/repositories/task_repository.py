@@ -72,7 +72,7 @@ class _SupabaseTaskRepository:
             if isinstance(data.get(field), str):
                 try:
                     data[field] = json.loads(data[field])
-                except:
+                except (json.JSONDecodeError, TypeError):
                     data[field] = []
         return Task(**data)
 
