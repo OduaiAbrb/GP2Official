@@ -91,18 +91,33 @@ async def ensure_tables_exist():
     print("[SUPABASE] Checking/creating database tables...")
     
     async with pool.acquire() as conn:
-        # Check if we need to recreate tables (if project_id is UUID instead of TEXT)
+        # Check if tables have correct column types by checking the actual column data type
+        tables_ok = True
         try:
-            # Try a simple query - if it fails with UUID error, we need to recreate
-            await conn.fetch("SELECT id FROM projects WHERE id = 'test' LIMIT 1")
-            tables_ok = True
-        except Exception as e:
-            if 'UUID' in str(e) or 'invalid input' in str(e):
-                print("[SUPABASE] Detected UUID column issue - recreating tables with TEXT columns...")
-                tables_ok = False
+            # Check if project_id column in tasks table is TEXT or UUID
+            result = await conn.fetchrow("""
+                SELECT data_type 
+                FROM information_schema.columns 
+                WHERE table_name = 'tasks' AND column_name = 'project_id'
+            """)
+            
+            if result:
+                data_type = result['data_type'].lower()
+                print(f"[SUPABASE] tasks.project_id column type: {data_type}")
+                if data_type == 'uuid':
+                    print("[SUPABASE] Detected UUID column type - need to recreate tables with TEXT columns")
+                    tables_ok = False
+                elif data_type == 'text' or data_type == 'character varying':
+                    print("[SUPABASE] Column types are correct (TEXT)")
+                    tables_ok = True
             else:
                 # Table doesn't exist
+                print("[SUPABASE] Tasks table doesn't exist - will create")
                 tables_ok = False
+                
+        except Exception as e:
+            print(f"[SUPABASE] Error checking column types: {e}")
+            tables_ok = False
         
         # Create users table (this one should be fine with TEXT)
         await conn.execute('''
