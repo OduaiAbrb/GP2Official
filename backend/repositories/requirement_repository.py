@@ -51,6 +51,20 @@ class RequirementRepository:
     async def clone_project_requirements(self, source_project_id: str, target_project_id: str) -> List[Requirement]:
         return await self._repo.clone_project_requirements(source_project_id, target_project_id)
 
+    async def create(self, project_id: str, type: str, title: str, description: str, priority: str, status: str, confidence_score: Optional[float] = None) -> Requirement:
+        """Create a single requirement."""
+        req_data = [{
+            "project_id": project_id,
+            "type": type,
+            "title": title,
+            "description": description,
+            "priority": priority,
+            "status": status,
+            "confidence_score": confidence_score,
+        }]
+        created = await self._repo.create_bulk(req_data)
+        return created[0] if created else None
+
 
 class _SupabaseRequirementRepository:
     """Supabase PostgreSQL implementation."""
