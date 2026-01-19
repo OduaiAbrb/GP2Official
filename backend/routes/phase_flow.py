@@ -67,12 +67,11 @@ async def generate_phase_output(
     raw_markdown = artifact.get("raw_markdown")
     formatted_markdown = artifact.get("formatted_markdown")
     
-    # Debug the response being sent
-    logger.info(f"API Response - Phase: {phase}, Project: {project_id}")
-    logger.info(f"Artifact keys: {list(artifact.keys())}")
-    logger.info(f"Raw markdown length: {len(raw_markdown) if raw_markdown else 0}")
-    logger.info(f"Formatted markdown length: {len(formatted_markdown) if formatted_markdown else 0}")
-    logger.info(f"Raw markdown preview: {raw_markdown[:200] if raw_markdown else 'None'}...")
+    # Simple debug - this will show in basic server logs
+    print(f"[DEBUG] AI Generation Response for {phase}:")
+    print(f"[DEBUG] Artifact keys: {list(artifact.keys())}")
+    print(f"[DEBUG] Raw markdown length: {len(raw_markdown) if raw_markdown else 0}")
+    print(f"[DEBUG] Content keys: {list(artifact.get('content', {}).keys()) if artifact.get('content') else 'No content key'}")
     
     response = PhaseGenerateResponse(
         phase_status=phase_status,
@@ -81,7 +80,7 @@ async def generate_phase_output(
         formatted_markdown=formatted_markdown,
     )
     
-    logger.info(f"Final response content length: {len(str(response.content)) if response.content else 0}")
+    print(f"[DEBUG] Response created successfully for phase {phase}")
     return response
 
 
