@@ -1,336 +1,284 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuthStore } from '@/store/authStore';
-import { Button } from '@/components/ui/Button';
-import { LogIn, Mail, Lock, AlertCircle, CheckCircle, Sparkles } from 'lucide-react';
-import { AcornLogo } from '@/components/AcornLogo';
-import { api } from '@/lib/api';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../store/authStore';
+import { 
+  Mail, 
+  Lock, 
+  Sparkles, 
+  ArrowRight, 
+  Eye, 
+  EyeOff,
+  AlertCircle,
+  Loader2,
+  Zap,
+  CheckCircle2
+} from 'lucide-react';
 
-const backgroundImages = [
-  'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1920&q=80',
-  'https://images.unsplash.com/photo-1534972195531-d756b9bfa9f2?w=1920&q=80',
-  'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=1920&q=80',
-];
-
-export const LoginPage: React.FC = () => {
+const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { login, isLoading, error } = useAuthStore();
+  const { login, isAuthenticated, isLoading } = useAuthStore();
+  
   const [formData, setFormData] = useState({ email: '', password: '' });
-  const [touched, setTouched] = useState({ email: false, password: false });
-  const [currentBg, setCurrentBg] = useState(0);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [loginSuccess, setLoginSuccess] = useState(false);
 
   useEffect(() => {
-    // Pre-warm the server on page load (Render free tier cold starts)
-    api.healthCheck();
-  }, []);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentBg((prev) => (prev + 1) % backgroundImages.length);
-    }, 6000);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePosition({ x: e.clientX, y: e.clientY });
-    };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
-
-  const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
-  const errors = {
-    email: touched.email && !validateEmail(formData.email) ? 'Please enter a valid email address' : '',
-    password: touched.password && formData.password.length < 1 ? 'Password is required' : ''
-  };
+    setIsVisible(true);
+    if (isAuthenticated) {
+      navigate('/projects');
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setTouched({ email: true, password: true });
+    setError(null);
     
-    if (!validateEmail(formData.email) || !formData.password) return;
+    if (!formData.email || !formData.password) {
+      setError('Please fill in all fields');
+      return;
+    }
 
     try {
       await login(formData.email, formData.password);
-      navigate('/projects');
-    } catch (err) {
-      console.error('Login failed:', err);
+      setLoginSuccess(true);
+      setTimeout(() => navigate('/projects'), 500);
+    } catch (err: any) {
+      setError(err.message || 'Invalid email or password');
     }
   };
 
-  const parallaxX = (mousePosition.x - window.innerWidth / 2) * 0.02;
-  const parallaxY = (mousePosition.y - window.innerHeight / 2) * 0.02;
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (error) setError(null);
+  };
 
   return (
-    <div className="min-h-screen flex overflow-hidden">
-      {/* Left Side - Animated Background */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
-        {/* Background Images with Crossfade */}
-        {backgroundImages.map((img, index) => (
-          <div
-            key={index}
-            className="absolute inset-0 transition-opacity duration-1000"
-            style={{
-              opacity: currentBg === index ? 1 : 0,
-              transform: `translate(${parallaxX}px, ${parallaxY}px) scale(1.1)`,
-            }}
+    <div className="min-h-screen bg-slate-950 flex relative overflow-hidden">
+      {/* Animated Background */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute inset-0 bg-grid opacity-20" />
+        <div className="glow-orb" style={{ top: '20%', left: '30%' }} />
+        <div className="glow-orb" style={{ bottom: '30%', right: '20%', animationDelay: '3s' }} />
+      </div>
+
+      {/* Left Side - Branding */}
+      <div className="hidden lg:flex lg:w-1/2 relative">
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-slate-900 to-slate-950" />
+        
+        <div className="relative z-10 flex flex-col justify-center px-16 xl:px-24">
+          {/* Logo */}
+          <div 
+            className={`flex items-center gap-4 mb-12 transition-all duration-700 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}`}
           >
-            <img src={img} alt="" className="w-full h-full object-cover" />
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl blur-xl opacity-50" />
+              <div className="relative w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-2xl">
+                <Sparkles className="w-8 h-8 text-white" />
+              </div>
+            </div>
+            <span className="text-4xl font-bold text-gradient-gold">Acorn</span>
           </div>
-        ))}
-        
-        {/* Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-acorn-blue-900/80 via-acorn-blue-800/70 to-acorn-orange-900/60" />
-        
-        {/* Floating Orbs */}
-        <div 
-          className="absolute w-96 h-96 rounded-full bg-acorn-orange-500/20 blur-3xl animate-float"
-          style={{ top: '10%', left: '20%', animationDelay: '0s' }}
-        />
-        <div 
-          className="absolute w-72 h-72 rounded-full bg-acorn-blue-400/20 blur-3xl animate-float"
-          style={{ bottom: '20%', right: '10%', animationDelay: '2s' }}
-        />
-        <div 
-          className="absolute w-64 h-64 rounded-full bg-purple-500/20 blur-3xl animate-float"
-          style={{ top: '50%', left: '50%', animationDelay: '4s' }}
-        />
 
-        {/* Content */}
-        <div className="relative z-10 flex flex-col justify-center items-center p-12 text-white">
-          <div className="max-w-md text-center animate-fade-in-up">
-            <div className="mb-8">
-              <AcornLogo size={80} />
-            </div>
-            <h1 className="text-4xl font-bold mb-6">Welcome Back to Acorn</h1>
-            <p className="text-xl text-white/80 mb-8">
-              Continue building amazing projects with AI-powered planning tools.
-            </p>
-            
-            {/* Floating Cards */}
-            <div className="space-y-4">
-              <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 animate-float" style={{ animationDelay: '0s' }}>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-acorn-orange-500 rounded-lg flex items-center justify-center">
-                    <Sparkles className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="text-left">
-                    <p className="font-semibold">AI Generation Ready</p>
-                    <p className="text-sm text-white/70">Your projects await</p>
-                  </div>
+          {/* Headline */}
+          <h1 
+            className={`text-5xl xl:text-6xl font-bold text-white leading-tight mb-6 transition-all duration-700 delay-100 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}`}
+          >
+            Welcome
+            <span className="block text-gradient-gold mt-2">Back</span>
+          </h1>
+
+          <p 
+            className={`text-xl text-slate-400 mb-12 max-w-md leading-relaxed transition-all duration-700 delay-200 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}`}
+          >
+            Continue transforming your ideas into actionable project plans with AI-powered intelligence.
+          </p>
+
+          {/* Features */}
+          <div className="space-y-4">
+            {[
+              'AI-powered project planning',
+              'Automatic documentation generation',
+              'Real-time collaboration'
+            ].map((feature, index) => (
+              <div 
+                key={index}
+                className={`flex items-center gap-3 text-slate-300 transition-all duration-700 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}`}
+                style={{ transitionDelay: `${300 + index * 100}ms` }}
+              >
+                <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center">
+                  <Zap className="w-3 h-3 text-amber-400" />
                 </div>
+                <span>{feature}</span>
               </div>
-              <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 animate-float" style={{ animationDelay: '1s' }}>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-acorn-blue-500 rounded-lg flex items-center justify-center">
-                    <CheckCircle className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="text-left">
-                    <p className="font-semibold">10,000+ Projects</p>
-                    <p className="text-sm text-white/70">Created this month</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
 
-        {/* Animated Particles */}
-        <div className="absolute inset-0 pointer-events-none">
-          {[...Array(15)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute w-2 h-2 bg-white/30 rounded-full animate-float"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 5}s`,
-                animationDuration: `${Math.random() * 10 + 5}s`,
-              }}
-            />
-          ))}
-        </div>
+        {/* Decorative Elements */}
+        <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-slate-950 to-transparent" />
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gradient-to-br from-gray-50 to-acorn-blue-50 relative overflow-hidden">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-5">
-          <div 
-            className="absolute inset-0"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%230D3B66' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-            }}
-          />
-        </div>
-
-        {/* Floating Orbs */}
-        <div className="absolute w-64 h-64 rounded-full bg-acorn-orange-200/30 blur-3xl top-10 right-10 animate-pulse-slow" />
-        <div className="absolute w-48 h-48 rounded-full bg-acorn-blue-200/30 blur-3xl bottom-20 left-10 animate-pulse-slow" style={{ animationDelay: '2s' }} />
-
-        <div className="w-full max-w-md relative z-10">
+      <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-12 relative z-10">
+        <div 
+          className={`w-full max-w-md transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+          style={{ transitionDelay: '200ms' }}
+        >
           {/* Mobile Logo */}
-          <div className="lg:hidden text-center mb-8 animate-fade-in">
-            <Link to="/" className="inline-block">
-              <AcornLogo size={64} />
-            </Link>
+          <div className="lg:hidden flex items-center gap-3 mb-10 justify-center">
+            <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center">
+              <Sparkles className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-2xl font-bold text-gradient-gold">Acorn</span>
           </div>
 
-          {/* Login Card */}
-          <div className="bg-white rounded-3xl shadow-2xl p-8 border border-gray-100 animate-scale-in">
+          {/* Form Card */}
+          <div className="card-glass p-8 md:p-10">
             <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Sign In</h1>
-              <p className="text-gray-500">Welcome back to Acorn</p>
+              <h2 className="text-3xl font-bold text-white mb-2">Sign In</h2>
+              <p className="text-slate-400">Enter your credentials to continue</p>
             </div>
 
+            {/* Error Message */}
             {error && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3 animate-shake">
-                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-red-600">{error}</p>
+              <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center gap-3 animate-fade-in-up">
+                <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+                <span className="text-red-400 text-sm">{error}</span>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="group">
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                  Email Address
-                </label>
+            {/* Success Message */}
+            {loginSuccess && (
+              <div className="mb-6 p-4 rounded-xl bg-green-500/10 border border-green-500/30 flex items-center gap-3 animate-fade-in-up">
+                <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0" />
+                <span className="text-green-400 text-sm">Login successful! Redirecting...</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Email Field */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-300 block">Email</label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-acorn-blue-500 transition-colors" />
+                  <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${
+                    focusedField === 'email' ? 'text-amber-400' : 'text-slate-500'
+                  }`} />
                   <input
-                    id="email"
                     type="email"
+                    name="email"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    onBlur={() => setTouched({ ...touched, email: true })}
+                    onChange={handleChange}
+                    onFocus={() => setFocusedField('email')}
+                    onBlur={() => setFocusedField(null)}
+                    className="input-premium pl-12"
                     placeholder="you@example.com"
-                    className={`w-full pl-12 pr-4 py-4 border-2 rounded-xl focus:ring-4 focus:ring-acorn-blue-100 transition-all ${
-                      errors.email ? 'border-red-300 bg-red-50' : 'border-gray-200 focus:border-acorn-blue-500'
-                    }`}
+                    data-testid="login-email-input"
                   />
-                  {touched.email && !errors.email && formData.email && (
-                    <CheckCircle className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500 animate-scale-in" />
-                  )}
                 </div>
-                {errors.email && (
-                  <p className="mt-2 text-sm text-red-500 flex items-center gap-1 animate-fade-in">
-                    <AlertCircle className="w-4 h-4" />
-                    {errors.email}
-                  </p>
-                )}
               </div>
 
-              <div className="group">
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                  Password
-                </label>
+              {/* Password Field */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-300 block">Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-acorn-blue-500 transition-colors" />
+                  <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${
+                    focusedField === 'password' ? 'text-amber-400' : 'text-slate-500'
+                  }`} />
                   <input
-                    id="password"
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
                     value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    onBlur={() => setTouched({ ...touched, password: true })}
-                    placeholder="Enter your password"
-                    className={`w-full pl-12 pr-4 py-4 border-2 rounded-xl focus:ring-4 focus:ring-acorn-blue-100 transition-all ${
-                      errors.password ? 'border-red-300 bg-red-50' : 'border-gray-200 focus:border-acorn-blue-500'
-                    }`}
+                    onChange={handleChange}
+                    onFocus={() => setFocusedField('password')}
+                    onBlur={() => setFocusedField(null)}
+                    className="input-premium pl-12 pr-12"
+                    placeholder="••••••••"
+                    data-testid="login-password-input"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
                 </div>
-                {errors.password && (
-                  <p className="mt-2 text-sm text-red-500 flex items-center gap-1 animate-fade-in">
-                    <AlertCircle className="w-4 h-4" />
-                    {errors.password}
-                  </p>
-                )}
               </div>
 
-              <div className="text-right">
-                <a href="#" className="text-sm text-acorn-blue-600 hover:text-acorn-blue-700 font-medium hover:underline">
+              {/* Remember & Forgot */}
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-amber-500 focus:ring-amber-500/30"
+                  />
+                  <span className="text-sm text-slate-400">Remember me</span>
+                </label>
+                <a href="#" className="text-sm text-amber-400 hover:text-amber-300 transition-colors">
                   Forgot password?
                 </a>
               </div>
 
-              <Button
+              {/* Submit Button */}
+              <button
                 type="submit"
-                disabled={isLoading}
-                className="w-full bg-gradient-to-r from-acorn-orange-500 to-acorn-orange-600 hover:from-acorn-orange-600 hover:to-acorn-orange-700 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] group"
+                disabled={isLoading || loginSuccess}
+                className="w-full btn-premium py-4 text-lg group disabled:opacity-50 disabled:cursor-not-allowed"
+                data-testid="login-submit-btn"
               >
                 {isLoading ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
                     Signing in...
-                  </div>
+                  </>
+                ) : loginSuccess ? (
+                  <>
+                    <CheckCircle2 className="w-5 h-5" />
+                    Success!
+                  </>
                 ) : (
-                  <div className="flex items-center justify-center gap-2">
-                    <LogIn className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  <>
                     Sign In
-                  </div>
+                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </>
                 )}
-              </Button>
+              </button>
             </form>
 
-            <div className="mt-8 text-center pt-6 border-t border-gray-100">
-              <p className="text-gray-600">
-                Don't have an account?{' '}
-                <Link to="/register" className="text-acorn-orange-500 hover:text-acorn-orange-600 font-bold hover:underline">
-                  Create Account
-                </Link>
-              </p>
+            {/* Divider */}
+            <div className="relative my-8">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-700" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-slate-900/80 text-slate-500">New to Acorn?</span>
+              </div>
             </div>
-          </div>
 
-          <div className="text-center mt-6">
-            <Link to="/" className="text-sm text-gray-500 hover:text-acorn-blue-600 transition-colors inline-flex items-center gap-2 group">
-              <span className="group-hover:-translate-x-1 transition-transform">←</span>
-              Back to Home
+            {/* Register Link */}
+            <Link
+              to="/register"
+              className="block w-full btn-ghost py-4 text-center"
+            >
+              Create an account
             </Link>
           </div>
+
+          {/* Footer */}
+          <p className="text-center text-slate-500 text-sm mt-8">
+            By signing in, you agree to our{' '}
+            <a href="#" className="text-amber-400 hover:text-amber-300 transition-colors">Terms</a>
+            {' '}and{' '}
+            <a href="#" className="text-amber-400 hover:text-amber-300 transition-colors">Privacy Policy</a>
+          </p>
         </div>
       </div>
-
-      <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0) rotate(0deg); }
-          50% { transform: translateY(-20px) rotate(3deg); }
-        }
-        .animate-float { animation: float 6s ease-in-out infinite; }
-        
-        @keyframes fade-in-up {
-          from { opacity: 0; transform: translateY(30px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in-up { animation: fade-in-up 0.8s ease-out; }
-        
-        @keyframes fade-in {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        .animate-fade-in { animation: fade-in 0.5s ease-out; }
-        
-        @keyframes scale-in {
-          from { opacity: 0; transform: scale(0.9); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        .animate-scale-in { animation: scale-in 0.5s ease-out; }
-        
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
-          20%, 40%, 60%, 80% { transform: translateX(4px); }
-        }
-        .animate-shake { animation: shake 0.4s ease-in-out; }
-        
-        @keyframes pulse-slow {
-          0%, 100% { opacity: 0.3; transform: scale(1); }
-          50% { opacity: 0.6; transform: scale(1.1); }
-        }
-        .animate-pulse-slow { animation: pulse-slow 4s ease-in-out infinite; }
-      `}</style>
     </div>
   );
 };
+
+export default LoginPage;
