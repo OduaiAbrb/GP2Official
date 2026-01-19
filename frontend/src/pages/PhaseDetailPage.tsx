@@ -1329,13 +1329,13 @@ export const PhaseDetailPage: React.FC = () => {
       : '';
     return (
       <Layout>
-        <div className="min-h-[calc(100vh-4rem)] bg-slate-50/80">
+        <div className="min-h-[calc(100vh-4rem)] bg-navy-950">
           <div className="mx-auto max-w-[1400px] px-3 sm:px-4 lg:px-6 py-6">
             <div className={`grid gap-5 ${gridTemplate}`}>
               {/* Phase Navigation Sidebar */}
               {showSidebar && (
                 <aside className="hidden xl:block">
-                  <div className="sticky top-6 rounded-2xl border border-slate-200 bg-white/90 shadow-sm">
+                  <div className="sticky top-6 rounded-2xl border border-navy-800 bg-navy-900/90 backdrop-blur-xl shadow-lg shadow-navy-950/50">
                     <PhaseNavigation projectId={id} variant="sidebar" />
                   </div>
                 </aside>
@@ -1350,53 +1350,53 @@ export const PhaseDetailPage: React.FC = () => {
 
                 <div className="space-y-6">
                   {!canTriggerAi && (
-                    <div className="rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-4 text-sm text-amber-800 flex items-center gap-3 shadow-sm">
-                      <div className="p-2 bg-amber-100 rounded-xl">
-                        <Shield className="h-5 w-5 text-amber-600" />
+                    <div className="rounded-2xl border border-gold-500/30 bg-gradient-to-r from-navy-900 to-navy-850 p-4 text-sm text-gold-400 flex items-center gap-3 shadow-lg animate-reveal-up">
+                      <div className="p-2 bg-gold-500/10 rounded-xl">
+                        <Shield className="h-5 w-5 text-gold-500" />
                       </div>
                       <div>
-                        <p className="font-medium">Limited Access</p>
-                        <p className="text-amber-700">You have {user?.role_label || 'reviewer'} access. A Program Manager must trigger AI generation.</p>
+                        <p className="font-medium text-gold-400">Limited Access</p>
+                        <p className="text-gray-400">You have {user?.role_label || 'reviewer'} access. A Program Manager must trigger AI generation.</p>
                       </div>
                     </div>
                   )}
-                  {/* Phase Header - Modern Card */}
-                  <div className="relative overflow-hidden rounded-3xl bg-white shadow-xl ring-1 ring-black/5">
-                    {/* Gradient accent bar */}
-                    <div className="h-2 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500" />
+                  {/* Phase Header - Corporate Navy Card */}
+                  <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-navy-900 to-navy-850 shadow-2xl border border-navy-800 animate-reveal-up" data-testid="phase-header">
+                    {/* Gold accent bar */}
+                    <div className="h-1 bg-gradient-to-r from-gold-600 via-gold-500 to-gold-400" />
                     <div className="p-6 sm:p-8">
                       <div className="flex flex-wrap items-start justify-between gap-6">
                         <div className="space-y-3">
-                          <div className="flex items-center gap-3">
-                            <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white font-bold text-lg shadow-lg">
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-navy-950 font-bold text-xl shadow-lg shadow-gold-500/20 animate-glow">
                               {phaseConfig.stepNumber}
                             </div>
                             <div>
-                              <p className="text-xs font-semibold uppercase text-slate-400 tracking-wider">
+                              <p className="text-xs font-semibold uppercase text-gold-500/80 tracking-wider">
                                 Phase {(phaseConfig.order || 0) + 1} of {phaseConfigs.length}
                               </p>
-                              <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
+                              <h1 className="text-2xl sm:text-3xl font-bold text-white">
                                 {phaseConfig.title}
                               </h1>
                             </div>
                           </div>
-                          <p className="text-slate-500 max-w-md">{phaseConfig.description || project?.name}</p>
+                          <p className="text-gray-400 max-w-md">{phaseConfig.description || project?.name}</p>
                         </div>
                         <div className="flex flex-col items-end gap-3">
                           <Button 
                             variant="outline" 
                             onClick={() => navigate(`/projects/${id}`)} 
-                            className="border-slate-200 hover:bg-slate-50 text-slate-700"
+                            className="border-navy-700 hover:bg-navy-800 text-gray-300 hover:text-white hover:border-gold-500/50 transition-all"
                           >
                             <ArrowLeft className="mr-2 h-4 w-4" />
                             Back to Project
                           </Button>
-                          <div className={`px-4 py-2 rounded-full text-sm font-semibold shadow-sm ${
+                          <div className={`px-4 py-2 rounded-full text-sm font-semibold shadow-lg ${
                             status === 'completed' 
-                              ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' 
+                              ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-emerald-500/30' 
                               : status === 'locked' 
-                              ? 'bg-slate-200 text-slate-600' 
-                              : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
+                              ? 'bg-navy-800 text-gray-500 border border-navy-700' 
+                              : 'bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950 shadow-gold-500/30'
                           }`}>
                             {status === 'locked' ? '🔒 Locked' : status === 'completed' ? '✓ Completed' : '● In Progress'}
                           </div>
@@ -1406,19 +1406,19 @@ export const PhaseDetailPage: React.FC = () => {
                   </div>
 
                   {nextPhase && (
-                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-[2px] shadow-lg">
-                      <div className="bg-white rounded-[14px] p-5 flex flex-wrap items-center justify-between gap-4">
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-gold-600 via-gold-500 to-gold-400 p-[2px] shadow-lg shadow-gold-500/20 animate-reveal-up delay-100" data-testid="next-phase-banner">
+                      <div className="bg-navy-900 rounded-[14px] p-5 flex flex-wrap items-center justify-between gap-4">
                         <div className="flex items-center gap-4">
-                          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-100 to-purple-100 text-indigo-600 font-bold">
+                          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-gold-500/20 to-gold-600/20 text-gold-500 font-bold border border-gold-500/30">
                             {nextPhase.stepNumber}
                           </div>
                           <div>
-                            <p className="text-xs uppercase tracking-wider text-slate-400 font-semibold">Continue to Next</p>
-                            <h3 className="text-lg font-bold text-slate-900">{nextPhase.title}</h3>
+                            <p className="text-xs uppercase tracking-wider text-gold-500/70 font-semibold">Continue to Next</p>
+                            <h3 className="text-lg font-bold text-white">{nextPhase.title}</h3>
                           </div>
                         </div>
                         <Button
-                          className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all"
+                          className="bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-navy-950 font-semibold shadow-lg shadow-gold-500/30 hover:shadow-gold-500/50 transition-all"
                           onClick={() => navigate(`/projects/${id}/phases/${nextPhase.id}`)}
                         >
                           Continue
@@ -1429,35 +1429,35 @@ export const PhaseDetailPage: React.FC = () => {
                   )}
 
                   {error && (
-                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
+                    <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-xl flex items-center gap-2">
                       <AlertTriangle className="h-4 w-4" />
                       {error}
                     </div>
                   )}
 
                   {phaseId !== 'validation' && (
-                    <div className="rounded-3xl bg-gradient-to-br from-slate-50 to-slate-100/50 border border-slate-200/60 shadow-sm overflow-hidden">
+                    <div className="rounded-3xl bg-gradient-to-br from-navy-900 to-navy-850 border border-navy-800 shadow-xl overflow-hidden animate-reveal-up delay-200" data-testid="ai-assistant-card">
                       <div className="p-6">
                         <div className="flex items-start gap-4 mb-5">
-                          <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg">
-                            <Sparkles className="h-6 w-6 text-white" />
+                          <div className="p-3 bg-gradient-to-br from-gold-500 to-gold-600 rounded-2xl shadow-lg shadow-gold-500/20">
+                            <Sparkles className="h-6 w-6 text-navy-950" />
                           </div>
                           <div>
-                            <h3 className="text-lg font-bold text-slate-900">AI Assistant</h3>
-                            <p className="text-sm text-slate-500">Enter a custom prompt to generate or refine content for this phase</p>
+                            <h3 className="text-lg font-bold text-white">AI Assistant</h3>
+                            <p className="text-sm text-gray-400">Enter a custom prompt to generate or refine content for this phase</p>
                           </div>
                         </div>
                         <div className="space-y-4">
                           <div className="relative">
                             <textarea
                               ref={unifiedPromptRef}
-                              className="w-full border-2 border-slate-200 rounded-2xl px-4 py-4 text-sm focus:ring-4 focus:ring-indigo-100 focus:border-indigo-400 bg-white transition-all resize-none"
+                              className="w-full border border-navy-700 rounded-2xl px-4 py-4 text-sm bg-navy-900 text-white placeholder-gray-500 focus:ring-2 focus:ring-gold-500/50 focus:border-gold-500 transition-all resize-none"
                               rows={3}
                               placeholder="E.g., 'Generate detailed requirements with acceptance criteria' or 'Create a risk assessment matrix'"
                             />
                             {isGenerating && (
-                              <div className="absolute inset-0 bg-white/80 rounded-2xl flex items-center justify-center">
-                                <div className="flex items-center gap-3 text-indigo-600">
+                              <div className="absolute inset-0 bg-navy-900/90 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                                <div className="flex items-center gap-3 text-gold-500">
                                   <Loader2 className="h-5 w-5 animate-spin" />
                                   <span className="font-medium">Generating content...</span>
                                 </div>
@@ -1468,19 +1468,19 @@ export const PhaseDetailPage: React.FC = () => {
                             <div className="flex flex-wrap gap-2">
                               <button
                                 onClick={() => { if (unifiedPromptRef.current) unifiedPromptRef.current.value = 'Generate comprehensive analysis'; }}
-                                className="px-3 py-1.5 text-xs font-medium bg-white border border-slate-200 rounded-full hover:bg-slate-50 text-slate-600 transition-colors"
+                                className="px-3 py-1.5 text-xs font-medium bg-navy-800 border border-navy-700 rounded-full hover:bg-navy-700 hover:border-gold-500/50 text-gray-300 transition-all"
                               >
                                 📊 Analysis
                               </button>
                               <button
                                 onClick={() => { if (unifiedPromptRef.current) unifiedPromptRef.current.value = 'Create detailed requirements list'; }}
-                                className="px-3 py-1.5 text-xs font-medium bg-white border border-slate-200 rounded-full hover:bg-slate-50 text-slate-600 transition-colors"
+                                className="px-3 py-1.5 text-xs font-medium bg-navy-800 border border-navy-700 rounded-full hover:bg-navy-700 hover:border-gold-500/50 text-gray-300 transition-all"
                               >
                                 📋 Requirements
                               </button>
                               <button
                                 onClick={() => { if (unifiedPromptRef.current) unifiedPromptRef.current.value = 'Generate risk assessment'; }}
-                                className="px-3 py-1.5 text-xs font-medium bg-white border border-slate-200 rounded-full hover:bg-slate-50 text-slate-600 transition-colors"
+                                className="px-3 py-1.5 text-xs font-medium bg-navy-800 border border-navy-700 rounded-full hover:bg-navy-700 hover:border-gold-500/50 text-gray-300 transition-all"
                               >
                                 ⚠️ Risks
                               </button>
@@ -1490,7 +1490,7 @@ export const PhaseDetailPage: React.FC = () => {
                                 variant="outline"
                                 onClick={() => { if (unifiedPromptRef.current) unifiedPromptRef.current.value = ''; }}
                                 disabled={isGenerating}
-                                className="border-slate-200"
+                                className="border-navy-700 text-gray-300 hover:bg-navy-800"
                               >
                                 Clear
                               </Button>
@@ -1501,7 +1501,7 @@ export const PhaseDetailPage: React.FC = () => {
                                   if (!prompt.trim()) return;
                                   handleGenerate(prompt);
                                 }}
-                                className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg"
+                                className="bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-navy-950 font-semibold shadow-lg shadow-gold-500/30"
                               >
                                 {isGenerating ? 'Generating…' : 'Generate with AI'}
                               </Button>
@@ -1528,13 +1528,13 @@ export const PhaseDetailPage: React.FC = () => {
                           key={action.id}
                           onClick={action.onClick}
                           disabled={action.disabled}
-                          className={`group flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:shadow-lg ${
+                          className={`group flex h-14 w-14 items-center justify-center rounded-2xl border border-navy-800 bg-navy-900 text-gray-400 shadow-lg transition hover:shadow-xl hover:border-gold-500/50 hover:text-gold-500 ${
                             action.disabled ? 'opacity-50 cursor-not-allowed' : 'hover:-translate-y-0.5'
                           }`}
                           aria-label={action.label}
                         >
                           <Icon className="h-5 w-5" />
-                          <span className="absolute right-full mr-2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs text-white opacity-0 transition group-hover:opacity-100">
+                          <span className="absolute right-full mr-2 whitespace-nowrap rounded-lg bg-navy-800 border border-navy-700 px-3 py-1.5 text-xs text-white opacity-0 transition group-hover:opacity-100">
                             {action.label}
                           </span>
                         </button>
