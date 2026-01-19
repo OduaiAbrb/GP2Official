@@ -15,7 +15,12 @@ import {
   Plus,
   Sparkles,
   User,
-  HelpCircle
+  HelpCircle,
+  BarChart3,
+  Kanban,
+  FileText,
+  Users,
+  CreditCard
 } from 'lucide-react';
 import { ConversationalDock } from '@/components/ConversationalDock';
 
@@ -24,8 +29,9 @@ interface LayoutProps {
 }
 
 const navItems = [
-  { id: 'projects', icon: FolderKanban, label: 'Projects', path: '/projects', exactMatch: true },
-  { id: 'profile', icon: User, label: 'Profile', path: '/profile', exactMatch: false },
+  { id: 'projects', icon: FolderKanban, label: 'Projects', path: '/projects' },
+  { id: 'analytics', icon: BarChart3, label: 'Analytics', path: '/analytics' },
+  { id: 'profile', icon: User, label: 'Profile', path: '/profile' },
 ];
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
@@ -39,7 +45,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   useEffect(() => {
     setIsVisible(true);
-    // Load sidebar state from localStorage
     const savedState = localStorage.getItem('sidebar_collapsed');
     if (savedState !== null) {
       setSidebarCollapsed(savedState === 'true');
@@ -64,48 +69,45 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
   }, [activeProjectId]);
 
-  const isActive = (item: typeof navItems[0]) => {
-    if (item.exactMatch) {
-      return location.pathname === item.path;
+  const isActive = (path: string) => {
+    if (path === '/projects') {
+      return location.pathname === path || location.pathname.startsWith('/projects/');
     }
-    return location.pathname === item.path || location.pathname.startsWith(item.path + '/');
+    return location.pathname === path || location.pathname.startsWith(path + '/');
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex">
-      {/* Animated Background */}
+    <div className="min-h-screen bg-[#0a0f1a] flex">
+      {/* Background */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute inset-0 bg-grid opacity-10" />
-        <div className="glow-orb opacity-30" style={{ top: '10%', right: '20%' }} />
       </div>
 
       {/* Sidebar - Desktop */}
       <aside 
-        className={`hidden lg:flex flex-col fixed left-0 top-0 h-screen bg-slate-900 border-r border-slate-800 transition-all duration-300 z-40 ${
+        className={`hidden lg:flex flex-col fixed left-0 top-0 h-screen bg-[#0d1525] border-r border-[#1e3a5f]/50 transition-all duration-300 z-40 ${
           sidebarCollapsed ? 'w-20' : 'w-64'
         }`}
       >
         {/* Logo */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800">
+        <div className="h-16 flex items-center justify-between px-4 border-b border-[#1e3a5f]/50">
           <Link 
             to="/projects" 
             className="flex items-center gap-3 group"
           >
             <div className="relative flex-shrink-0">
-              <div className="absolute inset-0 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl blur-md opacity-40 group-hover:opacity-60 transition-opacity" />
-              <div className="relative w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
-                <Sparkles className="w-5 h-5 text-white" />
+              <div className="absolute inset-0 bg-gradient-to-br from-[#d4af37] to-[#9a7b24] rounded-xl blur-md opacity-40 group-hover:opacity-60 transition-opacity" />
+              <div className="relative w-10 h-10 bg-gradient-to-br from-[#d4af37] to-[#b8962e] rounded-xl flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
+                <Sparkles className="w-5 h-5 text-[#0a0f1a]" />
               </div>
             </div>
             {!sidebarCollapsed && (
-              <span className="text-xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
-                Acorn
-              </span>
+              <span className="text-xl font-bold text-gradient-gold">Acorn</span>
             )}
           </Link>
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all"
+            className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-[#1e3a5f]/50 transition-all"
           >
             {sidebarCollapsed ? (
               <ChevronRight className="w-4 h-4" />
@@ -119,7 +121,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         <div className="p-3">
           <button
             onClick={() => navigate('/projects/new')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-medium shadow-lg shadow-orange-500/20 transition-all ${
+            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl bg-gradient-to-r from-[#d4af37] to-[#b8962e] hover:from-[#e6c358] hover:to-[#d4af37] text-[#0a0f1a] font-semibold shadow-lg shadow-[#d4af37]/20 transition-all ${
               sidebarCollapsed ? 'justify-center' : ''
             }`}
           >
@@ -132,7 +134,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
           {!sidebarCollapsed && (
             <div className="px-3 py-2">
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 Navigation
               </span>
             </div>
@@ -140,27 +142,27 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
           {navItems.map((item) => {
             const Icon = item.icon;
-            const active = isActive(item);
+            const active = isActive(item.path);
             
             return (
               <button
                 key={item.id}
                 onClick={() => navigate(item.path)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
                   active
-                    ? 'bg-gradient-to-r from-amber-500/15 to-orange-500/15 text-amber-400 border border-amber-500/30'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                    ? 'bg-[#d4af37]/10 text-[#d4af37] border border-[#d4af37]/30'
+                    : 'text-gray-400 hover:text-white hover:bg-[#1e3a5f]/30 border border-transparent'
                 } ${sidebarCollapsed ? 'justify-center' : ''}`}
                 title={sidebarCollapsed ? item.label : undefined}
               >
-                <Icon className={`w-5 h-5 flex-shrink-0 ${active ? 'text-amber-400' : ''}`} />
+                <Icon className={`w-5 h-5 flex-shrink-0 ${active ? 'text-[#d4af37]' : ''}`} />
                 {!sidebarCollapsed && (
-                  <span className={`font-medium ${active ? 'text-amber-400' : ''}`}>
+                  <span className={`font-medium ${active ? 'text-[#d4af37]' : ''}`}>
                     {item.label}
                   </span>
                 )}
                 {active && !sidebarCollapsed && (
-                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-amber-400" />
+                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#d4af37]" />
                 )}
               </button>
             );
@@ -168,19 +170,19 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         </nav>
 
         {/* User Section */}
-        <div className="border-t border-slate-800 p-3">
+        <div className="border-t border-[#1e3a5f]/50 p-3">
           {user && (
-            <div className={`flex items-center gap-3 p-3 rounded-xl bg-slate-800/50 mb-3 ${sidebarCollapsed ? 'justify-center' : ''}`}>
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-500/30 to-orange-500/30 flex items-center justify-center text-sm font-medium text-amber-400 flex-shrink-0 border border-amber-500/30">
+            <div className={`flex items-center gap-3 p-3 rounded-xl bg-[#111b2e]/50 mb-3 ${sidebarCollapsed ? 'justify-center' : ''}`}>
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#d4af37]/20 to-[#9a7b24]/20 flex items-center justify-center text-sm font-semibold text-[#d4af37] flex-shrink-0 border border-[#d4af37]/30">
                 {user.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
               </div>
               {!sidebarCollapsed && (
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">
+                  <p className="text-sm font-semibold text-white truncate">
                     {user.full_name || user.email?.split('@')[0]}
                   </p>
-                  <p className="text-xs text-slate-500 truncate">
-                    {user.organization || 'Personal'}
+                  <p className="text-xs text-gray-500 truncate">
+                    {user.organization || 'Enterprise'}
                   </p>
                 </div>
               )}
@@ -189,7 +191,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           
           <button
             onClick={handleLogout}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-all ${
               sidebarCollapsed ? 'justify-center' : ''
             }`}
             title={sidebarCollapsed ? 'Logout' : undefined}
@@ -201,17 +203,17 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       </aside>
 
       {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-slate-900/95 backdrop-blur-lg border-b border-slate-800 z-50 flex items-center justify-between px-4">
+      <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-[#0d1525]/95 backdrop-blur-lg border-b border-[#1e3a5f]/50 z-50 flex items-center justify-between px-4">
         <Link to="/projects" className="flex items-center gap-2">
-          <div className="w-9 h-9 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-white" />
+          <div className="w-9 h-9 bg-gradient-to-br from-[#d4af37] to-[#b8962e] rounded-lg flex items-center justify-center">
+            <Sparkles className="w-5 h-5 text-[#0a0f1a]" />
           </div>
           <span className="text-lg font-bold text-gradient-gold">Acorn</span>
         </Link>
         
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all"
+          className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-[#1e3a5f]/50 transition-all"
         >
           {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
@@ -219,11 +221,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 z-40 bg-slate-950/90 backdrop-blur-lg pt-16">
+        <div className="lg:hidden fixed inset-0 z-40 bg-[#0a0f1a]/95 backdrop-blur-lg pt-16 animate-reveal-down">
           <nav className="p-4 space-y-2">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const active = isActive(item);
+              const active = isActive(item.path);
               
               return (
                 <button
@@ -234,8 +236,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                   }}
                   className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl transition-all ${
                     active
-                      ? 'bg-gradient-to-r from-amber-500/15 to-orange-500/15 text-amber-400 border border-amber-500/30'
-                      : 'text-slate-300 hover:bg-slate-800'
+                      ? 'bg-[#d4af37]/10 text-[#d4af37] border border-[#d4af37]/30'
+                      : 'text-gray-300 hover:bg-[#1e3a5f]/30'
                   }`}
                 >
                   <Icon className="w-6 h-6" />
@@ -244,7 +246,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               );
             })}
             
-            <div className="pt-4 border-t border-slate-800 mt-4">
+            <div className="pt-4 border-t border-[#1e3a5f]/50 mt-4">
               <button
                 onClick={() => {
                   handleLogout();
@@ -271,23 +273,21 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
       </main>
 
-      {/* AI Assistant Dock */}
+      {/* AI Assistant */}
       {activeProjectId && (
         <>
-          {/* Floating Assistant Button */}
           {!assistantOpen && (
             <button
               onClick={() => setAssistantOpen(true)}
-              className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/30 hover:scale-110 transition-transform group"
+              className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-2xl bg-gradient-to-br from-[#d4af37] to-[#b8962e] flex items-center justify-center shadow-lg shadow-[#d4af37]/30 hover:scale-110 hover:shadow-[#d4af37]/50 transition-all group"
             >
-              <MessageCircle className="w-6 h-6 text-white" />
-              <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-slate-950 animate-pulse" />
+              <MessageCircle className="w-6 h-6 text-[#0a0f1a]" />
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-[#0a0f1a] animate-pulse" />
             </button>
           )}
 
-          {/* Assistant Panel */}
           {assistantOpen && (
-            <div className="fixed bottom-6 right-6 z-50 w-96 max-h-[600px] card-glass rounded-2xl overflow-hidden shadow-2xl animate-slide-in-up">
+            <div className="fixed bottom-6 right-6 z-50 w-96 max-h-[600px] card-glass rounded-2xl overflow-hidden shadow-2xl animate-reveal-up">
               <ConversationalDock
                 projectId={activeProjectId}
                 open={assistantOpen}
