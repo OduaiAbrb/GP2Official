@@ -143,27 +143,27 @@ export const PhaseNavigation: React.FC<PhaseNavigationProps> = ({
     );
   }
 
-  // Sidebar variant (default)
+  // Sidebar variant (default) - Navy & Gold Theme
   return (
     <div
-      className={`flex flex-col h-full bg-white border-r border-gray-200 transition-all duration-300 ${
+      className={`flex flex-col h-full bg-navy-900 border-r border-navy-800 transition-all duration-300 ${
         collapsed ? 'w-16' : 'w-64'
       }`}
     >
       {/* Header */}
-      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+      <div className="p-4 border-b border-navy-800 flex items-center justify-between">
         {!collapsed && (
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">GP</span>
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 flex items-center justify-center shadow-lg shadow-gold-500/20">
+              <span className="text-navy-950 font-bold text-sm">GP</span>
             </div>
-            <span className="font-semibold text-gray-900">Phases</span>
+            <span className="font-semibold text-white">Phases</span>
           </div>
         )}
         {onToggleCollapse && (
           <button
             onClick={onToggleCollapse}
-            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="p-2 rounded-lg hover:bg-navy-800 text-gray-400 hover:text-gold-500 transition-colors"
           >
             {collapsed ? (
               <ChevronRight className="h-4 w-4" />
@@ -181,8 +181,8 @@ export const PhaseNavigation: React.FC<PhaseNavigationProps> = ({
           onClick={() => navigate(`/projects/${effectiveProjectId}`)}
           className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${
             !currentPhaseId || currentPhaseId === effectiveProjectId
-              ? 'bg-gray-100 text-gray-900'
-              : 'text-gray-600 hover:bg-gray-50'
+              ? 'bg-navy-800 text-gold-500 border border-gold-500/30'
+              : 'text-gray-400 hover:bg-navy-800 hover:text-white'
           }`}
         >
           <Home className="h-5 w-5 flex-shrink-0" />
@@ -192,7 +192,7 @@ export const PhaseNavigation: React.FC<PhaseNavigationProps> = ({
         {/* Phase Divider */}
         {!collapsed && (
           <div className="px-3 py-2">
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+            <span className="text-xs font-semibold text-gold-500/60 uppercase tracking-wider">
               Development Phases
             </span>
           </div>
@@ -200,7 +200,6 @@ export const PhaseNavigation: React.FC<PhaseNavigationProps> = ({
 
         {/* Phase Items */}
         {phaseConfigs.map((phase) => {
-          const colors = phaseColors[phase.color];
           const isActive = currentPhaseId === phase.id;
           const isCompleted = false; // Phase status tracked elsewhere
 
@@ -208,16 +207,17 @@ export const PhaseNavigation: React.FC<PhaseNavigationProps> = ({
             <button
               key={phase.id}
               onClick={() => handlePhaseClick(phase)}
+              data-testid={`phase-nav-${phase.id}`}
               className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all group ${
                 isActive
-                  ? `bg-gradient-to-r ${colors.gradient} text-white shadow-lg`
-                  : `text-gray-600 hover:${colors.bg}`
+                  ? 'bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950 shadow-lg shadow-gold-500/30'
+                  : 'text-gray-400 hover:bg-navy-800 hover:text-white'
               }`}
             >
               {/* Phase Number/Icon */}
               <div
-                className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-lg ${
-                  isActive ? 'bg-white/20' : colors.bg
+                className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-lg transition-all ${
+                  isActive ? 'bg-navy-950/20' : 'bg-navy-800 group-hover:bg-navy-700'
                 }`}
               >
                 {getPhaseIcon(phase.id)}
@@ -245,9 +245,9 @@ export const PhaseNavigation: React.FC<PhaseNavigationProps> = ({
                       </svg>
                     </div>
                   ) : isActive ? (
-                    <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                    <div className="w-2 h-2 rounded-full bg-navy-950 animate-pulse" />
                   ) : (
-                    <div className="w-2 h-2 rounded-full bg-gray-300" />
+                    <div className="w-2 h-2 rounded-full bg-navy-700" />
                   )}
                 </div>
               )}
