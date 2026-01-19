@@ -132,6 +132,21 @@ async def ensure_tables_exist():
             )
         ''')
         
+        # Create refresh_tokens table
+        await conn.execute('''
+            CREATE TABLE IF NOT EXISTS refresh_tokens (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                token_hash TEXT UNIQUE NOT NULL,
+                user_agent TEXT,
+                ip_address TEXT,
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                expires_at TIMESTAMPTZ NOT NULL,
+                revoked BOOLEAN DEFAULT false,
+                revoked_at TIMESTAMPTZ
+            )
+        ''')
+        
         if not tables_ok:
             # Create projects table - drop and recreate to fix UUID column type
             await conn.execute('DROP TABLE IF EXISTS artifacts CASCADE')
