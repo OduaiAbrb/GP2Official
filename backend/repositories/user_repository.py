@@ -72,12 +72,16 @@ class _SupabaseUserRepository:
         user_id = str(uuid.uuid4())
         now = datetime.utcnow()
         
-        async with pool.acquire() as conn:
-            await conn.execute('''
-                INSERT INTO users (id, email, full_name, organization, hashed_password, role, created_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7)
-            ''', user_id, user_data.email.lower(), user_data.full_name, 
-                user_data.organization or "Private Workspace", hashed_password, role_key, now)
+        try:
+            async with pool.acquire() as conn:
+                await conn.execute('''
+                    INSERT INTO users (id, email, full_name, organization, hashed_password, role, created_at)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7)
+                ''', user_id, user_data.email.lower(), user_data.full_name, 
+                    user_data.organization or "Private Workspace", hashed_password, role_key, now)
+        except Exception as e:
+            print(f"[SUPABASE ERROR] Failed to create user: {e}")
+            raise
         
         return User(
             id=user_id,
