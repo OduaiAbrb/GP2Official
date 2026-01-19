@@ -157,7 +157,7 @@ async def ensure_tables_exist():
         
         # Create artifacts table
         await conn.execute('''
-            CREATE TABLE IF NOT EXISTS artifacts (
+            CREATE TABLE artifacts (
                 id TEXT PRIMARY KEY,
                 project_id TEXT NOT NULL,
                 type TEXT NOT NULL,
