@@ -17,29 +17,29 @@ async def init_supabase_db():
     """Initialize Supabase PostgreSQL connection pool."""
     global pool
     
-    print(f"[SUPABASE INIT] URL={'SET' if settings.supabase_url else 'NOT SET'}, SERVICE_KEY={'SET' if settings.supabase_service_key else 'NOT SET'}")
+    # Clean and get the URL
+    raw_url = (settings.supabase_url or "").strip().strip('"').strip("'")
     
-    if not settings.supabase_url or not settings.supabase_service_key:
-        print("[SUPABASE ERROR] Missing Supabase URL or Service Key!")
-        logger.error("Supabase URL and Service Key are required")
-        raise ValueError("Missing Supabase configuration")
+    print(f"[SUPABASE INIT] URL={'SET' if raw_url else 'NOT SET'}, SERVICE_KEY={'SET' if settings.supabase_service_key else 'NOT SET'}")
+    
+    if not raw_url:
+        print("[SUPABASE ERROR] Missing Supabase URL!")
+        logger.error("Supabase URL is required")
+        raise ValueError("Missing Supabase configuration - SUPABASE_URL not set")
     
     try:
         # Check if SUPABASE_URL is already a PostgreSQL connection string
-        if settings.supabase_url.startswith('postgresql://') or settings.supabase_url.startswith('postgres://'):
-            # Direct PostgreSQL connection string provided
-            database_url = settings.supabase_url
+        if raw_url.startswith('postgresql://') or raw_url.startswith('postgres://'):
+            # Direct PostgreSQL connection string provided - use it as-is
+            database_url = raw_url
             print(f"[SUPABASE] Using direct PostgreSQL connection string")
+            print(f"[SUPABASE] URL starts with: {database_url[:50]}...")
         else:
-            # Convert Supabase API URL to PostgreSQL connection string
-            # From: https://qscbybwxuybptijwdyvc.supabase.co
-            # To: postgresql://postgres:[password]@db.qscbybwxuybptijwdyvc.supabase.co:5432/postgres
-            
-            # Extract project ID from Supabase URL
+            # It's an API URL like https://xxx.supabase.co - need to construct DB URL
             import re
-            url_match = re.search(r'https://([^.]+)\.supabase\.co', settings.supabase_url)
+            url_match = re.search(r'https://([^.]+)\.supabase\.co', raw_url)
             if not url_match:
-                raise ValueError(f"Invalid Supabase URL format: {settings.supabase_url}")
+                raise ValueError(f"Invalid Supabase URL format: {raw_url}")
             
             project_id = url_match.group(1)
             
@@ -51,8 +51,7 @@ async def init_supabase_db():
             
             database_url = f"postgresql://postgres.{project_id}:{db_password}@aws-0-us-west-1.pooler.supabase.com:6543/postgres"
             
-            print(f"[SUPABASE] Using connection string: postgresql://postgres.{project_id}:***@aws-0-us-west-1.pooler.supabase.com:6543/postgres")
-            print(f"[SUPABASE] Using {'database password' if settings.supabase_db_password else 'service key as password'}")
+            print(f"[SUPABASE] Using constructed connection string for project: {project_id}")
         
         # Create connection pool
         pool = await asyncpg.create_pool(
@@ -68,13 +67,190 @@ async def init_supabase_db():
         
         # Test connection
         async with pool.acquire() as conn:
-            await conn.execute('SELECT 1')
+            result = await conn.fetchval('SELECT 1')
+            print(f"[SUPABASE] Connection test successful: {result}")
             
         logger.info("Connected to Supabase PostgreSQL database")
+        print("[SUPABASE] ✅ Database connection established successfully!")
+        
+        # Create tables if they don't exist
+        await ensure_tables_exist()
         
     except Exception as e:
         logger.error(f"Failed to connect to Supabase: {e}")
+        print(f"[SUPABASE ERROR] Connection failed: {e}")
         raise
+
+
+async def ensure_tables_exist():
+    """Create tables if they don't exist."""
+    global pool
+    if not pool:
+        return
+    
+    print("[SUPABASE] Checking/creating database tables...")
+    
+    async with pool.acquire() as conn:
+        # Create users table
+        await conn.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id TEXT PRIMARY KEY,
+                email TEXT UNIQUE NOT NULL,
+                full_name TEXT,
+                organization TEXT DEFAULT 'Private Workspace',
+                hashed_password TEXT NOT NULL,
+                is_active BOOLEAN DEFAULT true,
+                role TEXT DEFAULT 'viewer',
+                avatar_url TEXT,
+                banner_url TEXT,
+                bio TEXT,
+                job_title TEXT,
+                location TEXT,
+                timezone TEXT,
+                pronouns TEXT,
+                skills JSONB DEFAULT '[]',
+                interests JSONB DEFAULT '[]',
+                social_links JSONB DEFAULT '[]',
+                availability TEXT,
+                contact_email TEXT,
+                phone TEXT,
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                updated_at TIMESTAMPTZ DEFAULT NOW()
+            )
+        ''')
+        
+        # Create projects table
+        await conn.execute('''
+            CREATE TABLE IF NOT EXISTS projects (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                description TEXT,
+                template_type TEXT,
+                brief_text TEXT,
+                questionnaire_data JSONB DEFAULT '{}',
+                owner_id TEXT NOT NULL,
+                organization TEXT NOT NULL,
+                status TEXT DEFAULT 'draft',
+                feature_tier TEXT DEFAULT 'pro',
+                phase_status JSONB DEFAULT '{}',
+                roadmap JSONB,
+                roadmap_summary JSONB,
+                feasibility_studies JSONB,
+                feasibility_sections JSONB,
+                development_stack JSONB,
+                development_notes JSONB,
+                parent_project_id TEXT,
+                scenario_label TEXT,
+                scenario_metadata JSONB,
+                ui_preferences JSONB,
+                team_members JSONB DEFAULT '[]',
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                updated_at TIMESTAMPTZ DEFAULT NOW()
+            )
+        ''')
+        
+        # Create artifacts table
+        await conn.execute('''
+            CREATE TABLE IF NOT EXISTS artifacts (
+                id TEXT PRIMARY KEY,
+                project_id TEXT NOT NULL,
+                type TEXT NOT NULL,
+                title TEXT,
+                content_json JSONB,
+                version INTEGER DEFAULT 1,
+                is_approved BOOLEAN DEFAULT false,
+                metadata JSONB,
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                updated_at TIMESTAMPTZ DEFAULT NOW()
+            )
+        ''')
+        
+        # Create requirements table
+        await conn.execute('''
+            CREATE TABLE IF NOT EXISTS requirements (
+                id TEXT PRIMARY KEY,
+                project_id TEXT NOT NULL,
+                type TEXT,
+                title TEXT NOT NULL,
+                description TEXT,
+                priority TEXT DEFAULT 'medium',
+                status TEXT DEFAULT 'draft',
+                confidence_score FLOAT,
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                updated_at TIMESTAMPTZ DEFAULT NOW()
+            )
+        ''')
+        
+        # Create tasks table
+        await conn.execute('''
+            CREATE TABLE IF NOT EXISTS tasks (
+                id TEXT PRIMARY KEY,
+                project_id TEXT NOT NULL,
+                requirement_id TEXT,
+                title TEXT NOT NULL,
+                description TEXT,
+                estimate_hours FLOAT,
+                actual_hours FLOAT,
+                start_date TIMESTAMPTZ,
+                due_date TIMESTAMPTZ,
+                status TEXT DEFAULT 'pending',
+                priority TEXT DEFAULT 'medium',
+                role TEXT,
+                dependencies JSONB DEFAULT '[]',
+                tags JSONB DEFAULT '[]',
+                phase TEXT,
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                updated_at TIMESTAMPTZ DEFAULT NOW()
+            )
+        ''')
+        
+        # Create refresh_tokens table
+        await conn.execute('''
+            CREATE TABLE IF NOT EXISTS refresh_tokens (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                token_hash TEXT UNIQUE NOT NULL,
+                user_agent TEXT,
+                ip_address TEXT,
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                expires_at TIMESTAMPTZ NOT NULL,
+                revoked BOOLEAN DEFAULT false,
+                revoked_at TIMESTAMPTZ
+            )
+        ''')
+        
+        # Create ai_runs table
+        await conn.execute('''
+            CREATE TABLE IF NOT EXISTS ai_runs (
+                id TEXT PRIMARY KEY,
+                project_id TEXT NOT NULL,
+                user_id TEXT,
+                job_type TEXT,
+                phase TEXT,
+                provider TEXT,
+                model TEXT,
+                status TEXT DEFAULT 'pending',
+                prompt TEXT,
+                response_excerpt TEXT,
+                duration_ms INTEGER,
+                error_message TEXT,
+                metadata JSONB,
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                completed_at TIMESTAMPTZ
+            )
+        ''')
+        
+        # Create indexes
+        await conn.execute('CREATE INDEX IF NOT EXISTS idx_projects_organization ON projects(organization)')
+        await conn.execute('CREATE INDEX IF NOT EXISTS idx_projects_owner ON projects(owner_id)')
+        await conn.execute('CREATE INDEX IF NOT EXISTS idx_artifacts_project ON artifacts(project_id)')
+        await conn.execute('CREATE INDEX IF NOT EXISTS idx_artifacts_project_type ON artifacts(project_id, type)')
+        await conn.execute('CREATE INDEX IF NOT EXISTS idx_requirements_project ON requirements(project_id)')
+        await conn.execute('CREATE INDEX IF NOT EXISTS idx_tasks_project ON tasks(project_id)')
+        await conn.execute('CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)')
+        await conn.execute('CREATE INDEX IF NOT EXISTS idx_ai_runs_project ON ai_runs(project_id)')
+        
+    print("[SUPABASE] ✅ Database tables verified/created successfully!")
 
 
 async def close_supabase_db():
@@ -82,7 +258,14 @@ async def close_supabase_db():
     global pool
     if pool:
         await pool.close()
+        pool = None
         logger.info("Closed Supabase database connection")
+
+
+def get_pool():
+    """Get the database pool."""
+    global pool
+    return pool
 
 
 class SupabaseRepository:
@@ -91,19 +274,25 @@ class SupabaseRepository:
     def __init__(self, table_name: str):
         self.table_name = table_name
     
+    def _get_pool(self):
+        global pool
+        if pool is None:
+            raise Exception("Supabase database pool not initialized")
+        return pool
+    
     async def _execute_query(self, query: str, *args):
         """Execute a query and return results."""
-        async with pool.acquire() as conn:
+        async with self._get_pool().acquire() as conn:
             return await conn.fetch(query, *args)
     
     async def _execute_single(self, query: str, *args):
         """Execute a query and return single result."""
-        async with pool.acquire() as conn:
+        async with self._get_pool().acquire() as conn:
             return await conn.fetchrow(query, *args)
     
     async def _execute_command(self, query: str, *args):
         """Execute a command (INSERT/UPDATE/DELETE)."""
-        async with pool.acquire() as conn:
+        async with self._get_pool().acquire() as conn:
             return await conn.execute(query, *args)
     
     async def find_by_id(self, id: str, organization: str = None) -> Optional[Dict]:
