@@ -32,7 +32,7 @@ async def init_supabase_db():
         if raw_url.startswith('postgresql://') or raw_url.startswith('postgres://'):
             # Direct PostgreSQL connection string provided - use it as-is
             database_url = raw_url
-            print(f"[SUPABASE] Using direct PostgreSQL connection string")
+            print("[SUPABASE] Using direct PostgreSQL connection string")
             print(f"[SUPABASE] URL starts with: {database_url[:50]}...")
         else:
             # It's an API URL like https://xxx.supabase.co - need to construct DB URL
