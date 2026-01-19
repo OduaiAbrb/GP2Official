@@ -63,6 +63,38 @@ app.include_router(websocket.router, prefix="/api/ws", tags=["WebSocket"])
 app.include_router(ai_pipeline.router, prefix="/api/ai", tags=["AI Pipeline"])
 
 
+@app.get("/")
+async def root():
+    """Root endpoint with API information."""
+    return {
+        "service": "Acorn - AI Planning Platform",
+        "version": "1.0.0",
+        "status": "running",
+        "message": "Plant the seeds of perfect projects with AI-powered software planning 🌰",
+        "endpoints": {
+            "health": "/api/health",
+            "docs": "/docs",
+            "api": "/api"
+        }
+    }
+
+
+@app.get("/api")
+async def api_info():
+    """API information endpoint."""
+    return {
+        "service": "Acorn API",
+        "version": "1.0.0",
+        "endpoints": {
+            "auth": "/api/auth",
+            "projects": "/api/projects",
+            "generation": "/api/generation",
+            "users": "/api/users",
+            "health": "/api/health"
+        }
+    }
+
+
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint."""
