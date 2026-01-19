@@ -181,7 +181,7 @@ export const RegisterPage: React.FC = () => {
           {/* Mobile Logo */}
           <div className="lg:hidden text-center mb-6 animate-fade-in">
             <Link to="/" className="inline-block">
-              <AcornLogo size={56} />
+              <AcornLogo size="lg" />
             </Link>
           </div>
 
