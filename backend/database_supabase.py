@@ -25,28 +25,34 @@ async def init_supabase_db():
         raise ValueError("Missing Supabase configuration")
     
     try:
-        # Convert Supabase API URL to PostgreSQL connection string
-        # From: https://qscbybwxuybptijwdyvc.supabase.co
-        # To: postgresql://postgres:[password]@db.qscbybwxuybptijwdyvc.supabase.co:5432/postgres
-        
-        # Extract project ID from Supabase URL
-        import re
-        url_match = re.search(r'https://([^.]+)\.supabase\.co', settings.supabase_url)
-        if not url_match:
-            raise ValueError(f"Invalid Supabase URL format: {settings.supabase_url}")
-        
-        project_id = url_match.group(1)
-        
-        # Use dedicated database password if provided, otherwise fall back to service key
-        db_password = settings.supabase_db_password or settings.supabase_service_key
-        
-        if not db_password:
-            raise ValueError("Either SUPABASE_DB_PASSWORD or SUPABASE_SERVICE_KEY must be set")
-        
-        database_url = f"postgresql://postgres.{project_id}:{db_password}@aws-0-us-west-1.pooler.supabase.com:6543/postgres"
-        
-        print(f"[SUPABASE] Using connection string: postgresql://postgres.{project_id}:***@aws-0-us-west-1.pooler.supabase.com:6543/postgres")
-        print(f"[SUPABASE] Using {'database password' if settings.supabase_db_password else 'service key as password'}")
+        # Check if SUPABASE_URL is already a PostgreSQL connection string
+        if settings.supabase_url.startswith('postgresql://') or settings.supabase_url.startswith('postgres://'):
+            # Direct PostgreSQL connection string provided
+            database_url = settings.supabase_url
+            print(f"[SUPABASE] Using direct PostgreSQL connection string")
+        else:
+            # Convert Supabase API URL to PostgreSQL connection string
+            # From: https://qscbybwxuybptijwdyvc.supabase.co
+            # To: postgresql://postgres:[password]@db.qscbybwxuybptijwdyvc.supabase.co:5432/postgres
+            
+            # Extract project ID from Supabase URL
+            import re
+            url_match = re.search(r'https://([^.]+)\.supabase\.co', settings.supabase_url)
+            if not url_match:
+                raise ValueError(f"Invalid Supabase URL format: {settings.supabase_url}")
+            
+            project_id = url_match.group(1)
+            
+            # Use dedicated database password if provided, otherwise fall back to service key
+            db_password = settings.supabase_db_password or settings.supabase_service_key
+            
+            if not db_password:
+                raise ValueError("Either SUPABASE_DB_PASSWORD or SUPABASE_SERVICE_KEY must be set")
+            
+            database_url = f"postgresql://postgres.{project_id}:{db_password}@aws-0-us-west-1.pooler.supabase.com:6543/postgres"
+            
+            print(f"[SUPABASE] Using connection string: postgresql://postgres.{project_id}:***@aws-0-us-west-1.pooler.supabase.com:6543/postgres")
+            print(f"[SUPABASE] Using {'database password' if settings.supabase_db_password else 'service key as password'}")
         
         # Create connection pool
         pool = await asyncpg.create_pool(
