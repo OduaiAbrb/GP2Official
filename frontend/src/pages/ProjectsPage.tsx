@@ -290,7 +290,7 @@ export const ProjectsPage: React.FC = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            navigate(`/projects/${project.id}`);
+                            navigate(`/projects/${projectId}`);
                           }}
                           className="p-2 rounded-lg bg-slate-800 hover:bg-amber-500 text-slate-400 hover:text-white transition-all"
                         >
@@ -299,7 +299,7 @@ export const ProjectsPage: React.FC = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            setActiveMenu(activeMenu === project.id ? null : project.id);
+                            setActiveMenu(activeMenu === projectId ? null : projectId);
                           }}
                           className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-all"
                         >
@@ -307,20 +307,20 @@ export const ProjectsPage: React.FC = () => {
                         </button>
                         
                         {/* Dropdown Menu */}
-                        {activeMenu === project.id && (
+                        {activeMenu === projectId && (
                           <div 
                             className="absolute top-full right-0 mt-2 w-40 bg-slate-800 border border-slate-700 rounded-xl shadow-xl overflow-hidden z-10 animate-fade-in-down"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <button
-                              onClick={() => navigate(`/projects/${project.id}`)}
+                              onClick={() => navigate(`/projects/${projectId}`)}
                               className="w-full flex items-center gap-2 px-4 py-3 text-sm text-slate-300 hover:bg-slate-700 transition-colors"
                             >
                               <Edit3 className="w-4 h-4" />
                               Edit
                             </button>
                             <button
-                              onClick={() => deleteProject(project.id)}
+                              onClick={() => deleteProject(projectId)}
                               className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -336,6 +336,7 @@ export const ProjectsPage: React.FC = () => {
             ) : (
               <div className="space-y-3">
                 {filteredProjects.map((project, index) => {
+                  const projectId = project.id || project.project_id || '';
                   const statusConfig = getStatusConfig(project.status);
                   const StatusIcon = statusConfig.icon;
                   
