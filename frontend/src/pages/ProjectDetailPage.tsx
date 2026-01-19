@@ -552,7 +552,6 @@ export const ProjectDetailPage: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
     </Layout>
   );
 };
