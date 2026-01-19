@@ -1353,12 +1353,12 @@ export const PhaseDetailPage: React.FC = () => {
 
                 <div className="space-y-6">
                   {!canTriggerAi && (
-                    <div className="rounded-2xl border border-gold-500/30 bg-gradient-to-r from-navy-900 to-navy-850 p-4 text-sm text-gold-400 flex items-center gap-3 shadow-lg animate-reveal-up">
-                      <div className="p-2 bg-gold-500/10 rounded-xl">
-                        <Shield className="h-5 w-5 text-gold-500" />
+                    <div className="rounded-2xl p-4 text-sm flex items-center gap-3 shadow-lg animate-reveal-up" style={{ backgroundColor: '#111b2e', border: '1px solid rgba(212, 175, 55, 0.3)' }}>
+                      <div className="p-2 rounded-xl" style={{ backgroundColor: 'rgba(212, 175, 55, 0.1)' }}>
+                        <Shield className="h-5 w-5" style={{ color: '#d4af37' }} />
                       </div>
                       <div>
-                        <p className="font-medium text-gold-400">Limited Access</p>
+                        <p className="font-medium" style={{ color: '#d4af37' }}>Limited Access</p>
                         <p className="text-gray-400">You have {user?.role_label || 'reviewer'} access. A Program Manager must trigger AI generation.</p>
                       </div>
                     </div>
