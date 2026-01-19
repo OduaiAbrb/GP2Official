@@ -119,9 +119,15 @@ async def ensure_tables_exist():
             )
         ''')
         
-        # Create projects table
+        # Create projects table - drop and recreate to fix UUID column type
+        await conn.execute('DROP TABLE IF EXISTS artifacts CASCADE')
+        await conn.execute('DROP TABLE IF EXISTS requirements CASCADE')
+        await conn.execute('DROP TABLE IF EXISTS tasks CASCADE')
+        await conn.execute('DROP TABLE IF EXISTS ai_runs CASCADE')
+        await conn.execute('DROP TABLE IF EXISTS projects CASCADE')
+        
         await conn.execute('''
-            CREATE TABLE IF NOT EXISTS projects (
+            CREATE TABLE projects (
                 id TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
                 description TEXT,
