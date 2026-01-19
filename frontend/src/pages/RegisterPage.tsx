@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Sparkles, CheckCircle, Code, Layers, Boxes, ArrowRight } from 'lucide-react';
 import { ROLE_OPTIONS } from '@/constants/roles';
+import { AcornLogo } from '@/components/AcornLogo';
 
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
@@ -57,16 +58,8 @@ export const RegisterPage: React.FC = () => {
           {/* Left side - Benefits & Image */}
           <div className="hidden lg:block space-y-8">
             <div className="text-center lg:text-left mb-8 animate-slideInLeft">
-              <Link to="/" className="inline-flex items-center space-x-3 group mb-6">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full blur-md opacity-50 group-hover:opacity-75 transition-opacity" />
-                  <img 
-                    src="https://images.unsplash.com/photo-1569977562541-024dd41514fc?w=100&h=100&fit=crop" 
-                    alt="Acorn" 
-                    className="relative w-16 h-16 rounded-full object-cover ring-2 ring-amber-400 group-hover:scale-110 transition-transform"
-                  />
-                </div>
-                <span className="text-3xl font-bold bg-gradient-to-r from-amber-700 to-orange-600 bg-clip-text text-transparent">Acorn</span>
+              <Link to="/" className="inline-block hover:scale-105 transition-transform mb-6">
+                <AcornLogo size={64} />
               </Link>
             </div>
 
@@ -120,13 +113,8 @@ export const RegisterPage: React.FC = () => {
           {/* Right side - Form */}
           <div className="animate-slideInRight">
             <div className="lg:hidden text-center mb-6">
-              <Link to="/" className="inline-flex items-center space-x-3">
-                <img 
-                  src="https://images.unsplash.com/photo-1569977562541-024dd41514fc?w=100&h=100&fit=crop" 
-                  alt="Acorn" 
-                  className="w-12 h-12 rounded-full object-cover ring-2 ring-amber-400"
-                />
-                <span className="text-2xl font-bold bg-gradient-to-r from-amber-700 to-orange-600 bg-clip-text text-transparent">Acorn</span>
+              <Link to="/" className="inline-block hover:scale-105 transition-transform">
+                <AcornLogo size={56} />
               </Link>
             </div>
 

@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Sparkles, Zap, Shield, Lock } from 'lucide-react';
+import { AcornLogo } from '@/components/AcornLogo';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -43,16 +44,8 @@ export const LoginPage: React.FC = () => {
           {/* Left Side - Image & Logo */}
           <div className="hidden lg:block space-y-6 animate-slideInLeft">
             <div className="text-center lg:text-left">
-              <Link to="/" className="inline-flex items-center space-x-3 group mb-6">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-orange-400 to-blue-500 rounded-full blur-md opacity-50 group-hover:opacity-75 transition-opacity" />
-                  <img 
-                    src="/logo.png" 
-                    alt="Acorn" 
-                    className="relative w-16 h-16 object-contain group-hover:scale-110 transition-transform"
-                  />
-                </div>
-                <span className="text-3xl font-bold bg-gradient-to-r from-orange-600 via-blue-500 to-navy-600 bg-clip-text text-transparent">Acorn</span>
+              <Link to="/" className="inline-block group mb-6 hover:scale-105 transition-transform">
+                <AcornLogo size={64} />
               </Link>
               <p className="text-xl text-gray-700 font-medium mb-4">Welcome back to your AI-powered planning platform</p>
             </div>
@@ -93,16 +86,8 @@ export const LoginPage: React.FC = () => {
           {/* Right Side - Login Form */}
           <div className="animate-slideInRight">
             <div className="lg:hidden text-center mb-6">
-              <Link to="/" className="inline-flex items-center space-x-3 group">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-orange-400 to-blue-500 rounded-full blur-md opacity-50 group-hover:opacity-75 transition-opacity" />
-                  <img 
-                    src="/logo.png" 
-                    alt="Acorn" 
-                    className="relative w-16 h-16 object-contain group-hover:scale-110 transition-transform"
-                  />
-                </div>
-                <span className="text-3xl font-bold bg-gradient-to-r from-orange-600 via-blue-500 to-navy-600 bg-clip-text text-transparent">Acorn</span>
+              <Link to="/" className="inline-block hover:scale-105 transition-transform">
+                <AcornLogo size={64} />
               </Link>
               <p className="mt-2 text-gray-600">Plant the seeds of perfect projects</p>
             </div>

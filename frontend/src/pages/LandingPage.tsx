@@ -15,6 +15,7 @@ import {
   Quote
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { AcornLogo } from '@/components/AcornLogo';
 
 const features = [
   {
@@ -127,18 +128,8 @@ const LandingPage: React.FC = () => {
 
       <nav className="relative z-10 px-6 py-4 backdrop-blur-sm bg-white/30 border-b border-amber-200/50">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center space-x-3 group cursor-pointer" onClick={() => navigate('/') }>
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-400 to-blue-500 rounded-full blur-md opacity-50 group-hover:opacity-75 transition-opacity" />
-              <img
-                src="/logo.png"
-                alt="Acorn Logo"
-                className="relative w-12 h-12 object-contain group-hover:scale-110 transition-transform"
-              />
-            </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-orange-600 via-blue-500 to-navy-600 bg-clip-text text-transparent group-hover:scale-105 transition-transform">
-              Acorn
-            </span>
+          <div className="cursor-pointer group-hover:scale-105 transition-transform" onClick={() => navigate('/') }>
+            <AcornLogo size={48} />
           </div>
           <div className="flex gap-3">
             <Button
