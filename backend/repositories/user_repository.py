@@ -90,7 +90,9 @@ class _SupabaseUserRepository:
         async with pool.acquire() as conn:
             row = await conn.fetchrow('SELECT * FROM users WHERE email = $1', email.lower())
         if row:
-            return User(**dict(row))
+            data = dict(row)
+            data['id'] = str(data['id'])  # Convert UUID to string
+            return User(**data)
         return None
     
     async def get_by_id(self, user_id: str) -> Optional[User]:
@@ -98,7 +100,9 @@ class _SupabaseUserRepository:
         async with pool.acquire() as conn:
             row = await conn.fetchrow('SELECT * FROM users WHERE id = $1', user_id)
         if row:
-            return User(**dict(row))
+            data = dict(row)
+            data['id'] = str(data['id'])  # Convert UUID to string
+            return User(**data)
         return None
     
     async def update_profile(self, user_id: str, updates: Dict[str, Any]) -> Optional[User]:
@@ -111,7 +115,9 @@ class _SupabaseUserRepository:
         async with pool.acquire() as conn:
             row = await conn.fetchrow(query, user_id, *updates.values())
         if row:
-            return User(**dict(row))
+            data = dict(row)
+            data['id'] = str(data['id'])  # Convert UUID to string
+            return User(**data)
         return None
     
     async def update_workspace(self, user_id: str, organization: str, role: str) -> Optional[User]:

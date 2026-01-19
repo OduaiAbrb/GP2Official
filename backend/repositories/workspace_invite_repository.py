@@ -67,14 +67,27 @@ class _SupabaseWorkspaceInviteRepository:
         pool = self._get_pool()
         async with pool.acquire() as conn:
             rows = await conn.fetch('SELECT * FROM workspace_invites WHERE organization = $1 ORDER BY created_at DESC', organization)
-        return [WorkspaceInvite(**dict(row)) for row in rows]
+        invites = []
+        for row in rows:
+            data = dict(row)
+            data['id'] = str(data['id'])
+            data['invited_by'] = str(data['invited_by'])
+            if data.get('accepted_by'):
+                data['accepted_by'] = str(data['accepted_by'])
+            invites.append(WorkspaceInvite(**data))
+        return invites
 
     async def find_pending_for_email(self, email: str) -> Optional[WorkspaceInvite]:
         pool = self._get_pool()
         async with pool.acquire() as conn:
             row = await conn.fetchrow('SELECT * FROM workspace_invites WHERE email = $1 AND status = $2 ORDER BY created_at DESC LIMIT 1', email.lower(), "pending")
         if row:
-            return WorkspaceInvite(**dict(row))
+            data = dict(row)
+            data['id'] = str(data['id'])
+            data['invited_by'] = str(data['invited_by'])
+            if data.get('accepted_by'):
+                data['accepted_by'] = str(data['accepted_by'])
+            return WorkspaceInvite(**data)
         return None
 
     async def mark_accepted(self, invite_id: str, user_id: str) -> None:
