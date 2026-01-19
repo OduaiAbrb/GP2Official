@@ -1,5 +1,6 @@
 """Phase flow routes."""
 
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from typing import Optional
@@ -10,6 +11,7 @@ from services.phase_flow_service import PhaseFlowService, PHASE_ORDER
 from services.project_service import ProjectService
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 phase_service = PhaseFlowService()
 project_service = ProjectService()
 
