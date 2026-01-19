@@ -123,6 +123,8 @@ class AIModelPipeline:
                 ]
             )
             logger.info(f"OpenAI GPT model configured: {settings.llm_model_name or 'gpt-4'}")
+        else:
+            logger.info("No LLM API key configured - using stub model only")
             
         return models
     
