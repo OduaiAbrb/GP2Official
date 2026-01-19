@@ -1,6 +1,6 @@
 """FastAPI main application."""
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import os
@@ -77,6 +77,12 @@ async def root():
             "api": "/api"
         }
     }
+
+
+@app.head("/")
+async def root_head():
+    """Root endpoint for health probes that use HEAD requests."""
+    return Response(status_code=200)
 
 
 @app.get("/api")
