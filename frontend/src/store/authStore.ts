@@ -62,8 +62,15 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
           });
         } catch (error: any) {
-          const raw = error.response?.data?.detail || error.response?.data?.error || 'Login failed';
-          const message = normalizeErrorMessage(raw, 'Login failed');
+          let message = 'Login failed';
+          if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+            message = 'Server is waking up. Please try again in a few seconds.';
+          } else if (!error.response) {
+            message = 'Unable to connect to server. Please check your connection.';
+          } else {
+            const raw = error.response?.data?.detail || error.response?.data?.error || 'Login failed';
+            message = normalizeErrorMessage(raw, 'Login failed');
+          }
           set({ error: message, isLoading: false });
           throw error;
         }

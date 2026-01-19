@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/ui/Button';
 import { LogIn, Mail, Lock, AlertCircle, CheckCircle, Sparkles } from 'lucide-react';
 import { AcornLogo } from '@/components/AcornLogo';
+import { api } from '@/lib/api';
 
 const backgroundImages = [
   'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1920&q=80',
@@ -18,6 +19,11 @@ export const LoginPage: React.FC = () => {
   const [touched, setTouched] = useState({ email: false, password: false });
   const [currentBg, setCurrentBg] = useState(0);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    // Pre-warm the server on page load (Render free tier cold starts)
+    api.healthCheck();
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {

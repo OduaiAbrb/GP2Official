@@ -55,6 +55,7 @@ class ApiClient {
       headers: {
         'Content-Type': 'application/json',
       },
+      timeout: 60000, // 60 second timeout for cold starts on Render free tier
     });
 
     // Add token to requests
@@ -106,6 +107,16 @@ class ApiClient {
         return Promise.reject(error);
       }
     );
+  }
+
+  // Health check to warm up server
+  async healthCheck(): Promise<boolean> {
+    try {
+      await this.client.get('/health', { timeout: 10000 });
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   // Auth
