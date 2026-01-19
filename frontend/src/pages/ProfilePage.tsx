@@ -63,7 +63,7 @@ const CardSection: React.FC<CardSectionProps> = ({ title, icon: Icon, children, 
   );
 };
 
-export const ProfilePage: React.FC = () => {
+const ProfilePage: React.FC = () => {
   const { user } = useAuthStore();
   const [profile, setProfile] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -417,3 +417,6 @@ export const ProfilePage: React.FC = () => {
     </Layout>
   );
 };
+
+export default ProfilePage;
+export { ProfilePage };
