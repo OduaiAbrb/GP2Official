@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import { ThemeProvider } from './contexts/ThemeContext';
 import LandingPage from './pages/LandingPage';
-import { LoginPage } from './pages/LoginPage';
+import LoginPage from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { NewProjectPage } from './pages/NewProjectPage';
