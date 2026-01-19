@@ -37,11 +37,16 @@ async def init_supabase_db():
         
         project_id = url_match.group(1)
         
-        # For now, use service key as password (this is a common pattern for server-side connections)
-        # In production, you'd typically have a dedicated database password
-        database_url = f"postgresql://postgres.{project_id}:{settings.supabase_service_key}@aws-0-us-west-1.pooler.supabase.com:6543/postgres"
+        # Use dedicated database password if provided, otherwise fall back to service key
+        db_password = settings.supabase_db_password or settings.supabase_service_key
+        
+        if not db_password:
+            raise ValueError("Either SUPABASE_DB_PASSWORD or SUPABASE_SERVICE_KEY must be set")
+        
+        database_url = f"postgresql://postgres.{project_id}:{db_password}@aws-0-us-west-1.pooler.supabase.com:6543/postgres"
         
         print(f"[SUPABASE] Using connection string: postgresql://postgres.{project_id}:***@aws-0-us-west-1.pooler.supabase.com:6543/postgres")
+        print(f"[SUPABASE] Using {'database password' if settings.supabase_db_password else 'service key as password'}")
         
         # Create connection pool
         pool = await asyncpg.create_pool(
