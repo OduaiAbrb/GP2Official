@@ -26,7 +26,14 @@ class WorkspaceInviteRepository:
     """Manage workspace invite persistence - delegates to appropriate backend."""
 
     def __init__(self):
-        self._repo = _get_repository()
+        self._cached_repo = None
+
+    @property
+    def _repo(self):
+        """Lazy repository getter - checks pool availability at call time."""
+        if self._cached_repo is None:
+            self._cached_repo = _get_repository()
+        return self._cached_repo
 
     async def create_invite(self, organization: str, email: str, role: str, invited_by: str, message: Optional[str] = None) -> WorkspaceInvite:
         return await self._repo.create_invite(organization, email, role, invited_by, message)

@@ -76,11 +76,18 @@ class MemoryCollection:
         ]
         return MemoryDeleteResult(deleted_count=original_count - len(self.docs))
 
-    async def find_one(self, filter_doc: Dict[str, Any]):
-        for doc in self.docs:
-            if all(doc.get(k) == v for k, v in filter_doc.items()):
-                return dict(doc)
-        return None
+    async def find_one(self, filter_doc: Dict[str, Any], sort=None):
+        matched = [
+            doc for doc in self.docs
+            if all(doc.get(k) == v for k, v in filter_doc.items())
+        ]
+        if not matched:
+            return None
+        if sort:
+            for key, direction in reversed(sort):
+                reverse = direction == -1
+                matched = sorted(matched, key=lambda d: d.get(key) or "", reverse=reverse)
+        return dict(matched[0])
 
     def find(self, filter_doc: Dict[str, Any]):
         matched = [

@@ -26,7 +26,14 @@ class UserRepository:
     """Repository for user data access - delegates to appropriate backend."""
     
     def __init__(self):
-        self._repo = _get_repository()
+        self._cached_repo = None
+    
+    @property
+    def _repo(self):
+        """Lazy repository getter - checks pool availability at call time."""
+        if self._cached_repo is None:
+            self._cached_repo = _get_repository()
+        return self._cached_repo
     
     async def create(self, user_data: UserCreate) -> User:
         return await self._repo.create(user_data)

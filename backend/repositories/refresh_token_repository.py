@@ -25,7 +25,14 @@ class RefreshTokenRepository:
     """Manage persistence of refresh tokens - delegates to appropriate backend."""
 
     def __init__(self) -> None:
-        self._repo = _get_repository()
+        self._cached_repo = None
+
+    @property
+    def _repo(self):
+        """Lazy repository getter - checks pool availability at call time."""
+        if self._cached_repo is None:
+            self._cached_repo = _get_repository()
+        return self._cached_repo
 
     async def create_token(self, *, user_id: str, token_hash: str, expires_at: datetime,
                           user_agent: Optional[str], ip_address: Optional[str]) -> RefreshToken:

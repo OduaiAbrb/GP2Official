@@ -27,7 +27,14 @@ class ProjectRepository:
     """Repository for project data access - delegates to appropriate backend."""
     
     def __init__(self):
-        self._repo = _get_repository()
+        self._cached_repo = None
+    
+    @property
+    def _repo(self):
+        """Lazy repository getter - checks pool availability at call time."""
+        if self._cached_repo is None:
+            self._cached_repo = _get_repository()
+        return self._cached_repo
     
     async def create(self, project_data: ProjectCreate, user_id: str, organization: str, owner_member: Optional[Dict[str, Any]] = None) -> Project:
         return await self._repo.create(project_data, user_id, organization, owner_member)
