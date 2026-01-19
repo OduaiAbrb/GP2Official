@@ -10,8 +10,10 @@ import {
   EyeOff,
   AlertCircle,
   Loader2,
-  Zap,
-  CheckCircle2
+  CheckCircle2,
+  Shield,
+  Building2,
+  Award
 } from 'lucide-react';
 
 const LoginPage: React.FC = () => {
@@ -56,116 +58,113 @@ const LoginPage: React.FC = () => {
     if (error) setError(null);
   };
 
+  const trustBadges = [
+    { icon: Shield, label: 'Enterprise Security' },
+    { icon: Building2, label: 'SOC 2 Compliant' },
+    { icon: Award, label: 'ISO 27001' },
+  ];
+
   return (
-    <div className="min-h-screen bg-slate-950 flex relative overflow-hidden">
-      {/* Animated Background */}
+    <div className="min-h-screen bg-[#0a0f1a] flex relative overflow-hidden">
+      {/* Background Effects */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute inset-0 bg-grid opacity-20" />
-        <div className="glow-orb" style={{ top: '20%', left: '30%' }} />
-        <div className="glow-orb" style={{ bottom: '30%', right: '20%', animationDelay: '3s' }} />
+        <div className="glow-orb glow-orb-gold w-[600px] h-[600px]" style={{ top: '10%', left: '20%' }} />
+        <div className="glow-orb glow-orb-navy w-[500px] h-[500px]" style={{ bottom: '20%', right: '30%' }} />
       </div>
 
-      {/* Left Side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-slate-900 to-slate-950" />
+      {/* Left Panel - Branding */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#d4af37]/10 via-[#0a0f1a] to-[#0a0f1a]" />
         
-        <div className="relative z-10 flex flex-col justify-center px-16 xl:px-24">
+        <div className="relative z-10 flex flex-col justify-center px-16 xl:px-24 w-full">
           {/* Logo */}
-          <div 
-            className={`flex items-center gap-4 mb-12 transition-all duration-700 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}`}
-          >
+          <div className={`flex items-center gap-4 mb-16 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-12'}`}>
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl blur-xl opacity-50" />
-              <div className="relative w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-2xl">
-                <Sparkles className="w-8 h-8 text-white" />
+              <div className="absolute inset-0 bg-gradient-to-br from-[#d4af37] to-[#9a7b24] rounded-2xl blur-xl opacity-50" />
+              <div className="relative w-16 h-16 bg-gradient-to-br from-[#d4af37] to-[#b8962e] rounded-2xl flex items-center justify-center shadow-2xl">
+                <Sparkles className="w-8 h-8 text-[#0a0f1a]" />
               </div>
             </div>
             <span className="text-4xl font-bold text-gradient-gold">Acorn</span>
           </div>
 
           {/* Headline */}
-          <h1 
-            className={`text-5xl xl:text-6xl font-bold text-white leading-tight mb-6 transition-all duration-700 delay-100 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}`}
-          >
-            Welcome
-            <span className="block text-gradient-gold mt-2">Back</span>
+          <h1 className={`text-5xl xl:text-6xl font-bold text-white leading-[1.1] mb-8 transition-all duration-1000 delay-200 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-12'}`}>
+            Welcome Back to
+            <span className="block text-gradient-gold mt-3">Enterprise Planning</span>
           </h1>
 
-          <p 
-            className={`text-xl text-slate-400 mb-12 max-w-md leading-relaxed transition-all duration-700 delay-200 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}`}
-          >
-            Continue transforming your ideas into actionable project plans with AI-powered intelligence.
+          <p className={`text-xl text-gray-400 mb-16 max-w-lg leading-relaxed transition-all duration-1000 delay-300 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-12'}`}>
+            Continue transforming complex project requirements into actionable plans with AI-powered intelligence.
           </p>
 
-          {/* Features */}
-          <div className="space-y-4">
-            {[
-              'AI-powered project planning',
-              'Automatic documentation generation',
-              'Real-time collaboration'
-            ].map((feature, index) => (
-              <div 
-                key={index}
-                className={`flex items-center gap-3 text-slate-300 transition-all duration-700 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}`}
-                style={{ transitionDelay: `${300 + index * 100}ms` }}
-              >
-                <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center">
-                  <Zap className="w-3 h-3 text-amber-400" />
+          {/* Trust Badges */}
+          <div className={`flex items-center gap-6 transition-all duration-1000 delay-500 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-12'}`}>
+            {trustBadges.map((badge, index) => {
+              const Icon = badge.icon;
+              return (
+                <div 
+                  key={index}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#111b2e]/50 border border-[#1e3a5f]/50"
+                >
+                  <Icon className="w-5 h-5 text-[#d4af37]" />
+                  <span className="text-sm font-medium text-gray-300">{badge.label}</span>
                 </div>
-                <span>{feature}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
-        {/* Decorative Elements */}
-        <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-slate-950 to-transparent" />
+        {/* Decorative Line */}
+        <div className="absolute right-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[#d4af37]/30 to-transparent" />
       </div>
 
-      {/* Right Side - Login Form */}
+      {/* Right Panel - Login Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-12 relative z-10">
         <div 
-          className={`w-full max-w-md transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
-          style={{ transitionDelay: '200ms' }}
+          className={`w-full max-w-md transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
+          style={{ transitionDelay: '400ms' }}
         >
           {/* Mobile Logo */}
-          <div className="lg:hidden flex items-center gap-3 mb-10 justify-center">
-            <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-white" />
+          <div className="lg:hidden flex items-center gap-3 mb-12 justify-center">
+            <div className="w-12 h-12 bg-gradient-to-br from-[#d4af37] to-[#b8962e] rounded-xl flex items-center justify-center shadow-lg">
+              <Sparkles className="w-6 h-6 text-[#0a0f1a]" />
             </div>
             <span className="text-2xl font-bold text-gradient-gold">Acorn</span>
           </div>
 
           {/* Form Card */}
-          <div className="card-glass p-8 md:p-10">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-white mb-2">Sign In</h2>
-              <p className="text-slate-400">Enter your credentials to continue</p>
+          <div className="card-glass p-10">
+            <div className="text-center mb-10">
+              <h2 className="text-3xl font-bold text-white mb-3">Sign In</h2>
+              <p className="text-gray-400">Access your enterprise workspace</p>
             </div>
 
             {/* Error Message */}
             {error && (
-              <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center gap-3 animate-fade-in-up">
+              <div className="mb-8 p-4 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center gap-3 animate-reveal-up">
                 <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
-                <span className="text-red-400 text-sm">{error}</span>
+                <span className="text-red-400 text-sm font-medium">{error}</span>
               </div>
             )}
 
             {/* Success Message */}
             {loginSuccess && (
-              <div className="mb-6 p-4 rounded-xl bg-green-500/10 border border-green-500/30 flex items-center gap-3 animate-fade-in-up">
+              <div className="mb-8 p-4 rounded-xl bg-green-500/10 border border-green-500/30 flex items-center gap-3 animate-reveal-up">
                 <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0" />
-                <span className="text-green-400 text-sm">Login successful! Redirecting...</span>
+                <span className="text-green-400 text-sm font-medium">Login successful! Redirecting...</span>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-6">
               {/* Email Field */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-300 block">Email</label>
+                <label className="text-sm font-semibold text-gray-300 block">Email Address</label>
                 <div className="relative">
-                  <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${
-                    focusedField === 'email' ? 'text-amber-400' : 'text-slate-500'
+                  <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${
+                    focusedField === 'email' ? 'text-[#d4af37]' : 'text-gray-500'
                   }`} />
                   <input
                     type="email"
@@ -174,8 +173,8 @@ const LoginPage: React.FC = () => {
                     onChange={handleChange}
                     onFocus={() => setFocusedField('email')}
                     onBlur={() => setFocusedField(null)}
-                    className="input-premium pl-12"
-                    placeholder="you@example.com"
+                    className="input pl-12"
+                    placeholder="you@company.com"
                     data-testid="login-email-input"
                   />
                 </div>
@@ -183,10 +182,10 @@ const LoginPage: React.FC = () => {
 
               {/* Password Field */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-300 block">Password</label>
+                <label className="text-sm font-semibold text-gray-300 block">Password</label>
                 <div className="relative">
-                  <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${
-                    focusedField === 'password' ? 'text-amber-400' : 'text-slate-500'
+                  <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${
+                    focusedField === 'password' ? 'text-[#d4af37]' : 'text-gray-500'
                   }`} />
                   <input
                     type={showPassword ? 'text' : 'password'}
@@ -195,14 +194,14 @@ const LoginPage: React.FC = () => {
                     onChange={handleChange}
                     onFocus={() => setFocusedField('password')}
                     onBlur={() => setFocusedField(null)}
-                    className="input-premium pl-12 pr-12"
+                    className="input pl-12 pr-12"
                     placeholder="••••••••"
                     data-testid="login-password-input"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -211,14 +210,14 @@ const LoginPage: React.FC = () => {
 
               {/* Remember & Forgot */}
               <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label className="flex items-center gap-3 cursor-pointer group">
                   <input 
                     type="checkbox" 
-                    className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-amber-500 focus:ring-amber-500/30"
+                    className="w-4 h-4 rounded border-[#1e3a5f] bg-[#111b2e] text-[#d4af37] focus:ring-[#d4af37]/30 focus:ring-offset-0"
                   />
-                  <span className="text-sm text-slate-400">Remember me</span>
+                  <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors">Remember me</span>
                 </label>
-                <a href="#" className="text-sm text-amber-400 hover:text-amber-300 transition-colors">
+                <a href="#" className="text-sm text-[#d4af37] hover:text-[#e6c358] transition-colors font-medium">
                   Forgot password?
                 </a>
               </div>
@@ -227,7 +226,7 @@ const LoginPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={isLoading || loginSuccess}
-                className="w-full btn-premium py-4 text-lg group disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full btn-primary py-4 text-base group disabled:opacity-50 disabled:cursor-not-allowed"
                 data-testid="login-submit-btn"
               >
                 {isLoading ? (
@@ -243,37 +242,37 @@ const LoginPage: React.FC = () => {
                 ) : (
                   <>
                     Sign In
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform duration-300" />
                   </>
                 )}
               </button>
             </form>
 
             {/* Divider */}
-            <div className="relative my-8">
+            <div className="relative my-10">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-700" />
+                <div className="w-full border-t border-[#1e3a5f]" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-slate-900/80 text-slate-500">New to Acorn?</span>
+                <span className="px-4 bg-[#0d1525] text-gray-500">New to Acorn?</span>
               </div>
             </div>
 
             {/* Register Link */}
             <Link
               to="/register"
-              className="block w-full btn-ghost py-4 text-center"
+              className="block w-full btn-secondary py-4 text-center"
             >
-              Create an account
+              Create Enterprise Account
             </Link>
           </div>
 
           {/* Footer */}
-          <p className="text-center text-slate-500 text-sm mt-8">
+          <p className="text-center text-gray-500 text-sm mt-10">
             By signing in, you agree to our{' '}
-            <a href="#" className="text-amber-400 hover:text-amber-300 transition-colors">Terms</a>
+            <a href="#" className="text-[#d4af37] hover:text-[#e6c358] transition-colors">Terms of Service</a>
             {' '}and{' '}
-            <a href="#" className="text-amber-400 hover:text-amber-300 transition-colors">Privacy Policy</a>
+            <a href="#" className="text-[#d4af37] hover:text-[#e6c358] transition-colors">Privacy Policy</a>
           </p>
         </div>
       </div>
