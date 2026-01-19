@@ -69,10 +69,10 @@ class _SupabaseUserRepository:
         
         async with pool.acquire() as conn:
             await conn.execute('''
-                INSERT INTO users (id, email, full_name, organization, hashed_password, role, created_at, updated_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                INSERT INTO users (id, email, full_name, organization, hashed_password, role, created_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
             ''', user_id, user_data.email.lower(), user_data.full_name, 
-                user_data.organization or "Private Workspace", hashed_password, role_key, now, now)
+                user_data.organization or "Private Workspace", hashed_password, role_key, now)
         
         return User(
             id=user_id,
