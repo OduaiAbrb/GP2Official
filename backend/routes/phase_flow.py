@@ -77,6 +77,27 @@ async def unlock_all_phases(
     project_id: str,
     current_user: User = Depends(get_current_user),
 ):
+    """Unlock all phases for development/testing."""
     project = await project_service.get_project(project_id, current_user)
-    status = await phase_service.unlock_all(project_id, project.organization)
-    return {"phases": status}
+    phase_status = await phase_service.unlock_all(project_id, project.organization)
+    return {"phases": phase_status, "order": PHASE_ORDER}
+
+
+@router.post("/projects/{project_id}/phases/{phase}/unlock/")
+async def unlock_phase(
+    project_id: str,
+    phase: str,
+    current_user: User = Depends(get_current_user),
+):
+    """Unlock a specific phase for generation."""
+    project = await project_service.get_project(project_id, current_user)
+    try:
+        phase_status = await phase_service.unlock_phase(project_id, project.organization, phase)
+        return {"phases": phase_status, "order": PHASE_ORDER}
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        )
+
+

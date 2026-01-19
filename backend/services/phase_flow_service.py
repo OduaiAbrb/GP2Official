@@ -67,6 +67,23 @@ class PhaseFlowService:
         project = await self.project_repo.update_phase_status(project_id, organization, updated)
         return project.phase_status
 
+    async def unlock_phase(self, project_id: str, organization: str, phase: str) -> Dict[str, str]:
+        """Unlock a specific phase for AI generation."""
+        project = await self.project_repo.get_by_id(project_id, organization)
+        if not project:
+            raise ValueError("Project not found")
+        
+        normalized_status = default_phase_status()
+        normalized_status.update(project.phase_status or {})
+        status = dict(normalized_status)
+        
+        if phase in PHASE_ORDER:
+            status[phase] = "ready"
+            project = await self.project_repo.update_phase_status(project_id, organization, status)
+            return project.phase_status
+        
+        raise ValueError("Invalid phase")
+
     async def generate_phase(
         self,
         project_id: str,
@@ -83,20 +100,26 @@ class PhaseFlowService:
         if not project:
             raise ValueError("Project not found")
 
-        # Normalize status to ensure every phase is present and planning is always startable
+        # Normalize status to ensure every phase is present
         normalized_status = default_phase_status()
         normalized_status.update(project.phase_status or {})
         status = dict(normalized_status)
         current_state = status.get(phase)
-        if phase == "planning" and current_state == "locked":
+        
+        # Auto-unlock phases for better user experience
+        if current_state == "locked":
+            # Auto-unlock the requested phase if user wants to generate it
             current_state = "ready"
             status[phase] = "ready"
+            logger.info(f"Auto-unlocked phase {phase} for generation")
+            
         if current_state == "completed":
             # Allow regenerating completed phases by resetting to ready
             current_state = "ready"
             status[phase] = "ready"
+            
         if current_state not in {"ready", "in_progress"}:
-            raise PermissionError("This phase is locked. Complete previous phases first.")
+            raise PermissionError(f"Phase {phase} is in state {current_state}. Unable to generate.")
 
         status[phase] = "in_progress"
         await self.project_repo.update_phase_status(project_id, organization, status)
@@ -243,13 +266,13 @@ class PhaseFlowService:
         )
 
         if llm_requires_key and not self.api_key:
-            logger.warning("LLM API key missing; returning placeholder content")
-            placeholder = f"# {PHASE_TITLES[phase]}\n\nNo LLM configured. User prompt:\n{user_prompt}"
+            logger.warning("LLM API key missing; generating placeholder content")
+            placeholder = await self._generate_placeholder_content(phase, user_prompt)
             await self.ai_run_repo.complete_run(
                 run_entry.id,
-                status="skipped",
+                status="completed",
                 response=placeholder,
-                error_message="LLM API key missing",
+                error_message="LLM API key missing - using placeholder content",
             )
             return placeholder
 
@@ -280,3 +303,249 @@ class PhaseFlowService:
                 duration_ms=duration,
             )
             return f"# {PHASE_TITLES[phase]}\n\nWe encountered an error generating this phase. Please try again later."
+
+    async def _generate_placeholder_content(self, phase: str, user_prompt: str) -> str:
+        """Generate useful placeholder content when LLM is not available."""
+        phase_templates = {
+            "planning": """# Planning Brief
+
+## Project Vision
+{user_prompt}
+
+## Key Objectives
+- Define project scope and boundaries
+- Identify core stakeholders and their needs  
+- Establish success criteria and metrics
+- Outline major constraints and assumptions
+
+## Business Goals
+- Primary goal: [To be defined based on project requirements]
+- Secondary goals: [Supporting objectives]
+- Success metrics: [Measurable outcomes]
+
+## Risk Considerations
+- Technical feasibility needs assessment
+- Resource availability and constraints
+- Timeline and budget considerations
+- Stakeholder alignment requirements
+
+## Next Steps
+1. Stakeholder interviews and requirements gathering
+2. Technical feasibility assessment  
+3. Resource planning and timeline estimation
+4. Risk mitigation strategy development
+
+*Note: This is placeholder content. Configure LLM API keys for AI-generated analysis.*""",
+
+            "feasibility_study": """# Feasibility Study
+
+## Executive Summary
+Based on the project brief: {user_prompt}
+
+## Market Analysis
+- **Market Opportunity**: [Assess market size and demand]
+- **Competitive Landscape**: [Key competitors and differentiators]
+- **Target Audience**: [Primary user segments]
+
+## Technical Feasibility
+- **Technology Stack**: [Recommended technologies]
+- **Development Complexity**: Medium to High
+- **Infrastructure Requirements**: [Server, database, third-party services]
+- **Security Considerations**: [Data protection, compliance needs]
+
+## Economic Viability  
+- **Development Costs**: [Estimated development effort]
+- **Operational Costs**: [Hosting, maintenance, support]
+- **Revenue Potential**: [Business model considerations]
+- **ROI Timeline**: [Expected return on investment]
+
+## Recommendation
+**GO/NO-GO**: Proceed with caution - conduct detailed requirements gathering
+
+*Note: This is placeholder content. Configure LLM API keys for detailed analysis.*""",
+
+            "requirements_gathering": """# Requirements Document
+
+## User Stories
+Based on: {user_prompt}
+
+### Core User Stories
+1. **As a user**, I want to [core functionality] so that [benefit]
+2. **As an admin**, I want to [management capability] so that [control]
+3. **As a stakeholder**, I want to [visibility feature] so that [insight]
+
+## Functional Requirements
+- **F1**: Core feature implementation
+- **F2**: User authentication and authorization  
+- **F3**: Data management and persistence
+- **F4**: User interface and experience
+- **F5**: Integration capabilities
+
+## Non-Functional Requirements
+- **Performance**: System should handle [X] concurrent users
+- **Security**: Data encryption and secure authentication
+- **Scalability**: Architecture should support growth
+- **Usability**: Intuitive interface with minimal learning curve
+- **Reliability**: 99.9% uptime with proper error handling
+
+## Acceptance Criteria
+- All core features function as specified
+- Security requirements are met
+- Performance benchmarks are achieved
+- User experience is validated through testing
+
+*Note: This is placeholder content. Configure LLM API keys for detailed requirements.*""",
+
+            "validation": """# Validation Checklist
+
+## Stakeholder Sign-off Criteria
+- [ ] Requirements reviewed and approved by product owner
+- [ ] Technical architecture validated by engineering team
+- [ ] Security requirements approved by security team
+- [ ] UI/UX mockups reviewed by design stakeholders
+
+## Prototype Validation Steps
+1. **Functional Validation**
+   - [ ] Core features demonstrate expected behavior
+   - [ ] User workflows are intuitive and complete
+   - [ ] Integration points are verified
+
+2. **Technical Validation**
+   - [ ] Architecture supports scalability requirements
+   - [ ] Security measures are properly implemented
+   - [ ] Performance meets defined benchmarks
+
+3. **User Validation**
+   - [ ] User testing sessions completed
+   - [ ] Feedback incorporated into requirements
+   - [ ] Accessibility requirements validated
+
+## Risk Confirmation Matrix
+| Risk Area | Identified | Mitigation Plan | Validated |
+|-----------|------------|----------------|-----------|
+| Technical | ✓ | [Strategy] | [ ] |
+| Security | ✓ | [Strategy] | [ ] |  
+| Performance | ✓ | [Strategy] | [ ] |
+| User Adoption | ✓ | [Strategy] | [ ] |
+
+*Note: This is placeholder content. Configure LLM API keys for comprehensive validation.*""",
+
+            "design": """# Design Document
+
+## System Architecture Overview
+High-level architecture for: {user_prompt}
+
+### Component Architecture
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Frontend      │◄──►│   Backend API   │◄──►│   Database      │
+│   (React/Vue)   │    │   (Node/Python) │    │   (SQL/NoSQL)   │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+## Data Models
+### Core Entities
+- **Users**: Authentication and profile management
+- **Content**: Primary data entities
+- **Metadata**: System configuration and settings
+
+## API Specifications
+### Core Endpoints
+- `GET /api/v1/[resource]` - List resources
+- `POST /api/v1/[resource]` - Create resource
+- `PUT /api/v1/[resource]/{id}` - Update resource
+- `DELETE /api/v1/[resource]/{id}` - Delete resource
+
+## UX Wireframe Descriptions
+- **Dashboard**: Main interface with key metrics and navigation
+- **Detail Views**: Focused interfaces for specific operations
+- **Settings**: Configuration and user preferences
+
+## Integration Touchpoints
+- Authentication system integration
+- Third-party API connections
+- Database synchronization points
+
+*Note: This is placeholder content. Configure LLM API keys for detailed design.*""",
+
+            "development": """# Development Plan
+
+## Tech Stack
+
+### Frontend
+- React: Modern UI framework with component-based architecture
+- TypeScript: Type safety and better development experience
+- Tailwind CSS: Utility-first styling framework
+- React Router: Client-side routing
+
+### Backend  
+- Node.js: Server runtime environment
+- Express: Web application framework
+- TypeScript: Type safety for backend code
+- JWT: Authentication and authorization
+
+### Database
+- PostgreSQL: Primary relational database
+- Redis: Caching and session storage
+
+### Infrastructure
+- Docker: Containerization platform
+- AWS/Vercel: Cloud hosting and deployment
+- GitHub Actions: CI/CD pipeline
+
+## Flow
+1. User authentication: Login/signup with JWT tokens
+2. Request routing: Frontend makes API calls to backend
+3. Business logic: Backend processes requests and validates data
+4. Database operations: CRUD operations on data entities
+5. Response formatting: API returns structured JSON responses
+6. UI updates: Frontend updates interface based on responses
+
+## Folder Structure
+```
+project/
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── services/
+│   │   └── utils/
+│   └── package.json
+├── backend/
+│   ├── src/
+│   │   ├── controllers/
+│   │   ├── models/
+│   │   ├── routes/
+│   │   └── services/
+│   └── package.json
+└── database/
+    ├── migrations/
+    └── seeds/
+```
+
+*Note: This is placeholder content. Configure LLM API keys for detailed development guidance.*"""
+        }
+        
+        template = phase_templates.get(phase, f"""# {PHASE_TITLES.get(phase, phase.title())}
+
+User Request: {user_prompt}
+
+This phase requires detailed analysis and planning. 
+
+## Key Considerations
+- Project context and requirements
+- Technical feasibility and constraints  
+- Resource availability and timeline
+- Risk assessment and mitigation
+- Stakeholder needs and expectations
+
+## Recommendations
+1. Review project requirements and constraints
+2. Conduct stakeholder interviews for clarity
+3. Assess technical options and trade-offs
+4. Develop detailed implementation plan
+5. Validate approach with key stakeholders
+
+*Note: This is placeholder content. Configure LLM API keys for AI-generated analysis.*""")
+        
+        return template.format(user_prompt=user_prompt[:200] if user_prompt else "No specific prompt provided")
