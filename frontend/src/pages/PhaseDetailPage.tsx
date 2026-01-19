@@ -1440,7 +1440,7 @@ export const PhaseDetailPage: React.FC = () => {
                   )}
 
                   {error && (
-                    <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-xl flex items-center gap-2">
+                    <div className="px-4 py-3 rounded-xl flex items-center gap-2" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
                       <AlertTriangle className="h-4 w-4" />
                       {error}
                     </div>
