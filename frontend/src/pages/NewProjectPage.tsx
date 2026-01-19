@@ -4,15 +4,20 @@ import { api } from '@/lib/api';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Card } from '@/components/ui/Card';
-import { ArrowLeft, Sparkles, Rocket, Zap, Target, Code, Smartphone, Cloud, Box } from 'lucide-react';
+import { ArrowLeft, Sparkles, Rocket, Zap, Target, Code, Smartphone, Cloud, Box, CheckCircle, Layers, FileText } from 'lucide-react';
 
 const templateTypes = [
-  { value: 'web_app', label: 'Web Application', icon: Code, color: 'from-blue-500 to-cyan-600', description: 'Full-featured web platform' },
-  { value: 'mobile_app', label: 'Mobile App', icon: Smartphone, color: 'from-purple-500 to-pink-600', description: 'iOS & Android applications' },
-  { value: 'api', label: 'API Service', icon: Zap, color: 'from-green-500 to-emerald-600', description: 'RESTful or GraphQL APIs' },
-  { value: 'desktop', label: 'Desktop App', icon: Box, color: 'from-orange-500 to-red-600', description: 'Cross-platform desktop software' },
-  { value: 'other', label: 'Other', icon: Cloud, color: 'from-gray-500 to-slate-600', description: 'Custom project type' },
+  { value: 'web_app', label: 'Web Application', icon: Code, color: 'from-blue-500 to-indigo-600', bgColor: 'bg-blue-50', borderColor: 'border-blue-200', description: 'Full-featured web platform with modern frontend' },
+  { value: 'mobile_app', label: 'Mobile App', icon: Smartphone, color: 'from-violet-500 to-purple-600', bgColor: 'bg-violet-50', borderColor: 'border-violet-200', description: 'Native iOS & Android applications' },
+  { value: 'api', label: 'API Service', icon: Zap, color: 'from-emerald-500 to-teal-600', bgColor: 'bg-emerald-50', borderColor: 'border-emerald-200', description: 'RESTful or GraphQL backend APIs' },
+  { value: 'desktop', label: 'Desktop App', icon: Box, color: 'from-orange-500 to-amber-600', bgColor: 'bg-orange-50', borderColor: 'border-orange-200', description: 'Cross-platform desktop software' },
+  { value: 'other', label: 'Other', icon: Cloud, color: 'from-slate-500 to-gray-600', bgColor: 'bg-slate-50', borderColor: 'border-slate-200', description: 'Custom project type' },
+];
+
+const stepInfo = [
+  { number: 1, title: 'Basics', icon: Target },
+  { number: 2, title: 'Type', icon: Layers },
+  { number: 3, title: 'Brief', icon: FileText },
 ];
 
 export const NewProjectPage: React.FC = () => {
@@ -50,301 +55,302 @@ export const NewProjectPage: React.FC = () => {
 
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto space-y-8 animate-fadeIn">
-        {/* Floating background elements */}
-        <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
-          <div className="absolute w-96 h-96 bg-amber-200/20 rounded-full blur-3xl animate-float" style={{ top: '10%', left: '5%' }}></div>
-          <div className="absolute w-80 h-80 bg-orange-200/20 rounded-full blur-3xl animate-float" style={{ top: '50%', right: '10%', animationDelay: '2s' }}></div>
-          <div className="absolute w-72 h-72 bg-yellow-200/20 rounded-full blur-3xl animate-float" style={{ bottom: '10%', left: '15%', animationDelay: '4s' }}></div>
-        </div>
-
-        {/* Header */}
-        <div className="space-y-4 animate-slideDown">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/projects')}
-            className="text-amber-700 hover:text-amber-800 hover:bg-amber-50 group"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-            Back to Projects
-          </Button>
-          
-          <div className="text-center space-y-3">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl shadow-lg transform hover:scale-110 transition-transform">
-              <Rocket className="w-8 h-8 text-white animate-bounce" />
-            </div>
-            <h1 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-amber-700 via-orange-600 to-amber-700 bg-clip-text text-transparent">
-              Plant a New Project Seed
-            </h1>
-            <p className="text-gray-600">Let's grow your idea into reality with AI-powered planning</p>
-          </div>
-        </div>
-
-        {/* Progress Steps */}
-        <div className="flex items-center justify-center gap-2 sm:gap-4 py-6 sm:py-8">
-          {[1, 2, 3].map((step) => (
-            <div key={step} className="flex items-center gap-4">
-              <div className={`relative flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 transition-all duration-500 ${
-                currentStep >= step
-                  ? 'bg-gradient-to-br from-amber-500 to-orange-600 border-orange-600 shadow-lg scale-110'
-                  : 'bg-white border-gray-300'
-              }`}>
-                <span className={`text-sm font-bold transition-colors ${
-                  currentStep >= step ? 'text-white' : 'text-gray-400'
-                }`}>
-                  {step}
-                </span>
-                {currentStep >= step && (
-                  <div className="absolute inset-0 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full animate-ping opacity-30"></div>
-                )}
+      <div className="min-h-[calc(100vh-80px)] bg-gradient-to-br from-slate-50 via-white to-amber-50/30">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+          {/* Header */}
+          <div className="mb-8">
+            <button
+              onClick={() => navigate('/projects')}
+              className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors mb-6 group"
+            >
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+              Back to Projects
+            </button>
+            
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <div className="p-4 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl shadow-lg shadow-amber-500/25">
+                  <Rocket className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
+                    Create New Project
+                  </h1>
+                  <p className="text-slate-500 mt-1">Set up your project with AI-powered planning</p>
+                </div>
               </div>
-              {step < 3 && (
-                <div className={`w-8 sm:w-16 h-1 rounded-full transition-all duration-500 ${
-                  currentStep > step ? 'bg-gradient-to-r from-amber-500 to-orange-600' : 'bg-gray-200'
-                }`}></div>
+              
+              {/* Live Preview Badge */}
+              {formData.name && (
+                <div className="hidden lg:flex items-center gap-3 px-4 py-2 bg-white rounded-xl shadow-sm border border-slate-200">
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                  <span className="text-sm text-slate-600">Preview:</span>
+                  <span className="font-semibold text-slate-900">{formData.name}</span>
+                </div>
               )}
             </div>
-          ))}
-        </div>
+          </div>
 
-        {/* Form */}
-        <Card className="bg-white/80 backdrop-blur-sm border-2 border-amber-100 shadow-2xl transform hover:shadow-3xl transition-shadow">
-          <form onSubmit={handleSubmit} className="p-4 sm:p-8 space-y-6 sm:space-y-8">
-            {/* Step 1: Basic Info */}
-            <div className={`space-y-6 transition-all duration-500 ${
-              currentStep === 1 ? 'opacity-100 transform translate-x-0' : 'opacity-0 transform translate-x-10 hidden'
-            }`}>
-              <div className="text-center mb-6">
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Basic Information</h2>
-                <p className="text-gray-600">Give your project a name and description</p>
-              </div>
+          {/* Progress Steps */}
+          <div className="flex items-center justify-between mb-8 bg-white rounded-2xl p-2 shadow-sm border border-slate-200/60">
+            {stepInfo.map((step, index) => (
+              <React.Fragment key={step.number}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (step.number < currentStep) setCurrentStep(step.number);
+                    else if (step.number === 2 && formData.name) setCurrentStep(2);
+                    else if (step.number === 3 && formData.name) setCurrentStep(3);
+                  }}
+                  className={`flex-1 flex items-center justify-center gap-2 sm:gap-3 py-3 px-2 sm:px-4 rounded-xl transition-all ${
+                    currentStep === step.number
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25'
+                      : currentStep > step.number
+                      ? 'bg-emerald-50 text-emerald-700'
+                      : 'text-slate-400 hover:text-slate-600'
+                  }`}
+                >
+                  {currentStep > step.number ? (
+                    <CheckCircle className="w-5 h-5 text-emerald-600" />
+                  ) : (
+                    <step.icon className="w-5 h-5" />
+                  )}
+                  <span className="hidden sm:inline font-medium">{step.title}</span>
+                  <span className="sm:hidden font-medium text-sm">{step.number}</span>
+                </button>
+                {index < stepInfo.length - 1 && (
+                  <div className={`hidden sm:block w-8 h-0.5 mx-1 rounded-full transition-colors ${
+                    currentStep > step.number ? 'bg-emerald-300' : 'bg-slate-200'
+                  }`} />
+                )}
+              </React.Fragment>
+            ))}
+          </div>
 
-              <div className="space-y-4">
-                <div className="relative group">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                    <Target className="w-4 h-4 text-amber-600" />
-                    Project Name *
-                  </label>
-                  <Input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="e.g., E-commerce Platform, Healthcare App"
-                    required
-                    className="w-full border-2 border-amber-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all"
-                  />
-                  <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-amber-500 to-orange-600 group-focus-within:w-full transition-all duration-500"></div>
+          {/* Form */}
+          <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-200/60 overflow-hidden">
+            <form onSubmit={handleSubmit}>
+              {/* Step 1: Basic Info */}
+              <div className={`transition-all duration-300 ${
+                currentStep === 1 ? 'block' : 'hidden'
+              }`}>
+                <div className="p-6 sm:p-8 border-b border-slate-100">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-amber-100 rounded-lg">
+                      <Target className="w-5 h-5 text-amber-600" />
+                    </div>
+                    <h2 className="text-xl font-bold text-slate-900">Basic Information</h2>
+                  </div>
+                  <p className="text-slate-500 ml-11">Give your project a name and brief description</p>
                 </div>
 
-                <div className="relative group">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Short Description</label>
-                  <Input
-                    type="text"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Brief overview of your project"
-                    className="w-full border-2 border-amber-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all"
-                  />
-                </div>
-              </div>
+                <div className="p-6 sm:p-8 space-y-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                      Project Name <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="e.g., E-commerce Platform, Healthcare App"
+                      required
+                      className="w-full h-12 text-lg border-slate-200 focus:border-amber-500 focus:ring-amber-500/20"
+                    />
+                  </div>
 
-              <Button
-                type="button"
-                onClick={nextStep}
-                disabled={!formData.name}
-                className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold py-3 shadow-lg hover:shadow-xl transition-all hover:scale-105 group"
-              >
-                Continue
-                <Sparkles className="w-5 h-5 ml-2 group-hover:rotate-12 transition-transform" />
-              </Button>
-            </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">Short Description</label>
+                    <Input
+                      type="text"
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      placeholder="A brief one-line overview of your project"
+                      className="w-full h-12 border-slate-200 focus:border-amber-500 focus:ring-amber-500/20"
+                    />
+                  </div>
 
-            {/* Step 2: Project Type */}
-            <div className={`space-y-6 transition-all duration-500 ${
-              currentStep === 2 ? 'opacity-100 transform translate-x-0' : 'opacity-0 transform translate-x-10 hidden'
-            }`}>
-              <div className="text-center mb-6">
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Project Type</h2>
-                <p className="text-gray-600">What type of software are you building?</p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {templateTypes.map((template, index) => (
-                  <div
-                    key={template.value}
-                    className="animate-fadeInUp"
-                    style={{ animationDelay: `${index * 0.1}s` }}
-                  >
-                    <button
+                  <div className="pt-4">
+                    <Button
                       type="button"
-                      onClick={() => setFormData({ ...formData, template_type: template.value })}
-                      className={`relative w-full p-6 rounded-2xl border-2 transition-all duration-300 group hover:scale-105 ${
-                        formData.template_type === template.value
-                          ? 'border-amber-500 bg-gradient-to-br from-amber-50 to-orange-50 shadow-lg'
-                          : 'border-gray-200 bg-white hover:border-amber-300 hover:shadow-md'
-                      }`}
+                      onClick={nextStep}
+                      disabled={!formData.name}
+                      className="w-full h-12 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold shadow-lg shadow-amber-500/25 disabled:opacity-50 disabled:shadow-none"
                     >
-                      {formData.template_type === template.value && (
-                        <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-orange-600 rounded-2xl blur opacity-30 group-hover:opacity-50 transition"></div>
-                      )}
-                      
-                      <div className="relative flex items-start gap-4">
-                        <div className={`flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br ${template.color} flex items-center justify-center shadow-lg transform group-hover:scale-110 group-hover:rotate-3 transition-transform`}>
-                          <template.icon className="w-6 h-6 text-white" />
-                        </div>
-                        <div className="flex-1 text-left">
-                          <h3 className="font-bold text-gray-900 mb-1">{template.label}</h3>
-                          <p className="text-sm text-gray-600">{template.description}</p>
+                      Continue to Project Type
+                      <Sparkles className="w-5 h-5 ml-2" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 2: Project Type */}
+              <div className={`transition-all duration-300 ${
+                currentStep === 2 ? 'block' : 'hidden'
+              }`}>
+                <div className="p-6 sm:p-8 border-b border-slate-100">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-violet-100 rounded-lg">
+                      <Layers className="w-5 h-5 text-violet-600" />
+                    </div>
+                    <h2 className="text-xl font-bold text-slate-900">Project Type</h2>
+                  </div>
+                  <p className="text-slate-500 ml-11">What kind of software are you building?</p>
+                </div>
+
+                <div className="p-6 sm:p-8 space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {templateTypes.map((template) => (
+                      <button
+                        key={template.value}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, template_type: template.value })}
+                        className={`relative p-5 rounded-2xl border-2 text-left transition-all ${
+                          formData.template_type === template.value
+                            ? `${template.borderColor} ${template.bgColor} shadow-md`
+                            : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
+                        }`}
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className={`flex-shrink-0 w-11 h-11 rounded-xl bg-gradient-to-br ${template.color} flex items-center justify-center shadow-md`}>
+                            <template.icon className="w-5 h-5 text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-slate-900 mb-1">{template.label}</h3>
+                            <p className="text-sm text-slate-500 line-clamp-2">{template.description}</p>
+                          </div>
                         </div>
                         {formData.template_type === template.value && (
-                          <div className="absolute top-2 right-2 w-6 h-6 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full flex items-center justify-center animate-bounce">
-                            <span className="text-white text-xs">✓</span>
+                          <div className="absolute top-3 right-3">
+                            <CheckCircle className="w-5 h-5 text-emerald-500" />
                           </div>
                         )}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-3 pt-4">
+                    <Button
+                      type="button"
+                      onClick={prevStep}
+                      variant="outline"
+                      className="flex-1 h-12 border-slate-300 text-slate-700 hover:bg-slate-50"
+                    >
+                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      Back
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={nextStep}
+                      className="flex-1 h-12 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold shadow-lg shadow-amber-500/25"
+                    >
+                      Continue to Brief
+                      <Sparkles className="w-5 h-5 ml-2" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 3: Project Brief */}
+              <div className={`transition-all duration-300 ${
+                currentStep === 3 ? 'block' : 'hidden'
+              }`}>
+                <div className="p-6 sm:p-8 border-b border-slate-100">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-emerald-100 rounded-lg">
+                      <FileText className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    <h2 className="text-xl font-bold text-slate-900">Project Brief</h2>
+                  </div>
+                  <p className="text-slate-500 ml-11">Describe your project vision for AI-powered planning</p>
+                </div>
+
+                <div className="p-6 sm:p-8 space-y-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                      Tell us about your project
+                    </label>
+                    <textarea
+                      value={formData.brief_text}
+                      onChange={(e) => setFormData({ ...formData, brief_text: e.target.value })}
+                      placeholder="Describe features, user needs, technical requirements, goals, and any specific details that will help our AI generate comprehensive requirements..."
+                      rows={8}
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all resize-none text-slate-700"
+                    />
+                    <div className="flex justify-between items-center mt-2">
+                      <span className="text-xs text-slate-400">Optional but recommended</span>
+                      <span className="text-xs text-slate-400">{formData.brief_text.length} characters</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3 p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-100">
+                    <div className="p-1.5 bg-amber-100 rounded-lg">
+                      <Zap className="w-4 h-4 text-amber-600" />
+                    </div>
+                    <div className="text-sm">
+                      <p className="font-semibold text-slate-900 mb-1">Pro Tip</p>
+                      <p className="text-slate-600">The more detailed your brief, the better our AI can generate requirements, architecture, and planning documents!</p>
+                    </div>
+                  </div>
+
+                  {/* Summary Preview */}
+                  <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                    <h4 className="text-sm font-semibold text-slate-700 mb-3">Project Summary</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Name</span>
+                        <span className="font-medium text-slate-900">{formData.name || '—'}</span>
                       </div>
-                    </button>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Type</span>
+                        <span className="font-medium text-slate-900">
+                          {templateTypes.find(t => t.value === formData.template_type)?.label || '—'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Brief</span>
+                        <span className="font-medium text-slate-900">
+                          {formData.brief_text ? `${formData.brief_text.length} chars` : 'Not provided'}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                ))}
-              </div>
 
-              <div className="flex gap-4">
-                <Button
-                  type="button"
-                  onClick={prevStep}
-                  variant="outline"
-                  className="flex-1 border-amber-300 text-amber-700 hover:bg-amber-50"
-                >
-                  Back
-                </Button>
-                <Button
-                  type="button"
-                  onClick={nextStep}
-                  className="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-105"
-                >
-                  Continue
-                  <Sparkles className="w-5 h-5 ml-2" />
-                </Button>
-              </div>
-            </div>
-
-            {/* Step 3: Project Brief */}
-            <div className={`space-y-6 transition-all duration-500 ${
-              currentStep === 3 ? 'opacity-100 transform translate-x-0' : 'opacity-0 transform translate-x-10 hidden'
-            }`}>
-              <div className="text-center mb-6">
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Project Brief</h2>
-                <p className="text-gray-600">Describe your project vision and requirements</p>
-              </div>
-
-              <div className="relative group">
-                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-amber-600" />
-                  Tell us about your project
-                </label>
-                <textarea
-                  value={formData.brief_text}
-                  onChange={(e) => setFormData({ ...formData, brief_text: e.target.value })}
-                  placeholder="Describe features, user needs, technical requirements, goals, and any specific details that will help our AI generate comprehensive requirements..."
-                  rows={10}
-                  className="w-full px-4 py-3 border-2 border-amber-200 rounded-xl focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all resize-none"
-                />
-                <div className="absolute bottom-4 right-4 text-sm text-gray-400">
-                  {formData.brief_text.length} characters
-                </div>
-              </div>
-
-              <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-4">
-                <div className="flex items-start gap-3">
-                  <Zap className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-gray-700">
-                    <p className="font-semibold mb-1">Pro Tip:</p>
-                    <p>The more detailed your brief, the better our AI can generate requirements, architecture, and planning documents!</p>
+                  <div className="flex gap-3 pt-4">
+                    <Button
+                      type="button"
+                      onClick={prevStep}
+                      variant="outline"
+                      className="flex-1 h-12 border-slate-300 text-slate-700 hover:bg-slate-50"
+                    >
+                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      Back
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={loading}
+                      className="flex-1 h-12 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold shadow-lg shadow-amber-500/25 disabled:opacity-70"
+                    >
+                      {loading ? (
+                        <>
+                          <div className="w-5 h-5 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          Creating Project...
+                        </>
+                      ) : (
+                        <>
+                          <Rocket className="w-5 h-5 mr-2" />
+                          Create Project
+                        </>
+                      )}
+                    </Button>
                   </div>
                 </div>
               </div>
-
-              <div className="flex gap-4">
-                <Button
-                  type="button"
-                  onClick={prevStep}
-                  variant="outline"
-                  className="flex-1 border-amber-300 text-amber-700 hover:bg-amber-50"
-                >
-                  Back
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold py-3 shadow-lg hover:shadow-xl transition-all hover:scale-105 group"
-                >
-                  {loading ? (
-                    <>
-                      <div className="w-5 h-5 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Planting...
-                    </>
-                  ) : (
-                    <>
-                      <Rocket className="w-5 h-5 mr-2 group-hover:translate-y-[-2px] transition-transform" />
-                      Plant Project Seed
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          </form>
-        </Card>
+            </form>
+          </div>
+        </div>
       </div>
 
-      <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        @keyframes slideDown {
-          from {
-            opacity: 0;
-            transform: translateY(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        @keyframes float {
-          0%, 100% {
-            transform: translate(0px, 0px) rotate(0deg);
-          }
-          33% {
-            transform: translate(30px, -30px) rotate(5deg);
-          }
-          66% {
-            transform: translate(-20px, 20px) rotate(-5deg);
-          }
-        }
-        .animate-fadeIn {
-          animation: fadeIn 0.6s ease-out;
-        }
-        .animate-fadeInUp {
-          animation: fadeInUp 0.6s ease-out;
-          animation-fill-mode: both;
-        }
-        .animate-slideDown {
-          animation: slideDown 0.6s ease-out;
-        }
-        .animate-float {
-          animation: float 10s ease-in-out infinite;
-        }
-      `}</style>
     </Layout>
   );
 };
