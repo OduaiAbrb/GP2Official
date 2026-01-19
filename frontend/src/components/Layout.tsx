@@ -5,7 +5,6 @@ import { Button } from './ui/Button';
 import { 
   LogOut, 
   MessageCircle, 
-  Home,
   FolderKanban,
   Settings,
   Bell,
@@ -22,9 +21,8 @@ interface LayoutProps {
 }
 
 const navItems = [
-  { icon: Home, label: 'Dashboard', path: '/projects' },
-  { icon: FolderKanban, label: 'Projects', path: '/projects' },
-  { icon: Settings, label: 'Settings', path: '/profile' },
+  { id: 'projects', icon: FolderKanban, label: 'Projects', path: '/projects', exactMatch: true },
+  { id: 'profile', icon: Settings, label: 'Settings', path: '/profile', exactMatch: false },
 ];
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
@@ -49,7 +47,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
   }, [activeProjectId]);
 
-  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
+  const isActive = (item: typeof navItems[0]) => {
+    if (item.exactMatch) {
+      return location.pathname === item.path;
+    }
+    return location.pathname === item.path || location.pathname.startsWith(item.path + '/');
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -72,7 +75,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               key={item.label}
               to={item.path}
               className={`flex items-center gap-3 px-4 py-3 mx-2 rounded-lg transition-all ${
-                isActive(item.path)
+                isActive(item)
                   ? 'bg-acorn-orange-500 text-white'
                   : 'text-acorn-blue-100 hover:bg-acorn-blue-500'
               }`}
@@ -113,7 +116,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                   to={item.path}
                   onClick={() => setMobileMenuOpen(false)}
                   className={`flex items-center gap-3 px-4 py-3 mx-2 rounded-lg transition-all ${
-                    isActive(item.path)
+                    isActive(item)
                       ? 'bg-acorn-orange-500 text-white'
                       : 'text-acorn-blue-100 hover:bg-acorn-blue-500'
                   }`}
