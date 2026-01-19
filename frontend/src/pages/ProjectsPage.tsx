@@ -342,9 +342,9 @@ export const ProjectsPage: React.FC = () => {
                   
                   return (
                     <div
-                      key={project.id}
+                      key={projectId}
                       className="group flex items-center gap-6 p-5 rounded-xl bg-slate-900/50 border border-slate-800 hover:border-amber-500/30 cursor-pointer transition-all duration-300"
-                      onClick={() => navigate(`/projects/${project.id}`)}
+                      onClick={() => navigate(`/projects/${projectId}`)}
                       style={{ animationDelay: `${index * 30}ms` }}
                     >
                       <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center flex-shrink-0">
