@@ -139,90 +139,90 @@ async def ensure_tables_exist():
             await conn.execute('DROP TABLE IF EXISTS tasks CASCADE')
             await conn.execute('DROP TABLE IF EXISTS ai_runs CASCADE')
             await conn.execute('DROP TABLE IF EXISTS projects CASCADE')
-        
-        await conn.execute('''
-            CREATE TABLE projects (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
-                description TEXT,
-                template_type TEXT,
-                brief_text TEXT,
-                questionnaire_data JSONB DEFAULT '{}',
-                owner_id TEXT NOT NULL,
-                organization TEXT NOT NULL,
-                status TEXT DEFAULT 'draft',
-                feature_tier TEXT DEFAULT 'pro',
-                phase_status JSONB DEFAULT '{}',
-                roadmap JSONB,
-                roadmap_summary JSONB,
-                feasibility_studies JSONB,
-                feasibility_sections JSONB,
-                development_stack JSONB,
-                development_notes JSONB,
-                parent_project_id TEXT,
-                scenario_label TEXT,
-                scenario_metadata JSONB,
-                ui_preferences JSONB,
-                team_members JSONB DEFAULT '[]',
-                created_at TIMESTAMPTZ DEFAULT NOW(),
-                updated_at TIMESTAMPTZ DEFAULT NOW()
-            )
-        ''')
-        
-        # Create artifacts table
-        await conn.execute('''
-            CREATE TABLE artifacts (
-                id TEXT PRIMARY KEY,
-                project_id TEXT NOT NULL,
-                type TEXT NOT NULL,
-                title TEXT,
-                content_json JSONB,
-                version INTEGER DEFAULT 1,
-                is_approved BOOLEAN DEFAULT false,
-                metadata JSONB,
-                created_at TIMESTAMPTZ DEFAULT NOW(),
-                updated_at TIMESTAMPTZ DEFAULT NOW()
-            )
-        ''')
-        
-        # Create requirements table
-        await conn.execute('''
-            CREATE TABLE requirements (
-                id TEXT PRIMARY KEY,
-                project_id TEXT NOT NULL,
-                type TEXT,
-                title TEXT NOT NULL,
-                description TEXT,
-                priority TEXT DEFAULT 'medium',
-                status TEXT DEFAULT 'draft',
-                confidence_score FLOAT,
-                created_at TIMESTAMPTZ DEFAULT NOW(),
-                updated_at TIMESTAMPTZ DEFAULT NOW()
-            )
-        ''')
-        
-        # Create tasks table
-        await conn.execute('''
-            CREATE TABLE tasks (
-                id TEXT PRIMARY KEY,
-                project_id TEXT NOT NULL,
-                requirement_id TEXT,
-                title TEXT NOT NULL,
-                description TEXT,
-                estimate_hours FLOAT,
-                actual_hours FLOAT,
-                start_date TIMESTAMPTZ,
-                due_date TIMESTAMPTZ,
-                status TEXT DEFAULT 'pending',
-                priority TEXT DEFAULT 'medium',
-                role TEXT,
-                dependencies JSONB DEFAULT '[]',
-                tags JSONB DEFAULT '[]',
-                phase TEXT,
-                created_at TIMESTAMPTZ DEFAULT NOW(),
-                updated_at TIMESTAMPTZ DEFAULT NOW()
-            )
-        ''')
+            
+            await conn.execute('''
+                CREATE TABLE projects (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    description TEXT,
+                    template_type TEXT,
+                    brief_text TEXT,
+                    questionnaire_data JSONB DEFAULT '{}',
+                    owner_id TEXT NOT NULL,
+                    organization TEXT NOT NULL,
+                    status TEXT DEFAULT 'draft',
+                    feature_tier TEXT DEFAULT 'pro',
+                    phase_status JSONB DEFAULT '{}',
+                    roadmap JSONB,
+                    roadmap_summary JSONB,
+                    feasibility_studies JSONB,
+                    feasibility_sections JSONB,
+                    development_stack JSONB,
+                    development_notes JSONB,
+                    parent_project_id TEXT,
+                    scenario_label TEXT,
+                    scenario_metadata JSONB,
+                    ui_preferences JSONB,
+                    team_members JSONB DEFAULT '[]',
+                    created_at TIMESTAMPTZ DEFAULT NOW(),
+                    updated_at TIMESTAMPTZ DEFAULT NOW()
+                )
+            ''')
+            
+            # Create artifacts table
+            await conn.execute('''
+                CREATE TABLE artifacts (
+                    id TEXT PRIMARY KEY,
+                    project_id TEXT NOT NULL,
+                    type TEXT NOT NULL,
+                    title TEXT,
+                    content_json JSONB,
+                    version INTEGER DEFAULT 1,
+                    is_approved BOOLEAN DEFAULT false,
+                    metadata JSONB,
+                    created_at TIMESTAMPTZ DEFAULT NOW(),
+                    updated_at TIMESTAMPTZ DEFAULT NOW()
+                )
+            ''')
+            
+            # Create requirements table
+            await conn.execute('''
+                CREATE TABLE requirements (
+                    id TEXT PRIMARY KEY,
+                    project_id TEXT NOT NULL,
+                    type TEXT,
+                    title TEXT NOT NULL,
+                    description TEXT,
+                    priority TEXT DEFAULT 'medium',
+                    status TEXT DEFAULT 'draft',
+                    confidence_score FLOAT,
+                    created_at TIMESTAMPTZ DEFAULT NOW(),
+                    updated_at TIMESTAMPTZ DEFAULT NOW()
+                )
+            ''')
+            
+            # Create tasks table
+            await conn.execute('''
+                CREATE TABLE tasks (
+                    id TEXT PRIMARY KEY,
+                    project_id TEXT NOT NULL,
+                    requirement_id TEXT,
+                    title TEXT NOT NULL,
+                    description TEXT,
+                    estimate_hours FLOAT,
+                    actual_hours FLOAT,
+                    start_date TIMESTAMPTZ,
+                    due_date TIMESTAMPTZ,
+                    status TEXT DEFAULT 'pending',
+                    priority TEXT DEFAULT 'medium',
+                    role TEXT,
+                    dependencies JSONB DEFAULT '[]',
+                    tags JSONB DEFAULT '[]',
+                    phase TEXT,
+                    created_at TIMESTAMPTZ DEFAULT NOW(),
+                    updated_at TIMESTAMPTZ DEFAULT NOW()
+                )
+            ''')
         
         # Create refresh_tokens table
         await conn.execute('''
