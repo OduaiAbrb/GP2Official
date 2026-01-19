@@ -2598,7 +2598,7 @@ export const PhaseDetailPage: React.FC = () => {
                       <label className="text-xs text-gray-500 mb-1 block">Start Date</label>
                       <input
                         type="date"
-                        className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm"
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-400 focus:border-transparent cursor-pointer hover:border-purple-300 transition-colors"
                         value={newTask.start_date}
                         onChange={(e) => setNewTask({ ...newTask, start_date: e.target.value })}
                       />
@@ -2607,9 +2607,10 @@ export const PhaseDetailPage: React.FC = () => {
                       <label className="text-xs text-gray-500 mb-1 block">Due Date</label>
                       <input
                         type="date"
-                        className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm"
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-400 focus:border-transparent cursor-pointer hover:border-purple-300 transition-colors"
                         value={newTask.due_date}
                         onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
+                        min={newTask.start_date || undefined}
                       />
                     </div>
                   </div>
