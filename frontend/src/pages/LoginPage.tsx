@@ -45,14 +45,14 @@ export const LoginPage: React.FC = () => {
             <div className="text-center lg:text-left">
               <Link to="/" className="inline-flex items-center space-x-3 group mb-6">
                 <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full blur-md opacity-50 group-hover:opacity-75 transition-opacity" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-orange-400 to-blue-500 rounded-full blur-md opacity-50 group-hover:opacity-75 transition-opacity" />
                   <img 
-                    src="https://images.unsplash.com/photo-1569977562541-024dd41514fc?w=100&h=100&fit=crop" 
+                    src="/logo.png" 
                     alt="Acorn" 
-                    className="relative w-16 h-16 rounded-full object-cover ring-2 ring-amber-400 group-hover:scale-110 transition-transform"
+                    className="relative w-16 h-16 object-contain group-hover:scale-110 transition-transform"
                   />
                 </div>
-                <span className="text-3xl font-bold bg-gradient-to-r from-amber-700 to-orange-600 bg-clip-text text-transparent">Acorn</span>
+                <span className="text-3xl font-bold bg-gradient-to-r from-orange-600 via-blue-500 to-navy-600 bg-clip-text text-transparent">Acorn</span>
               </Link>
               <p className="text-xl text-gray-700 font-medium mb-4">Welcome back to your AI-powered planning platform</p>
             </div>
@@ -95,14 +95,14 @@ export const LoginPage: React.FC = () => {
             <div className="lg:hidden text-center mb-6">
               <Link to="/" className="inline-flex items-center space-x-3 group">
                 <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full blur-md opacity-50 group-hover:opacity-75 transition-opacity" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-orange-400 to-blue-500 rounded-full blur-md opacity-50 group-hover:opacity-75 transition-opacity" />
                   <img 
-                    src="https://images.unsplash.com/photo-1569977562541-024dd41514fc?w=100&h=100&fit=crop" 
+                    src="/logo.png" 
                     alt="Acorn" 
-                    className="relative w-16 h-16 rounded-full object-cover ring-2 ring-amber-400 group-hover:scale-110 transition-transform"
+                    className="relative w-16 h-16 object-contain group-hover:scale-110 transition-transform"
                   />
                 </div>
-                <span className="text-3xl font-bold bg-gradient-to-r from-amber-700 to-orange-600 bg-clip-text text-transparent">Acorn</span>
+                <span className="text-3xl font-bold bg-gradient-to-r from-orange-600 via-blue-500 to-navy-600 bg-clip-text text-transparent">Acorn</span>
               </Link>
               <p className="mt-2 text-gray-600">Plant the seeds of perfect projects</p>
             </div>

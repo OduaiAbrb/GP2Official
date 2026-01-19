@@ -129,14 +129,14 @@ const LandingPage: React.FC = () => {
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-3 group cursor-pointer" onClick={() => navigate('/') }>
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full blur-md opacity-50 group-hover:opacity-75 transition-opacity" />
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-400 to-blue-500 rounded-full blur-md opacity-50 group-hover:opacity-75 transition-opacity" />
               <img
-                src="https://images.unsplash.com/photo-1569977562541-024dd41514fc?w=100&h=100&fit=crop"
+                src="/logo.png"
                 alt="Acorn Logo"
-                className="relative w-12 h-12 rounded-full object-cover ring-2 ring-amber-400 group-hover:scale-110 transition-transform"
+                className="relative w-12 h-12 object-contain group-hover:scale-110 transition-transform"
               />
             </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-amber-700 to-orange-600 bg-clip-text text-transparent group-hover:scale-105 transition-transform">
+            <span className="text-2xl font-bold bg-gradient-to-r from-orange-600 via-blue-500 to-navy-600 bg-clip-text text-transparent group-hover:scale-105 transition-transform">
               Acorn
             </span>
           </div>
