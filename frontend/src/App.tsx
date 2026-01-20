@@ -158,6 +158,22 @@ function App() {
           }
         />
         <Route
+          path="/projects/:id/export"
+          element={
+            <PrivateRoute>
+              <ExportCenterPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/projects/:id/analytics"
+          element={
+            <PrivateRoute>
+              <AnalyticsDashboardPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
           path="/billing"
           element={
             <PrivateRoute>
