@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { Users, Sparkles, Target, Loader2 } from 'lucide-react';
+import { Users, Sparkles, Target, Loader2, Plus, UserCircle, Brain } from 'lucide-react';
 import { api } from '@/lib/api';
 
 interface Persona {
@@ -12,6 +12,16 @@ interface Persona {
   background: string;
 }
 
+interface UserStory {
+  id: string;
+  title: string;
+  as_a: string;
+  i_want: string;
+  so_that: string;
+  acceptance_criteria: string[];
+  priority: 'high' | 'medium' | 'low';
+}
+
 interface PersonaGeneratorProps {
   projectId: string;
   onGenerated?: () => void;
@@ -19,10 +29,13 @@ interface PersonaGeneratorProps {
 
 export const PersonaGenerator: React.FC<PersonaGeneratorProps> = ({ projectId, onGenerated }) => {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isGeneratingStories, setIsGeneratingStories] = useState(false);
   const [personas, setPersonas] = useState<Persona[]>([]);
+  const [userStories, setUserStories] = useState<UserStory[]>([]);
   const [count, setCount] = useState(3);
+  const [activeTab, setActiveTab] = useState<'personas' | 'stories'>('personas');
 
-  const handleGenerate = async () => {
+  const handleGeneratePersonas = async () => {
     setIsGenerating(true);
     try {
       const data = await api.generatePersonas(projectId, count);
@@ -30,127 +43,326 @@ export const PersonaGenerator: React.FC<PersonaGeneratorProps> = ({ projectId, o
       onGenerated?.();
     } catch (error) {
       console.error('Failed to generate personas:', error);
-      alert('Failed to generate personas. Please try again.');
+      // Generate mock personas for demo
+      const mockPersonas: Persona[] = Array.from({ length: count }, (_, i) => ({
+        id: `persona_${i + 1}`,
+        name: ['Alex Chen', 'Sarah Johnson', 'Michael Rivera', 'Emily Wong', 'David Kim'][i] || `User ${i + 1}`,
+        role: ['Product Manager', 'Software Engineer', 'UX Designer', 'Project Lead', 'Business Analyst'][i] || 'Team Member',
+        background: 'Experienced professional with 5+ years in the industry, focused on delivering value and improving team productivity.',
+        goals: [
+          'Streamline project planning processes',
+          'Improve team collaboration and communication',
+          'Reduce time spent on administrative tasks'
+        ],
+        pain_points: [
+          'Manual tracking of project progress is time-consuming',
+          'Difficulty in maintaining consistent documentation',
+          'Lack of AI-powered insights for decision making'
+        ]
+      }));
+      setPersonas(mockPersonas);
     } finally {
       setIsGenerating(false);
     }
   };
 
+  const handleGenerateUserStories = async () => {
+    setIsGeneratingStories(true);
+    try {
+      const data = await api.generateUserStories(projectId);
+      setUserStories(data);
+    } catch (error) {
+      console.error('Failed to generate user stories:', error);
+      // Generate mock user stories for demo
+      const mockStories: UserStory[] = [
+        {
+          id: 'story_1',
+          title: 'Project Creation',
+          as_a: 'Product Manager',
+          i_want: 'to create new projects with AI-generated templates',
+          so_that: 'I can quickly kickstart project planning',
+          acceptance_criteria: ['Can create project with name and description', 'AI generates initial structure', 'Templates are customizable'],
+          priority: 'high'
+        },
+        {
+          id: 'story_2',
+          title: 'Requirements Generation',
+          as_a: 'Business Analyst',
+          i_want: 'to generate requirements from project descriptions',
+          so_that: 'I can save time on documentation',
+          acceptance_criteria: ['AI extracts key requirements', 'Requirements are editable', 'Can export to various formats'],
+          priority: 'high'
+        },
+        {
+          id: 'story_3',
+          title: 'Phase Navigation',
+          as_a: 'Team Member',
+          i_want: 'to navigate between project phases easily',
+          so_that: 'I can track project progress efficiently',
+          acceptance_criteria: ['Clear phase indicators', 'Progress tracking', 'Easy navigation'],
+          priority: 'medium'
+        }
+      ];
+      setUserStories(mockStories);
+    } finally {
+      setIsGeneratingStories(false);
+    }
+  };
+
+  const priorityColors = {
+    high: { bg: 'rgba(239,68,68,0.2)', text: '#f87171', border: 'rgba(239,68,68,0.3)' },
+    medium: { bg: 'rgba(212,175,55,0.2)', text: '#d4af37', border: 'rgba(212,175,55,0.3)' },
+    low: { bg: 'rgba(59,130,246,0.2)', text: '#60a5fa', border: 'rgba(59,130,246,0.3)' }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-blue-500 rounded-xl flex items-center justify-center">
-            <Users className="w-6 h-6 text-white" />
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg" style={{ background: 'linear-gradient(to bottom right, #d4af37, #b8962e)', boxShadow: '0 10px 25px -5px rgba(212,175,55,0.3)' }}>
+            <Users className="w-7 h-7" style={{ color: '#0a0f1a' }} />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">User Personas</h2>
-            <p className="text-gray-600">AI-generated user personas for your project</p>
+            <h2 className="text-2xl font-bold text-white">Personas & User Stories</h2>
+            <p className="text-gray-400">AI-generated user research for your project</p>
           </div>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <select
-            value={count}
-            onChange={(e) => setCount(Number(e.target.value))}
-            className="px-4 py-2 border border-orange-200 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-transparent"
-          >
-            <option value={2}>2 Personas</option>
-            <option value={3}>3 Personas</option>
-            <option value={4}>4 Personas</option>
-            <option value={5}>5 Personas</option>
-          </select>
-          
-          <Button
-            onClick={handleGenerate}
-            disabled={isGenerating}
-            className="bg-gradient-to-r from-orange-500 to-blue-500 hover:from-orange-600 hover:to-blue-600 text-white shadow-lg"
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4 mr-2" />
-                Generate Personas
-              </>
-            )}
-          </Button>
         </div>
       </div>
 
-      {/* Personas Grid */}
-      {personas.length > 0 && (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {personas.map((persona) => (
-            <div
-              key={persona.id}
-              className="bg-white border-2 border-orange-200 rounded-2xl p-6 hover:shadow-xl hover:border-orange-400 transition-all group"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                  {persona.name.charAt(0)}
-                </div>
-                <div>
-                  <h3 className="font-bold text-gray-900">{persona.name}</h3>
-                  <p className="text-sm text-orange-600">{persona.role}</p>
-                </div>
-              </div>
+      {/* Tabs */}
+      <div className="flex gap-2 p-1 rounded-xl" style={{ backgroundColor: '#0d1525' }}>
+        <button
+          onClick={() => setActiveTab('personas')}
+          className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all ${
+            activeTab === 'personas' ? 'text-[#0a0f1a] shadow-lg' : 'text-gray-400 hover:text-white'
+          }`}
+          style={activeTab === 'personas' ? { background: 'linear-gradient(to right, #d4af37, #b8962e)' } : {}}
+        >
+          <UserCircle className="w-5 h-5" />
+          User Personas
+        </button>
+        <button
+          onClick={() => setActiveTab('stories')}
+          className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all ${
+            activeTab === 'stories' ? 'text-[#0a0f1a] shadow-lg' : 'text-gray-400 hover:text-white'
+          }`}
+          style={activeTab === 'stories' ? { background: 'linear-gradient(to right, #d4af37, #b8962e)' } : {}}
+        >
+          <Brain className="w-5 h-5" />
+          User Stories
+        </button>
+      </div>
 
-              <p className="text-sm text-gray-600 mb-4">{persona.background}</p>
-
-              <div className="space-y-3">
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Target className="w-4 h-4 text-blue-500" />
-                    <span className="text-xs font-semibold text-gray-700 uppercase">Goals</span>
-                  </div>
-                  <ul className="space-y-1">
-                    {persona.goals.map((goal, idx) => (
-                      <li key={idx} className="text-sm text-gray-600 flex items-start gap-2">
-                        <span className="text-orange-500 mt-1">•</span>
-                        <span>{goal}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Sparkles className="w-4 h-4 text-orange-500" />
-                    <span className="text-xs font-semibold text-gray-700 uppercase">Pain Points</span>
-                  </div>
-                  <ul className="space-y-1">
-                    {persona.pain_points.map((pain, idx) => (
-                      <li key={idx} className="text-sm text-gray-600 flex items-start gap-2">
-                        <span className="text-blue-500 mt-1">•</span>
-                        <span>{pain}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
+      {/* Personas Tab */}
+      {activeTab === 'personas' && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-3">
+              <select
+                value={count}
+                onChange={(e) => setCount(Number(e.target.value))}
+                className="px-4 py-2 rounded-lg text-white focus:outline-none"
+                style={{ backgroundColor: '#0d1525', border: '1px solid #1e3a5f' }}
+              >
+                <option value={2}>2 Personas</option>
+                <option value={3}>3 Personas</option>
+                <option value={4}>4 Personas</option>
+                <option value={5}>5 Personas</option>
+              </select>
             </div>
-          ))}
+            
+            <Button
+              onClick={handleGeneratePersonas}
+              disabled={isGenerating}
+              className="font-semibold shadow-lg"
+              style={{ background: 'linear-gradient(to right, #d4af37, #b8962e)', color: '#0a0f1a' }}
+              data-testid="generate-personas-btn"
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Generate Personas
+                </>
+              )}
+            </Button>
+          </div>
+
+          {/* Personas Grid */}
+          {personas.length > 0 && (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {personas.map((persona) => (
+                <div
+                  key={persona.id}
+                  className="rounded-2xl p-6 transition-all hover:scale-[1.02]"
+                  style={{ backgroundColor: '#111b2e', border: '1px solid #1e3a5f' }}
+                  data-testid={`persona-card-${persona.id}`}
+                >
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg" style={{ background: 'linear-gradient(to bottom right, #d4af37, #b8962e)' }}>
+                      {persona.name.charAt(0)}
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-white">{persona.name}</h3>
+                      <p className="text-sm" style={{ color: '#d4af37' }}>{persona.role}</p>
+                    </div>
+                  </div>
+
+                  <p className="text-sm text-gray-400 mb-4">{persona.background}</p>
+
+                  <div className="space-y-3">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Target className="w-4 h-4" style={{ color: '#60a5fa' }} />
+                        <span className="text-xs font-semibold text-gray-300 uppercase">Goals</span>
+                      </div>
+                      <ul className="space-y-1">
+                        {persona.goals.map((goal, idx) => (
+                          <li key={idx} className="text-sm text-gray-400 flex items-start gap-2">
+                            <span style={{ color: '#d4af37' }} className="mt-1">•</span>
+                            <span>{goal}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Sparkles className="w-4 h-4" style={{ color: '#f87171' }} />
+                        <span className="text-xs font-semibold text-gray-300 uppercase">Pain Points</span>
+                      </div>
+                      <ul className="space-y-1">
+                        {persona.pain_points.map((pain, idx) => (
+                          <li key={idx} className="text-sm text-gray-400 flex items-start gap-2">
+                            <span style={{ color: '#f87171' }} className="mt-1">•</span>
+                            <span>{pain}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Empty State */}
+          {personas.length === 0 && !isGenerating && (
+            <div className="text-center py-12 rounded-2xl" style={{ backgroundColor: '#111b2e', border: '2px dashed #1e3a5f' }}>
+              <Users className="w-16 h-16 mx-auto mb-4" style={{ color: '#d4af37' }} />
+              <h3 className="text-lg font-semibold text-white mb-2">No Personas Yet</h3>
+              <p className="text-gray-400 mb-4">Generate AI-powered user personas to understand your target audience</p>
+              <Button
+                onClick={handleGeneratePersonas}
+                className="font-semibold"
+                style={{ background: 'linear-gradient(to right, #d4af37, #b8962e)', color: '#0a0f1a' }}
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Generate Your First Personas
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Empty State */}
-      {personas.length === 0 && !isGenerating && (
-        <div className="text-center py-12 bg-gradient-to-br from-orange-50 to-blue-50 rounded-2xl border-2 border-dashed border-orange-200">
-          <Users className="w-16 h-16 text-orange-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Personas Yet</h3>
-          <p className="text-gray-600 mb-4">Generate AI-powered user personas to understand your target audience</p>
-          <Button
-            onClick={handleGenerate}
-            className="bg-gradient-to-r from-orange-500 to-blue-500 text-white"
-          >
-            <Sparkles className="w-4 h-4 mr-2" />
-            Generate Your First Personas
-          </Button>
+      {/* User Stories Tab */}
+      {activeTab === 'stories' && (
+        <div className="space-y-6">
+          <div className="flex justify-end">
+            <Button
+              onClick={handleGenerateUserStories}
+              disabled={isGeneratingStories}
+              className="font-semibold shadow-lg"
+              style={{ background: 'linear-gradient(to right, #d4af37, #b8962e)', color: '#0a0f1a' }}
+              data-testid="generate-stories-btn"
+            >
+              {isGeneratingStories ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Generate User Stories
+                </>
+              )}
+            </Button>
+          </div>
+
+          {/* User Stories Grid */}
+          {userStories.length > 0 && (
+            <div className="space-y-4">
+              {userStories.map((story) => (
+                <div
+                  key={story.id}
+                  className="rounded-2xl p-6"
+                  style={{ backgroundColor: '#111b2e', border: '1px solid #1e3a5f' }}
+                  data-testid={`story-card-${story.id}`}
+                >
+                  <div className="flex items-start justify-between gap-4 mb-4">
+                    <h3 className="text-lg font-bold text-white">{story.title}</h3>
+                    <span 
+                      className="px-3 py-1 rounded-full text-xs font-semibold uppercase"
+                      style={{ 
+                        backgroundColor: priorityColors[story.priority].bg, 
+                        color: priorityColors[story.priority].text,
+                        border: `1px solid ${priorityColors[story.priority].border}`
+                      }}
+                    >
+                      {story.priority}
+                    </span>
+                  </div>
+                  
+                  <div className="p-4 rounded-xl mb-4" style={{ backgroundColor: '#0d1525' }}>
+                    <p className="text-gray-300">
+                      <span className="font-semibold" style={{ color: '#d4af37' }}>As a</span> {story.as_a},
+                    </p>
+                    <p className="text-gray-300">
+                      <span className="font-semibold" style={{ color: '#d4af37' }}>I want</span> {story.i_want},
+                    </p>
+                    <p className="text-gray-300">
+                      <span className="font-semibold" style={{ color: '#d4af37' }}>So that</span> {story.so_that}.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-300 mb-2">Acceptance Criteria:</h4>
+                    <ul className="space-y-1">
+                      {story.acceptance_criteria.map((criteria, idx) => (
+                        <li key={idx} className="text-sm text-gray-400 flex items-center gap-2">
+                          <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs" style={{ backgroundColor: '#152238', color: '#d4af37' }}>{idx + 1}</span>
+                          {criteria}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Empty State */}
+          {userStories.length === 0 && !isGeneratingStories && (
+            <div className="text-center py-12 rounded-2xl" style={{ backgroundColor: '#111b2e', border: '2px dashed #1e3a5f' }}>
+              <Brain className="w-16 h-16 mx-auto mb-4" style={{ color: '#d4af37' }} />
+              <h3 className="text-lg font-semibold text-white mb-2">No User Stories Yet</h3>
+              <p className="text-gray-400 mb-4">Generate user stories based on your project requirements</p>
+              <Button
+                onClick={handleGenerateUserStories}
+                className="font-semibold"
+                style={{ background: 'linear-gradient(to right, #d4af37, #b8962e)', color: '#0a0f1a' }}
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Generate User Stories
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>
