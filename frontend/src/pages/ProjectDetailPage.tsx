@@ -2,11 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/Button';
+import { ScaffoldPanel } from '@/components/ScaffoldPanel';
 import { ExportButtons } from '@/components/ExportButtons';
-import { api } from '@/lib/api';
+import { api, ScaffoldResult } from '@/lib/api';
 import type { Artifact, Project, Requirement, Task } from '@/types';
 import { phaseConfigs } from '@/constants/phases';
-import { AlertCircle, ArrowLeft, Loader2 } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Loader2, Terminal, BrainCircuit } from 'lucide-react';
 import Joyride, { STATUS as JoyrideStatus, Step } from 'react-joyride';
 import { formatDate } from '@/lib/utils';
 import { workspacePresets } from '@/constants/workspacePresets';
@@ -25,6 +26,11 @@ export const ProjectDetailPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updatingPreset, setUpdatingPreset] = useState(false);
+
+  // Scaffolding state
+  const [scaffoldingTarget, setScaffoldingTarget] = useState<string | null>(null);
+  const [isScaffolding, setIsScaffolding] = useState(false);
+  const [scaffoldResult, setScaffoldResult] = useState<ScaffoldResult | null>(null);
 
   const tourSteps: Step[] = [
     {
@@ -118,6 +124,11 @@ export const ProjectDetailPage: React.FC = () => {
       setTasks(taskData);
       setArtifacts(artifactData);
 
+      const scaffolds = await api.getScaffolds(id);
+      if (scaffolds?.scaffolds?.length > 0) {
+        setScaffoldResult(scaffolds.scaffolds[0]); // Most recent
+      }
+
       try {
         const statusResponse = await api.getPhaseStatus(id);
         setPhaseStatus(statusResponse.phases);
@@ -157,6 +168,41 @@ export const ProjectDetailPage: React.FC = () => {
       setPhaseStatus(status);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to unlock phases');
+    }
+  };
+
+  const handleGenerateScaffold = async () => {
+    if (!id || !project) return;
+    try {
+      setIsScaffolding(true);
+      const targetStack = project?.template_type === 'web_app' ? 'React + Node.js' : 
+                         project?.template_type === 'mobile_app' ? 'React Native + Node.js' : 
+                         'Python FastAPI + React';
+
+      const targetInput = window.prompt("Target Stack (e.g. React + FastAPI):", targetStack);
+      if (!targetInput) {
+        setIsScaffolding(false);
+        return; // Cancelled
+      }
+
+      setScaffoldingTarget(targetInput);
+      
+      const res = await api.generateScaffold(id, {
+        target_stack: targetInput,
+        include_tests: true,
+        include_docker: true,
+        project_tier: 'mvp'
+      });
+      
+      if (res.success && res.scaffold) {
+        setScaffoldResult(res.scaffold);
+      }
+    } catch (err: any) {
+      console.error('Failed to generate scaffold', err);
+      alert('Failed to generate scaffold: ' + (err.response?.data?.detail || err.message));
+    } finally {
+      setIsScaffolding(false);
+      setScaffoldingTarget(null);
     }
   };
 
@@ -297,6 +343,13 @@ export const ProjectDetailPage: React.FC = () => {
                 Back to Projects
               </button>
               <div className="flex items-center gap-2 sm:gap-3">
+                <button
+                   onClick={() => navigate(`/projects/${project.project_id || project.id}/debate`)}
+                   className="flex items-center justify-center px-4 py-2 rounded-xl text-sm border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 font-medium transition-colors"
+                >
+                   <BrainCircuit className="w-4 h-4 mr-2" />
+                   <span className="hidden sm:inline">AI </span>Debate
+                </button>
                 <Button variant="outline" onClick={() => goToDraft('overview')} className="text-xs sm:text-sm px-2 sm:px-4">
                   <span className="hidden sm:inline">Open </span>Draft
                 </Button>
@@ -446,12 +499,45 @@ export const ProjectDetailPage: React.FC = () => {
                   <Button onClick={() => navigate(`/projects/${project.project_id || project.id}/updates`)}>
                     Development updates
                   </Button>
+                  
+                  {/* Scaffolding Button */}
+                  {(requirements.length > 0 || tasks.length > 0) && (
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-indigo-700 border-indigo-200 bg-indigo-50 hover:bg-indigo-100 mt-2"
+                      onClick={handleGenerateScaffold}
+                      disabled={isScaffolding}
+                    >
+                      {isScaffolding ? (
+                        <Loader2 className="w-4 h-4 mr-3 shrink-0 animate-spin" />
+                      ) : (
+                        <Terminal className="w-4 h-4 mr-3 shrink-0" />
+                      )}
+                      {isScaffolding ? 'Generating Scaffold...' : 'Generate Scaffold'}
+                    </Button>
+                  )}
                 </div>
               </div>
             </aside>
           )}
 
           <div className="space-y-4 sm:space-y-6">
+            {/* Scaffolding Panel */}
+            {scaffoldResult && (
+              <div className="bg-white border text-left border-slate-200 rounded-2xl p-6 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <Terminal className="w-5 h-5 text-indigo-500" />
+                    Project Code Scaffold
+                  </h3>
+                  <Button variant="outline" size="sm" onClick={() => setScaffoldResult(null)}>
+                    Hide Scaffold
+                  </Button>
+                </div>
+                <ScaffoldPanel scaffold={scaffoldResult} />
+              </div>
+            )}
+
             <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 shadow-sm phase-board">
               <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                 <div>

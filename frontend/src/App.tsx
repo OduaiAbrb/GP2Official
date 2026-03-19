@@ -22,6 +22,8 @@ import { SRSAuditPage } from './pages/SRSAuditPage';
 import ExportCenterPage from './pages/ExportCenterPage';
 import AnalyticsDashboardPage from './pages/AnalyticsDashboardPage';
 import { BillingPageRoute } from './pages/BillingPageRoute';
+import { PlanValidationPage } from './pages/PlanValidationPage';
+import { AgentDebatePage } from './pages/AgentDebatePage';
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, checkAuth } = useAuthStore();
@@ -42,146 +44,162 @@ function App() {
     <ThemeProvider>
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route
-          path="/projects"
-          element={
-            <PrivateRoute>
-              <ProjectsPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/projects/new"
-          element={
-            <PrivateRoute>
-              <NewProjectPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/projects/new/wizard"
-          element={
-            <PrivateRoute>
-              <GuidedWorkspaceBuilder />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <PrivateRoute>
-              <ProfilePage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/projects/:id/governance"
-          element={
-            <PrivateRoute>
-              <ProjectGovernancePage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/projects/:id/updates"
-          element={
-            <PrivateRoute>
-              <DevelopmentUpdatesPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/projects/:id"
-          element={
-            <PrivateRoute>
-              <ProjectDetailPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/projects/:id/summary"
-          element={
-            <PrivateRoute>
-              <ProjectSummaryPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/projects/:id/diagram-studio"
-          element={
-            <PrivateRoute>
-              <DiagramWorkspacePage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/projects/:id/draft/:section"
-          element={
-            <PrivateRoute>
-              <AcornDraftPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/projects/:id/phases/:phaseId"
-          element={
-            <PrivateRoute>
-              <PhaseDetailPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/projects/:id/uml/:type/edit"
-          element={
-            <PrivateRoute>
-              <UmlDiagramEditorPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/projects/:id/personas"
-          element={
-            <PrivateRoute>
-              <PersonasPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/projects/:id/srs-audit"
-          element={
-            <PrivateRoute>
-              <SRSAuditPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/projects/:id/export"
-          element={
-            <PrivateRoute>
-              <ExportCenterPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/projects/:id/analytics"
-          element={
-            <PrivateRoute>
-              <AnalyticsDashboardPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/billing"
-          element={
-            <PrivateRoute>
-              <BillingPageRoute />
-            </PrivateRoute>
-          }
-        />
-        <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route
+            path="/projects"
+            element={
+              <PrivateRoute>
+                <ProjectsPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/projects/new"
+            element={
+              <PrivateRoute>
+                <NewProjectPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/projects/new/wizard"
+            element={
+              <PrivateRoute>
+                <GuidedWorkspaceBuilder />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <PrivateRoute>
+                <ProfilePage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/projects/:id/governance"
+            element={
+              <PrivateRoute>
+                <ProjectGovernancePage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/projects/:id/updates"
+            element={
+              <PrivateRoute>
+                <DevelopmentUpdatesPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/projects/:id"
+            element={
+              <PrivateRoute>
+                <ProjectDetailPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/projects/:id/summary"
+            element={
+              <PrivateRoute>
+                <ProjectSummaryPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/projects/:id/diagram-studio"
+            element={
+              <PrivateRoute>
+                <DiagramWorkspacePage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/projects/:id/draft/:section"
+            element={
+              <PrivateRoute>
+                <AcornDraftPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/projects/:id/phases/:phaseId"
+            element={
+              <PrivateRoute>
+                <PhaseDetailPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/projects/:id/uml/:type/edit"
+            element={
+              <PrivateRoute>
+                <UmlDiagramEditorPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/projects/:id/personas"
+            element={
+              <PrivateRoute>
+                <PersonasPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/projects/:id/srs-audit"
+            element={
+              <PrivateRoute>
+                <SRSAuditPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/projects/:id/export"
+            element={
+              <PrivateRoute>
+                <ExportCenterPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/projects/:id/analytics"
+            element={
+              <PrivateRoute>
+                <AnalyticsDashboardPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/projects/:id/validate"
+            element={
+              <PrivateRoute>
+                <PlanValidationPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/projects/:id/debate"
+            element={
+              <PrivateRoute>
+                <AgentDebatePage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/billing"
+            element={
+              <PrivateRoute>
+                <BillingPageRoute />
+              </PrivateRoute>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>

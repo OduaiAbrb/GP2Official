@@ -11,6 +11,10 @@ import {
   Plus,
   Home,
   Sparkles,
+  ListTree,
+  FileCode2,
+  BrainCircuit,
+  MessageSquare,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 
@@ -68,17 +72,35 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
     },
   ];
 
-  // Check if a nav item is active - fixed to prevent multiple selections
-  const isActive = (item: typeof navItems[0]) => {
+  // Secondary links (e.g., for specific project context)
+  // This example assumes a projectId might be available from the URL or context
+  const projectId = location.pathname.split('/')[2]; // Simple way to extract projectId from /projects/:id/...
+
+  const secondaryLinks = projectId ? [
+    {
+      name: 'AI Debate',
+      path: `/projects/${projectId}/debate`,
+      icon: <BrainCircuit className="w-5 h-5" />
+    }
+  ] : [];
+
+  // Check if a nav item is active
+  const isActive = (item: any) => {
     const currentPath = location.pathname;
     
-    if (item.exactMatch) {
-      // For projects, only match exact /projects path, not /projects/xxx
+    if ('exactMatch' in item && item.exactMatch) {
+      if ('matchPaths' in item && item.matchPaths) {
+        return currentPath === item.path || item.matchPaths.includes(currentPath);
+      }
       return currentPath === item.path;
     }
     
-    // For other items, check if current path starts with the item path
-    return item.matchPaths.some(matchPath => currentPath.startsWith(matchPath));
+    if ('matchPaths' in item && item.matchPaths) {
+      return currentPath.startsWith(item.path) || 
+             item.matchPaths.some((p: string) => currentPath.startsWith(p));
+    }
+    
+    return currentPath.startsWith(item.path);
   };
 
   return (

@@ -147,12 +147,42 @@ class MemoryCollection:
 
     async def update_one(self, filter_doc: Dict[str, Any], update: Dict[str, Any], upsert: bool = False):
         set_fields = update.get("$set", {})
+        push_fields = update.get("$push", {})
+        pull_fields = update.get("$pull", {})
+        add_to_set_fields = update.get("$addToSet", {})
+        inc_fields = update.get("$inc", {})
+        
         for idx, doc in enumerate(self.docs):
             if self._match_filter(doc, filter_doc):
-                self.docs[idx] = {**doc, **set_fields}
+                # Apply $set
+                for k, v in set_fields.items():
+                    self.docs[idx][k] = v
+                # Apply $push (append to array)
+                for k, v in push_fields.items():
+                    if k not in self.docs[idx]:
+                        self.docs[idx][k] = []
+                    if isinstance(self.docs[idx][k], list):
+                        self.docs[idx][k].append(v)
+                # Apply $addToSet (append if not exists)
+                for k, v in add_to_set_fields.items():
+                    if k not in self.docs[idx]:
+                        self.docs[idx][k] = []
+                    if isinstance(self.docs[idx][k], list) and v not in self.docs[idx][k]:
+                        self.docs[idx][k].append(v)
+                # Apply $pull (remove from array)
+                for k, v in pull_fields.items():
+                    if k in self.docs[idx] and isinstance(self.docs[idx][k], list):
+                        self.docs[idx][k] = [item for item in self.docs[idx][k] if item != v]
+                # Apply $inc (increment numeric fields)
+                for k, v in inc_fields.items():
+                    if k not in self.docs[idx]:
+                        self.docs[idx][k] = 0
+                    self.docs[idx][k] += v
                 return MemoryUpdateResult(matched_count=1, modified_count=1)
         if upsert:
             new_doc = {**filter_doc, **set_fields}
+            for k, v in push_fields.items():
+                new_doc[k] = [v]
             self.docs.append(new_doc)
             return MemoryUpdateResult(matched_count=0, modified_count=1, upserted_id=new_doc.get("_id"))
         return MemoryUpdateResult()

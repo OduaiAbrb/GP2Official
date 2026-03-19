@@ -22,7 +22,7 @@ export default defineConfig({
           'vendor-utils': ['axios', 'date-fns', 'pako'],
           'vendor-canvas': ['reactflow'],
           'vendor-state': ['zustand'],
-          
+
           // App chunks
           'pages-auth': [
             './src/pages/LoginPage',
@@ -103,7 +103,7 @@ export default defineConfig({
     ],
     proxy: {
       '/api': {
-        target: 'http://localhost:8001',
+        target: 'http://localhost:8000',
         changeOrigin: true,
       },
     },

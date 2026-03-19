@@ -33,6 +33,14 @@ class TaskType(str, Enum):
     CODE_GENERATION = "code_generation"
     DIAGRAM_GENERATION = "diagram_generation"
     COST_ESTIMATION = "cost_estimation"
+    CODING = "coding"
+    CODE_REVIEW = "code_review"
+    COMPLEX_LOGIC = "complex_logic"
+    JSON_SCHEMA = "json_schema"
+    WORKFLOW = "workflow"
+    PLAN_VALIDATION = "plan_validation"
+    MULTI_AGENT_DEBATE = "multi_agent_debate"
+    CODE_SCAFFOLDING = "code_scaffolding"
 
 
 @dataclass
@@ -88,11 +96,26 @@ class AIModelPipeline:
         if settings.gemini_api_key:
             models["gemini-pro"] = ModelConfig(
                 provider=ModelProvider.GEMINI,
-                model_name="gemini-pro",
+                model_name="gemini-2.0-flash",
                 api_key=settings.gemini_api_key,
-                cost_per_token=0.00025,
+                cost_per_token=0.0,
+                max_tokens=8192,
                 quality_score=0.85,
-                specialties=[TaskType.REQUIREMENTS_EXTRACTION, TaskType.RISK_ANALYSIS, TaskType.CODE_GENERATION]
+                specialties=[
+                    TaskType.REQUIREMENTS_EXTRACTION,
+                    TaskType.RISK_ANALYSIS,
+                    TaskType.CODE_GENERATION,
+                    TaskType.PLAN_VALIDATION,
+                    TaskType.SRS_GENERATION,
+                    TaskType.GENERAL,
+                    TaskType.CODING,
+                    TaskType.CODE_REVIEW,
+                    TaskType.COMPLEX_LOGIC,
+                    TaskType.JSON_SCHEMA,
+                    TaskType.WORKFLOW,
+                    TaskType.MULTI_AGENT_DEBATE,
+                    TaskType.CODE_SCAFFOLDING
+                ]
             )
             
         # Add HuggingFace if configured
@@ -120,7 +143,16 @@ class AIModelPipeline:
                     TaskType.RISK_ANALYSIS,
                     TaskType.CODE_GENERATION,
                     TaskType.DIAGRAM_GENERATION,
-                    TaskType.COST_ESTIMATION
+                    TaskType.COST_ESTIMATION,
+                    TaskType.PLAN_VALIDATION,
+                    TaskType.CODING,
+                    TaskType.CODE_REVIEW,
+                    TaskType.COMPLEX_LOGIC,
+                    TaskType.JSON_SCHEMA,
+                    TaskType.WORKFLOW,
+                    TaskType.MULTI_AGENT_DEBATE,
+                    TaskType.CODE_SCAFFOLDING,
+                    TaskType.GENERAL
                 ]
             )
             logger.info(f"OpenAI GPT model configured: {settings.llm_model_name or 'gpt-4'}")
@@ -138,6 +170,14 @@ class AIModelPipeline:
             TaskType.CODE_GENERATION: [],
             TaskType.DIAGRAM_GENERATION: [],
             TaskType.COST_ESTIMATION: [],
+            TaskType.PLAN_VALIDATION: [],
+            TaskType.CODING: [],
+            TaskType.CODE_REVIEW: [],
+            TaskType.COMPLEX_LOGIC: [],
+            TaskType.JSON_SCHEMA: [],
+            TaskType.WORKFLOW: [],
+            TaskType.MULTI_AGENT_DEBATE: [],
+            TaskType.CODE_SCAFFOLDING: [],
         }
         
         # Prioritize models based on their specialties and quality
@@ -225,7 +265,44 @@ class AIModelPipeline:
                     quality_score=0.5
                 )
                 
-            # Handle real AI models using OpenAI SDK
+            # Handle real AI models
+            if model_config.provider == ModelProvider.GEMINI:
+                # --- Gemini SDK path ---
+                import google.generativeai as genai
+                genai.configure(api_key=model_config.api_key)
+                system_message = self._get_system_message(task_type)
+                full_prompt = self._build_contextual_prompt(prompt, context, task_type)
+                combined = f"{system_message}\n\n{full_prompt}"
+
+                logger.info(f"Calling Gemini API: model={model_config.model_name}")
+                model = genai.GenerativeModel(model_config.model_name)
+                gemini_response = model.generate_content(
+                    combined,
+                    generation_config=genai.types.GenerationConfig(
+                        max_output_tokens=model_config.max_tokens,
+                        temperature=model_config.temperature,
+                    ),
+                )
+                response = gemini_response.text
+
+                processed_content = await self._process_response(response, task_type)
+                tokens_used = len(combined.split()) + len(response.split())  # estimate
+                duration_ms = int((time.time() - start_time) * 1000)
+                cost_usd = 0.0  # free tier
+
+                logger.info(f"Gemini response: {len(response)} chars, ~{tokens_used} tokens, {duration_ms}ms")
+
+                return GenerationResult(
+                    provider=model_config.provider,
+                    model_name=model_config.model_name,
+                    content=processed_content,
+                    tokens_used=tokens_used,
+                    duration_ms=duration_ms,
+                    cost_usd=cost_usd,
+                    quality_score=model_config.quality_score,
+                )
+
+            # --- OpenAI SDK path ---
             client = openai.AsyncOpenAI(api_key=model_config.api_key)
             system_message = self._get_system_message(task_type)
             full_prompt = self._build_contextual_prompt(prompt, context, task_type)
@@ -327,7 +404,15 @@ class AIModelPipeline:
                 Generate PlantUML diagrams that clearly represent system architecture and relationships.""",
                 
             TaskType.COST_ESTIMATION: """You are a software project manager with expertise in cost estimation. 
-                Provide realistic cost estimates based on project scope and complexity."""
+                Provide realistic cost estimates based on project scope and complexity.""",
+            TaskType.CODING: "You are an expert software engineer, writing production-ready code.",
+            TaskType.CODE_REVIEW: "You are an expert software engineer, performing a thorough code review.",
+            TaskType.COMPLEX_LOGIC: "You are an expert in complex algorithm design and problem-solving.",
+            TaskType.JSON_SCHEMA: "You are an expert in JSON schema definition and validation.",
+            TaskType.WORKFLOW: "You are an expert project manager breaking down workflows.",
+            TaskType.PLAN_VALIDATION: "You are an expert technical auditor analyzing a project plan.",
+            TaskType.MULTI_AGENT_DEBATE: "You are a specialized AI agent participating in an architectural debate.",
+            TaskType.CODE_SCAFFOLDING: "You are an expert software engineer generating project scaffolding code."
         }
         
         return messages.get(task_type, "You are a helpful AI assistant.")
@@ -359,10 +444,11 @@ class AIModelPipeline:
     
     async def _process_response(self, response: str, task_type: TaskType) -> Any:
         """Process AI response based on task type."""
+        import json
+        import re
         
         if task_type == TaskType.REQUIREMENTS_EXTRACTION:
             # Try to parse JSON response
-            import json
             try:
                 # Handle markdown code blocks
                 if "```json" in response:
@@ -385,6 +471,15 @@ class AIModelPipeline:
             else:
                 # Wrap response in PlantUML format
                 return f"@startuml\n{response}\n@enduml"
+        
+        elif task_type in (TaskType.MULTI_AGENT_DEBATE, TaskType.CODE_SCAFFOLDING,
+                           TaskType.PLAN_VALIDATION, TaskType.JSON_SCHEMA):
+            # These tasks expect JSON — try to parse it
+            try:
+                clean = re.sub(r'```(?:json)?|```', '', response).strip()
+                return json.loads(clean)
+            except (json.JSONDecodeError, TypeError):
+                return response  # Fall back to raw string; caller handles it
                 
         return response
     
@@ -423,6 +518,36 @@ class AIModelPipeline:
                 "probability": "low",
                 "mitigation": "Mock mitigation strategy"
             }]
+        
+        elif task_type == TaskType.MULTI_AGENT_DEBATE:
+            # Return valid debate JSON so the parser doesn't crash
+            return {
+                "stance": "support",
+                "title": "Stub Analysis: Plan Appears Sound",
+                "content": f"Based on my review of the provided plan, the overall structure is reasonable. This is a stub response generated because no AI model API key is configured. Key observations from the prompt context: {prompt[:150]}...",
+                "evidence": "Stub mode — no real LLM analysis performed.",
+                "confidence": 0.5,
+                "target_argument_id": None
+            }
+        
+        elif task_type == TaskType.CODE_SCAFFOLDING:
+            return {
+                "files": [
+                    {"path": "README.md", "language": "markdown", "description": "Project README",
+                     "content": f"# Project\n\nScaffolded from: {prompt[:100]}..."}
+                ],
+                "setup_instructions": "This is a stub scaffold. Configure a real AI model for full generation.",
+                "tree_visualization": "README.md"
+            }
+        
+        elif task_type == TaskType.PLAN_VALIDATION:
+            return {
+                "score": 75,
+                "findings": [
+                    {"severity": "info", "title": "Stub Validation", "description": "No real AI model configured.",
+                     "affected_phase": "general", "recommendation": "Configure an AI API key for real validation.", "confidence": 0.5}
+                ]
+            }
             
         return f"Mock response for {task_type}: {prompt[:200]}..."
     

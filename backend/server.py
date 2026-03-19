@@ -9,7 +9,8 @@ from database import init_db, close_db
 from routes import (
     auth, projects, generation, requirements, tasks, diagrams, ux_flow, phase_flow, 
     sandbox, users, change_log, websocket, ai_pipeline, personas, srs_audit, billing, export,
-    negotiation, payment, version, notifications, traceability, templates, explainability, utils
+    negotiation, payment, version, notifications, traceability, templates, explainability, utils,
+    validation, debate, scaffolding
 )
 from config import settings
 
@@ -93,6 +94,9 @@ app.include_router(traceability.router, prefix="/api", tags=["Traceability"])
 app.include_router(templates.router, prefix="/api", tags=["Templates"])
 app.include_router(explainability.router, prefix="/api", tags=["AI Explainability"])
 app.include_router(utils.router, prefix="/api/utils", tags=["Utilities"])
+app.include_router(validation.router, prefix="/api", tags=["Plan Validation"])
+app.include_router(debate.router, prefix="/api", tags=["Multi-Agent Debate"])
+app.include_router(scaffolding.router, prefix="/api", tags=["Code Scaffolding"])
 
 
 @app.api_route("/", methods=["GET", "HEAD"])
