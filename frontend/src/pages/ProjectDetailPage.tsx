@@ -56,18 +56,18 @@ const PhaseTree: React.FC<{
 
   const getNodeColor = (phaseId: string) => {
     const status = (phaseStatus[phaseId] || 'locked').toLowerCase();
-    if (status === 'completed')                   return '#4ade80'; // bright forest green
-    if (status === 'active' || status === 'in_progress') return '#fbbf24'; // warm amber
-    if (status === 'ready' || status === 'planning')     return '#86efac'; // light green
-    return '#1e4a28'; // dark/locked
+    if (status === 'completed')                          return '#D4A017'; // acorn gold
+    if (status === 'active' || status === 'in_progress') return '#3d7a4a'; // leaf green
+    if (status === 'ready' || status === 'planning')     return '#5a9e6a'; // fresh leaf
+    return '#2c1b0e'; // bark/locked
   };
 
   const getTextColor = (phaseId: string) => {
     const status = (phaseStatus[phaseId] || 'locked').toLowerCase();
-    if (status === 'completed' || status === 'active' || status === 'ready' || status === 'planning') {
-      return '#0a150e';
-    }
-    return '#6b9e7a';
+    if (status === 'completed')                          return '#130c07';
+    if (status === 'active' || status === 'in_progress') return '#f0e4c8';
+    if (status === 'ready' || status === 'planning')     return '#0c0702';
+    return '#8a7055';
   };
 
   const nodeMap = Object.fromEntries(treeNodes.map(n => [n.id, n]));
@@ -76,16 +76,22 @@ const PhaseTree: React.FC<{
     <div className="relative w-full" style={{ height: '560px' }}>
       <svg width="100%" height="100%" viewBox="0 0 800 560" preserveAspectRatio="xMidYMid meet">
         {/* Deep root glow */}
-        <ellipse cx="400" cy="555" rx="70" ry="8" fill="#2c1810" fillOpacity="0.6" />
+        <ellipse cx="400" cy="555" rx="80" ry="10" fill="#0c0702" fillOpacity="0.7" />
 
-        {/* Tree trunk - thick bark brown */}
+        {/* Roots */}
+        <line x1="400" y1="555" x2="340" y2="558" stroke="#2c1b0e" strokeWidth="10" strokeLinecap="round" />
+        <line x1="400" y1="555" x2="460" y2="558" stroke="#2c1b0e" strokeWidth="10" strokeLinecap="round" />
+        <line x1="400" y1="555" x2="300" y2="558" stroke="#2c1b0e" strokeWidth="7" strokeLinecap="round" opacity="0.7" />
+        <line x1="400" y1="555" x2="500" y2="558" stroke="#2c1b0e" strokeWidth="7" strokeLinecap="round" opacity="0.7" />
+
+        {/* Tree trunk - bark brown */}
         <line x1="400" y1="558" x2="400" y2="480"
-          stroke="#3d2b1f" strokeWidth="16" strokeLinecap="round" />
+          stroke="#3d2412" strokeWidth="18" strokeLinecap="round" />
         <line x1="400" y1="558" x2="400" y2="490"
-          stroke="#5c4033" strokeWidth="9" strokeLinecap="round" />
+          stroke="#5c3820" strokeWidth="10" strokeLinecap="round" opacity="0.5" />
 
-        {/* Ambient ground mist */}
-        <ellipse cx="400" cy="556" rx="90" ry="6" fill="#142b1a" fillOpacity="0.5" />
+        {/* Ground shadow */}
+        <ellipse cx="400" cy="558" rx="90" ry="6" fill="#130c07" fillOpacity="0.6" />
 
         {/* Branches */}
         {branches.map(([from, to], i) => {
@@ -99,7 +105,7 @@ const PhaseTree: React.FC<{
             <path
               key={i}
               d={`M ${fromNode.x} ${fromNode.y} C ${fromNode.x} ${midY}, ${toNode.x} ${midY}, ${toNode.x} ${toNode.y}`}
-              stroke={isHighlighted ? '#4ade80' : '#2d6a3f'}
+              stroke={isHighlighted ? '#c8895a' : '#3d2412'}
               strokeWidth={isHighlighted ? 4.5 : 3}
               fill="none"
               strokeLinecap="round"
@@ -114,7 +120,7 @@ const PhaseTree: React.FC<{
           const py = 30 + (i % 3) * 20;
           return (
             <circle key={i} cx={px} cy={py} r="3"
-              fill="#4ade80" fillOpacity={0.2 + i * 0.05}
+              fill={i % 2 === 0 ? '#D4A017' : '#8B5E3C'} fillOpacity={0.15 + i * 0.05}
               style={{ animation: `float ${3 + i * 0.6}s ease-in-out ${i * 0.4}s infinite` }}
             />
           );
@@ -144,17 +150,25 @@ const PhaseTree: React.FC<{
                 style={{ transition: 'all 0.35s ease' }}
               />
 
-              {/* Main leaf/node circle */}
+              {/* Main phase node circle */}
               <circle
                 cx={node.x} cy={node.y} r={r}
                 fill={nodeColor}
-                stroke={isHovered ? '#86efac' : '#1e4a28'}
+                stroke={isHovered
+                  ? ((phaseStatus[node.id] || '').toLowerCase() === 'completed' ? '#f5df90' : '#5a9e6a')
+                  : 'rgba(255,255,255,0.08)'}
                 strokeWidth={isHovered ? 3 : 1.5}
                 style={{
                   transition: 'all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                  filter: isHovered ? `drop-shadow(0 0 14px ${nodeColor}90)` : 'none',
+                  filter: isHovered ? `drop-shadow(0 0 14px ${nodeColor}99)` : 'none',
                 }}
               />
+
+              {/* Acorn cap for completed phases */}
+              {(phaseStatus[node.id] || '').toLowerCase() === 'completed' && (
+                <ellipse cx={node.x} cy={node.y - r + 14} rx={r * 0.72} ry={10}
+                  fill="#3d2412" fillOpacity="0.9" />
+              )}
 
               {/* Step number */}
               <text x={node.x} y={node.y - 9} textAnchor="middle"
@@ -168,12 +182,12 @@ const PhaseTree: React.FC<{
                 {node.label}
               </text>
 
-              {/* Output dot indicator */}
-              {hasOutput && (
+              {/* Completed indicator */}
+              {hasOutput && (phaseStatus[node.id] || '').toLowerCase() !== 'completed' && (
                 <g>
-                  <circle cx={node.x + r - 8} cy={node.y - r + 8} r={8} fill="#fbbf24" />
+                  <circle cx={node.x + r - 8} cy={node.y - r + 8} r={8} fill="#D4A017" />
                   <text x={node.x + r - 8} y={node.y - r + 12}
-                    textAnchor="middle" fill="#0a150e" fontSize="9" fontWeight="800">
+                    textAnchor="middle" fill="#130c07" fontSize="9" fontWeight="800">
                     ✓
                   </text>
                 </g>
@@ -193,24 +207,28 @@ const PhaseTree: React.FC<{
             className="absolute bottom-4 left-1/2 transform -translate-x-1/2 rounded-xl px-5 py-3 text-center pointer-events-none z-10"
             style={{
               minWidth: '220px',
-              background: '#142b1a',
-              border: '1px solid #2d6a3f',
-              boxShadow: '0 8px 32px rgba(74,222,128,0.15)',
+              background: '#1a1008',
+              border: '1px solid rgba(212,160,23,0.25)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
             }}
           >
-            <p className="text-sm font-semibold text-[#86efac]">{phase.title}</p>
+            <p className="text-sm font-semibold" style={{ color: '#f0e4c8' }}>{phase.title}</p>
             {phase.description && (
-              <p className="text-xs text-[#6b9e7a] mt-0.5 line-clamp-2">{phase.description.slice(0, 70)}...</p>
+              <p className="text-xs mt-0.5 line-clamp-2" style={{ color: '#8a7055' }}>{phase.description.slice(0, 70)}...</p>
             )}
-            <span className={`inline-block mt-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-              status === 'completed'
-                ? 'bg-green-500/20 text-green-400'
-                : status === 'active' || status === 'in_progress'
-                ? 'bg-amber-500/20 text-amber-400'
-                : status === 'ready'
-                ? 'bg-[#4ade80]/20 text-[#4ade80]'
-                : 'bg-[#1e4a28]/50 text-[#6b9e7a]'
-            }`}>
+            <span className="inline-block mt-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold"
+              style={{
+                background: status === 'completed'
+                  ? 'rgba(212,160,23,0.15)'
+                  : status === 'active' || status === 'in_progress'
+                  ? 'rgba(90,158,106,0.15)'
+                  : 'rgba(61,36,18,0.4)',
+                color: status === 'completed'
+                  ? '#D4A017'
+                  : status === 'active' || status === 'in_progress'
+                  ? '#5a9e6a'
+                  : '#8a7055',
+              }}>
               {status}
             </span>
           </div>
@@ -423,7 +441,7 @@ export const ProjectDetailPage: React.FC = () => {
     completed:   'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
     ready:       'bg-[#4ade80]/20 text-[#4ade80] border border-[#4ade80]/30',
     in_progress: 'bg-[#fbbf24]/20 text-[#fbbf24] border border-[#fbbf24]/30',
-    locked:      'bg-[#1e4a28]/30 text-[#6b9e7a] border border-[#1e4a28]',
+    locked:      'bg-[#3d2412]/30 text-[#8a7055] border border-[#3d2412]',
   };
 
   const statusLabels: Record<string, string> = {
@@ -438,13 +456,8 @@ export const ProjectDetailPage: React.FC = () => {
       <Layout>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="relative">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#4ade80] to-[#3d8a55] flex items-center justify-center mx-auto mb-4 animate-pulse">
-                <Loader2 className="h-8 w-8 animate-spin text-[#0a150e]" />
-              </div>
-              <div className="absolute inset-0 w-16 h-16 mx-auto rounded-2xl bg-[#4ade80]/20 blur-xl animate-pulse" />
-            </div>
-            <p className="text-[#6b9e7a]">Loading project...</p>
+            <div className="text-5xl mb-4 animate-bounce">🌰</div>
+            <p style={{ color: '#8a7055' }}>Loading project…</p>
           </div>
         </div>
       </Layout>
@@ -455,8 +468,8 @@ export const ProjectDetailPage: React.FC = () => {
     return (
       <Layout>
         <div className="text-center py-16">
-          <h2 className="text-2xl font-bold text-[#e8f5e0] mb-4">Project not found</h2>
-          <Button onClick={() => navigate('/projects')} className="bg-gradient-to-r from-[#4ade80] to-[#3d8a55] text-[#0a150e]">Back to Projects</Button>
+          <h2 className="text-2xl font-bold text-[#f0e4c8] mb-4">Project not found</h2>
+          <Button onClick={() => navigate('/projects')} className="bg-gradient-to-r from-[#4ade80] to-[#3d8a55] text-[#130c07]">Back to Projects</Button>
         </div>
       </Layout>
     );
@@ -472,7 +485,7 @@ export const ProjectDetailPage: React.FC = () => {
         callback={handleTourCallback}
         styles={{
           options: {
-            primaryColor: '#4ade80',
+            primaryColor: '#D4A017',
           },
         }}
       />
@@ -485,55 +498,65 @@ export const ProjectDetailPage: React.FC = () => {
         )}
 
         {/* Project Header Card */}
-        <div className="bg-[#0f1f15] border border-[#1e4a28]/50 rounded-2xl shadow-lg overflow-hidden">
-          {/* Header gradient bar - forest green */}
-          <div className="h-1.5 bg-gradient-to-r from-[#4ade80] to-[#3d8a55]" />
+        <div className="rounded-2xl shadow-lg overflow-hidden"
+          style={{ background: '#1a1008', border: '1px solid #3d2412' }}>
+          {/* Header gradient bar - amber */}
+          <div className="h-1.5" style={{ background: 'linear-gradient(90deg, #D4A017, #c8870f, #8B5E3C)' }} />
 
           <div className="p-4 sm:p-6 space-y-4 sm:space-y-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <button
                 onClick={() => navigate('/projects')}
-                className="inline-flex items-center text-sm font-medium text-[#6b9e7a] hover:text-[#4ade80] transition-colors"
+                className="inline-flex items-center text-sm font-medium transition-colors"
+                style={{ color: '#8a7055' }}
+                onMouseEnter={e => (e.currentTarget.style.color = '#D4A017')}
+                onMouseLeave={e => (e.currentTarget.style.color = '#8a7055')}
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Projects
+                Back to Grove
               </button>
               <div className="flex items-center gap-2 sm:gap-3">
-                <Button variant="outline" onClick={() => goToDraft('overview')} className="text-xs sm:text-sm px-2 sm:px-4 border-[#1e4a28] text-[#6b9e7a] hover:border-[#4ade80]/50 hover:text-[#4ade80]">
+                <Button variant="outline" onClick={() => goToDraft('overview')}
+                  className="text-xs sm:text-sm px-2 sm:px-4"
+                  style={{ borderColor: '#3d2412', color: '#8a7055' }}>
                   <span className="hidden sm:inline">Open </span>Draft
                 </Button>
                 <Button
-                  className="bg-gradient-to-r from-[#4ade80] to-[#3d8a55] hover:from-[#86efac] hover:to-[#4ade80] text-[#0a150e] font-semibold shadow-lg shadow-[#4ade80]/20 text-xs sm:text-sm px-2 sm:px-4"
+                  className="text-xs sm:text-sm px-2 sm:px-4 font-semibold shadow-lg"
+                  style={{ background: 'linear-gradient(135deg, #D4A017, #c8870f)', color: '#130c07', boxShadow: '0 4px 14px rgba(212,160,23,0.3)' }}
                   onClick={() => navigate(`/projects/${project.project_id || project.id}/phases/${phaseConfigs[0]?.id}`)}
                 >
-                  <span className="hidden sm:inline">Continue </span>Planning
+                  <span className="hidden sm:inline">Continue </span>Planning 🌱
                 </Button>
               </div>
             </div>
 
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="space-y-2">
-                <h1 className="text-xl sm:text-2xl font-bold text-[#e8f5e0]">{project.name}</h1>
+                <h1 className="text-xl sm:text-2xl font-bold" style={{ color: '#f0e4c8' }}>{project.name}</h1>
                 {project.description && (
-                  <p className="text-[#6b9e7a] max-w-2xl">{project.description}</p>
+                  <p className="max-w-2xl" style={{ color: '#8a7055' }}>{project.description}</p>
                 )}
               </div>
               <div className="flex flex-wrap gap-2">
-                <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-[#4ade80]/20 text-[#4ade80] border border-[#4ade80]/30 text-xs font-semibold uppercase tracking-wide">
+                <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide"
+                  style={{ background: 'rgba(212,160,23,0.12)', color: '#D4A017', border: '1px solid rgba(212,160,23,0.3)' }}>
                   {project.status}
                 </span>
-                <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-[#1e4a28]/50 text-[#a8d5a8] border border-[#1e4a28] text-xs font-medium">
+                <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium"
+                  style={{ background: 'rgba(61,36,18,0.5)', color: '#c8b090', border: '1px solid #3d2412' }}>
                   {project.template_type.replace('_', ' ')}
                 </span>
-                <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-[#86efac]/10 text-[#86efac] border border-[#86efac]/30 text-xs font-medium">
+                <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium"
+                  style={{ background: 'rgba(90,158,106,0.1)', color: '#5a9e6a', border: '1px solid rgba(90,158,106,0.25)' }}>
                   {project.owner_name || 'Unassigned'}
                 </span>
               </div>
             </div>
 
             {/* Workspace Preset Switcher */}
-            <div className="pt-4 border-t border-[#1e4a28]/50">
-              <p className="text-xs font-semibold uppercase tracking-wider text-[#6b9e7a] mb-3">Workspace Mode</p>
+            <div className="pt-4" style={{ borderTop: '1px solid #3d2412' }}>
+              <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: '#5c3820' }}>Workspace Mode</p>
               <div className="flex flex-wrap items-center gap-2">
                 {workspacePresets.map((preset) => {
                   const isActive = preset.id === activePreset;
@@ -543,17 +566,19 @@ export const ProjectDetailPage: React.FC = () => {
                       onClick={() => handlePresetChange(preset.id)}
                       disabled={updatingPreset}
                       className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                        isActive
-                          ? 'bg-[#4ade80] text-[#0a150e] shadow-lg shadow-[#4ade80]/20'
-                          : 'bg-[#1a3520] text-[#6b9e7a] hover:bg-[#1e4a28] hover:text-[#e8f5e0] border border-[#1e4a28]'
-                      } ${updatingPreset ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        updatingPreset ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
+                      style={isActive
+                        ? { background: '#D4A017', color: '#130c07', boxShadow: '0 4px 12px rgba(212,160,23,0.3)' }
+                        : { background: '#221508', color: '#8a7055', border: '1px solid #3d2412' }
+                      }
                     >
                       {preset.label}
                     </button>
                   );
                 })}
               </div>
-              <p className="text-xs text-[#6b9e7a] mt-2">{presetConfig.description}</p>
+              <p className="text-xs mt-2" style={{ color: '#5c3820' }}>{presetConfig.description}</p>
             </div>
           </div>
         </div>
@@ -562,34 +587,34 @@ export const ProjectDetailPage: React.FC = () => {
         <div className={`grid gap-4 sm:gap-6 ${showSummaryPanel ? 'lg:grid-cols-[280px_minmax(0,1fr)]' : ''}`}>
           {showSummaryPanel && (
             <aside className="space-y-6 side-summary">
-              <div className="bg-[#0f1f15] border border-[#1e4a28]/50 rounded-2xl p-4 sm:p-6 shadow-lg space-y-4 sm:space-y-6">
+              <div className="bg-[#1a1008] border border-[#3d2412]/50 rounded-2xl p-4 sm:p-6 shadow-lg space-y-4 sm:space-y-6">
                 <div>
-                  <h2 className="text-lg font-bold text-[#e8f5e0]">Project Summary</h2>
-                  <dl className="mt-4 space-y-3 text-sm text-[#6b9e7a]">
+                  <h2 className="text-lg font-bold text-[#f0e4c8]">Project Summary</h2>
+                  <dl className="mt-4 space-y-3 text-sm text-[#8a7055]">
                     <div className="flex justify-between">
                       <span>Status</span>
                       <span className="font-medium text-[#4ade80]">{project.status}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Type</span>
-                      <span className="font-medium text-[#e8f5e0]">{project.template_type.replace('_', ' ')}</span>
+                      <span className="font-medium text-[#f0e4c8]">{project.template_type.replace('_', ' ')}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Owner</span>
-                      <span className="font-medium text-[#e8f5e0]">{project.owner_name || 'Unassigned'}</span>
+                      <span className="font-medium text-[#f0e4c8]">{project.owner_name || 'Unassigned'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Created</span>
-                      <span className="font-medium text-[#e8f5e0]">{formatDate(project.created_at)}</span>
+                      <span className="font-medium text-[#f0e4c8]">{formatDate(project.created_at)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Updated</span>
-                      <span className="font-medium text-[#e8f5e0]">{formatDate(project.updated_at)}</span>
+                      <span className="font-medium text-[#f0e4c8]">{formatDate(project.updated_at)}</span>
                     </div>
                   </dl>
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-[#6b9e7a] mb-3">Key Metrics</h3>
+                  <h3 className="text-sm font-semibold text-[#8a7055] mb-3">Key Metrics</h3>
                   <div className="grid grid-cols-2 gap-3">
                     {[
                       { label: 'Requirements', value: requirements.length, phase: 'requirements_gathering' },
@@ -600,15 +625,15 @@ export const ProjectDetailPage: React.FC = () => {
                       <button
                         key={metric.label}
                         onClick={() => navigate(`/projects/${project.project_id || project.id}/phases/${metric.phase}`)}
-                        className="rounded-xl border border-[#1e4a28] px-3 py-4 bg-[#142b1a] text-center hover:border-[#4ade80]/50 hover:bg-[#1a3520] transition-all cursor-pointer group"
+                        className="rounded-xl border border-[#3d2412] px-3 py-4 bg-[#221508] text-center hover:border-[#4ade80]/50 hover:bg-[#2c1b0e] transition-all cursor-pointer group"
                       >
-                        <div className="text-2xl font-semibold text-[#e8f5e0] group-hover:text-[#4ade80] transition-colors">{metric.value}</div>
-                        <div className="text-xs text-[#6b9e7a] group-hover:text-[#4ade80]/80 transition-colors">{metric.label}</div>
+                        <div className="text-2xl font-semibold text-[#f0e4c8] group-hover:text-[#4ade80] transition-colors">{metric.value}</div>
+                        <div className="text-xs text-[#8a7055] group-hover:text-[#4ade80]/80 transition-colors">{metric.label}</div>
                       </button>
                     ))}
                   </div>
                 </div>
-                <div className="text-sm text-[#6b9e7a]">
+                <div className="text-sm text-[#8a7055]">
                   <p className="mb-2">Need to unlock future workstream?</p>
                   <span
                     role="button"
@@ -627,26 +652,26 @@ export const ProjectDetailPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-[#0f1f15] border border-[#1e4a28]/50 rounded-2xl p-6 shadow-lg space-y-3">
+              <div className="bg-[#1a1008] border border-[#3d2412]/50 rounded-2xl p-6 shadow-lg space-y-3">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-base font-semibold text-[#e8f5e0]">Project Brief</h2>
-                  <Button variant="outline" size="sm" onClick={() => goToDraft('overview')} className="border-[#1e4a28] text-[#6b9e7a] hover:border-[#4ade80]/50 hover:text-[#4ade80]">
+                  <h2 className="text-base font-semibold text-[#f0e4c8]">Project Brief</h2>
+                  <Button variant="outline" size="sm" onClick={() => goToDraft('overview')} className="border-[#3d2412] text-[#8a7055] hover:border-[#4ade80]/50 hover:text-[#4ade80]">
                     Open Draft
                   </Button>
                 </div>
-                <p className="text-sm text-[#6b9e7a] whitespace-pre-wrap">
+                <p className="text-sm text-[#8a7055] whitespace-pre-wrap">
                   {project.brief_text || 'No brief provided.'}
                 </p>
               </div>
 
-              <div className="bg-[#0f1f15] border border-[#1e4a28]/50 rounded-2xl p-6 shadow-lg space-y-4">
-                <h2 className="text-base font-semibold text-[#e8f5e0]">Governance &amp; Updates</h2>
-                <p className="text-sm text-[#6b9e7a]">Manage membership, branching, and development logs.</p>
+              <div className="bg-[#1a1008] border border-[#3d2412]/50 rounded-2xl p-6 shadow-lg space-y-4">
+                <h2 className="text-base font-semibold text-[#f0e4c8]">Governance &amp; Updates</h2>
+                <p className="text-sm text-[#8a7055]">Manage membership, branching, and development logs.</p>
                 <div className="flex flex-col gap-2">
-                  <Button variant="outline" onClick={() => navigate(`/projects/${project.project_id || project.id}/governance`)} className="border-[#1e4a28] text-[#6b9e7a] hover:border-[#4ade80]/50 hover:text-[#4ade80]">
+                  <Button variant="outline" onClick={() => navigate(`/projects/${project.project_id || project.id}/governance`)} className="border-[#3d2412] text-[#8a7055] hover:border-[#4ade80]/50 hover:text-[#4ade80]">
                     Governance hub
                   </Button>
-                  <Button onClick={() => navigate(`/projects/${project.project_id || project.id}/updates`)} className="bg-gradient-to-r from-[#4ade80] to-[#3d8a55] text-[#0a150e] font-semibold">
+                  <Button onClick={() => navigate(`/projects/${project.project_id || project.id}/updates`)} className="bg-gradient-to-r from-[#4ade80] to-[#3d8a55] text-[#130c07] font-semibold">
                     Development updates
                   </Button>
                 </div>
@@ -656,21 +681,21 @@ export const ProjectDetailPage: React.FC = () => {
 
           <div className="space-y-4 sm:space-y-6">
             {/* Phases Section */}
-            <div className="bg-[#0f1f15] border border-[#1e4a28]/50 rounded-2xl p-4 sm:p-6 shadow-lg phase-board">
+            <div className="bg-[#1a1008] border border-[#3d2412]/50 rounded-2xl p-4 sm:p-6 shadow-lg phase-board">
               <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
                 <div>
-                  <h2 className="text-lg sm:text-xl font-semibold text-[#e8f5e0]">Project Phases</h2>
-                  <p className="text-xs sm:text-sm text-[#6b9e7a] hidden sm:block">
+                  <h2 className="text-lg sm:text-xl font-semibold text-[#f0e4c8]">Project Phases</h2>
+                  <p className="text-xs sm:text-sm text-[#8a7055] hidden sm:block">
                     Click any leaf to work on that phase. Green = complete, amber = in progress.
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
                   {/* View toggle */}
-                  <div className="flex items-center bg-[#142b1a] rounded-xl p-1 border border-[#1e4a28]/50">
+                  <div className="flex items-center bg-[#221508] rounded-xl p-1 border border-[#3d2412]/50">
                     <button
                       onClick={() => setTreeView(true)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                        treeView ? 'bg-[#4ade80] text-[#0a150e]' : 'text-[#6b9e7a] hover:text-[#e8f5e0]'
+                        treeView ? 'bg-[#4ade80] text-[#130c07]' : 'text-[#8a7055] hover:text-[#f0e4c8]'
                       }`}
                     >
                       Tree
@@ -678,13 +703,13 @@ export const ProjectDetailPage: React.FC = () => {
                     <button
                       onClick={() => setTreeView(false)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                        !treeView ? 'bg-[#4ade80] text-[#0a150e]' : 'text-[#6b9e7a] hover:text-[#e8f5e0]'
+                        !treeView ? 'bg-[#4ade80] text-[#130c07]' : 'text-[#8a7055] hover:text-[#f0e4c8]'
                       }`}
                     >
                       List
                     </button>
                   </div>
-                  <Button variant="outline" size="sm" onClick={handleExportAllPhases} disabled={!Object.keys(phaseOutputs).length} className="border-[#1e4a28] text-[#6b9e7a] hover:border-[#4ade80]/50 hover:text-[#4ade80]">
+                  <Button variant="outline" size="sm" onClick={handleExportAllPhases} disabled={!Object.keys(phaseOutputs).length} className="border-[#3d2412] text-[#8a7055] hover:border-[#4ade80]/50 hover:text-[#4ade80]">
                     Export All
                   </Button>
                 </div>
@@ -702,26 +727,26 @@ export const ProjectDetailPage: React.FC = () => {
                   />
 
                   {/* Phase color legend */}
-                  <div className="flex flex-wrap items-center gap-4 mt-4 pt-4 border-t border-[#1e4a28]/30">
+                  <div className="flex flex-wrap items-center gap-4 mt-4 pt-4 border-t border-[#3d2412]/30">
                     <div className="flex items-center gap-2">
                       <div className="w-3.5 h-3.5 rounded-full bg-[#4ade80]" />
-                      <span className="text-xs text-[#6b9e7a]">Completed</span>
+                      <span className="text-xs text-[#8a7055]">Completed</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-3.5 h-3.5 rounded-full bg-[#fbbf24]" />
-                      <span className="text-xs text-[#6b9e7a]">In Progress</span>
+                      <span className="text-xs text-[#8a7055]">In Progress</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-3.5 h-3.5 rounded-full bg-[#86efac]" />
-                      <span className="text-xs text-[#6b9e7a]">Ready</span>
+                      <span className="text-xs text-[#8a7055]">Ready</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="w-3.5 h-3.5 rounded-full bg-[#1e4a28] border border-[#2d6a3f]" />
-                      <span className="text-xs text-[#6b9e7a]">Locked</span>
+                      <div className="w-3.5 h-3.5 rounded-full bg-[#3d2412] border border-[#2d6a3f]" />
+                      <span className="text-xs text-[#8a7055]">Locked</span>
                     </div>
                     <div className="flex items-center gap-2 ml-auto">
                       <div className="w-3.5 h-3.5 rounded-full bg-[#fbbf24]" />
-                      <span className="text-xs text-[#6b9e7a]">dot = output available</span>
+                      <span className="text-xs text-[#8a7055]">dot = output available</span>
                     </div>
                   </div>
                 </div>
@@ -735,7 +760,7 @@ export const ProjectDetailPage: React.FC = () => {
                         ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                         : status === 'active' || status === 'planning'
                         ? 'bg-[#fbbf24]/20 text-[#fbbf24] border border-[#fbbf24]/30'
-                        : 'bg-[#1e4a28]/30 text-[#6b9e7a] border border-[#1e4a28]';
+                        : 'bg-[#3d2412]/30 text-[#8a7055] border border-[#3d2412]';
                     const pillLabel = statusLabels[status] || status;
                     const hasOutput = Boolean(phaseOutputs[phase.id]);
 
@@ -751,7 +776,7 @@ export const ProjectDetailPage: React.FC = () => {
                             navigate(`/projects/${project.project_id || project.id}/phases/${phase.id}`);
                           }
                         }}
-                        className={`w-full text-left ${phaseRowPadding} hover:bg-[#1a3520] transition cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4ade80] rounded-xl`}
+                        className={`w-full text-left ${phaseRowPadding} hover:bg-[#2c1b0e] transition cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4ade80] rounded-xl`}
                       >
                         <div className="flex items-start gap-3 sm:gap-4">
                           <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#4ade80]/20 text-[#4ade80] border border-[#4ade80]/30 flex items-center justify-center text-xs sm:text-sm font-semibold flex-shrink-0">
@@ -759,7 +784,7 @@ export const ProjectDetailPage: React.FC = () => {
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex flex-wrap items-center justify-between gap-3">
-                              <p className={`font-semibold text-[#e8f5e0] ${condensePhases ? 'text-sm' : 'text-base'}`}>{phase.title}</p>
+                              <p className={`font-semibold text-[#f0e4c8] ${condensePhases ? 'text-sm' : 'text-base'}`}>{phase.title}</p>
                               <div className="flex items-center gap-2">
                                 <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${pillClass}`}>
                                   {pillLabel}
@@ -786,7 +811,7 @@ export const ProjectDetailPage: React.FC = () => {
                                 )}
                               </div>
                             </div>
-                            <p className={`mt-1 text-[#6b9e7a] line-clamp-2 ${condensePhases ? 'text-xs' : 'text-sm'}`}>{phase.description}</p>
+                            <p className={`mt-1 text-[#8a7055] line-clamp-2 ${condensePhases ? 'text-xs' : 'text-sm'}`}>{phase.description}</p>
                           </div>
                         </div>
                       </div>
@@ -797,24 +822,24 @@ export const ProjectDetailPage: React.FC = () => {
             </div>
 
             <div className="grid gap-4">
-              <div className="bg-[#0f1f15] border border-[#1e4a28]/50 rounded-2xl p-6 shadow-lg">
-                <h2 className="text-base font-semibold text-[#e8f5e0] mb-4">Project Details</h2>
-                <dl className="space-y-3 text-sm text-[#6b9e7a]">
+              <div className="bg-[#1a1008] border border-[#3d2412]/50 rounded-2xl p-6 shadow-lg">
+                <h2 className="text-base font-semibold text-[#f0e4c8] mb-4">Project Details</h2>
+                <dl className="space-y-3 text-sm text-[#8a7055]">
                   <div className="flex justify-between">
                     <span>Type</span>
-                    <span className="font-medium text-[#e8f5e0]">{project.template_type.replace('_', ' ')}</span>
+                    <span className="font-medium text-[#f0e4c8]">{project.template_type.replace('_', ' ')}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Owner</span>
-                    <span className="font-medium text-[#e8f5e0]">{project.owner_name || 'Unassigned'}</span>
+                    <span className="font-medium text-[#f0e4c8]">{project.owner_name || 'Unassigned'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Created</span>
-                    <span className="font-medium text-[#e8f5e0]">{formatDate(project.created_at)}</span>
+                    <span className="font-medium text-[#f0e4c8]">{formatDate(project.created_at)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Last Updated</span>
-                    <span className="font-medium text-[#e8f5e0]">{formatDate(project.updated_at)}</span>
+                    <span className="font-medium text-[#f0e4c8]">{formatDate(project.updated_at)}</span>
                   </div>
                 </dl>
               </div>

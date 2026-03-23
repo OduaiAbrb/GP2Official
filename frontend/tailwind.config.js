@@ -7,50 +7,52 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Deep Forest / Nature Theme
+        // Bark Brown — primary backgrounds
+        bark: {
+          950: '#0c0702',
+          900: '#130c07',
+          850: '#1a1008',
+          800: '#221508',
+          750: '#2c1b0e',
+          700: '#3d2412',
+          600: '#5c3820',
+          500: '#8B5E3C',
+          400: '#c8895a',
+          300: '#e0b88a',
+        },
+        // Amber/Acorn Gold — primary accent
+        amber: {
+          900: '#1a0f00',
+          700: '#7a4c00',
+          600: '#a86d0e',
+          500: '#c8870f',
+          400: '#D4A017',
+          300: '#e8bf40',
+          200: '#f5df90',
+        },
+        // Forest Green — nature accent
         forest: {
           950: '#040a06',
-          900: '#0a150e',
-          850: '#0f1f15',
-          800: '#142b1a',
+          900: '#0a1a0e',
+          850: '#12241a',
+          800: '#162b1a',
           750: '#1a3520',
-          700: '#1e4a28',
-          600: '#2d6a3f',
-          500: '#3d8a55',
-          400: '#4ade80',
-          300: '#86efac',
-          200: '#bbf7d0',
-        },
-        bark: {
-          900: '#1c0f09',
-          800: '#2c1810',
-          700: '#3d2b1f',
-          600: '#5c4033',
+          700: '#1e3d25',
+          600: '#2d5c35',
+          500: '#3d7a4a',
+          400: '#5a9e6a',
+          300: '#7aba8a',
+          200: '#a8d5a8',
         },
         sage: {
           900: '#1a2b1e',
           800: '#2d4a35',
-          700: '#4a7a56',
-          600: '#6b9e7a',
-          500: '#8fbc8f',
-          400: '#a8d5a8',
+          700: '#6a5a40',
+          600: '#8a7055',
+          500: '#a88e6e',
+          400: '#c8b090',
         },
-        moss: {
-          900: '#0d1f10',
-          800: '#162b1a',
-          700: '#1e3d25',
-          600: '#2a5233',
-        },
-        amber: {
-          900: '#1a1000',
-          700: '#92400e',
-          600: '#b45309',
-          500: '#d97706',
-          400: '#fbbf24',
-          300: '#fcd34d',
-          200: '#fde68a',
-        },
-        // Teal — Costs & Benefits phase
+        // Phase-specific colors (keep all for backwards compat)
         teal: {
           900: '#0a1e1c',
           800: '#0d2b28',
@@ -60,7 +62,6 @@ module.exports = {
           400: '#3bbcad',
           300: '#7dd5ca',
         },
-        // Plum — System Design phase
         plum: {
           900: '#150e20',
           800: '#1e1430',
@@ -70,7 +71,6 @@ module.exports = {
           400: '#8B68B0',
           300: '#b49dd0',
         },
-        // Rust — Risks phase
         rust: {
           900: '#1a0800',
           800: '#2a0e00',
@@ -80,17 +80,12 @@ module.exports = {
           400: '#e05a24',
           300: '#f08050',
         },
-        // Extended bark palette
-        bark: {
-          900: '#1c0f09',
-          800: '#2c1810',
-          700: '#3d2b1f',
-          600: '#5c4033',
-          500: '#8B5E3C',
-          400: '#a87850',
-          300: '#c89870',
+        moss: {
+          900: '#0d1f10',
+          800: '#162b1a',
+          700: '#1e3d25',
+          600: '#2a5233',
         },
-        // Slate — Validation phase
         slate: {
           900: '#0d1419',
           800: '#152030',
@@ -123,6 +118,8 @@ module.exports = {
         'rotate-slow': 'rotate-slow 20s linear infinite',
         'leaf-sway': 'leafSway 4s ease-in-out infinite',
         'branch-grow': 'branchGrow 1.5s cubic-bezier(0.19, 1, 0.22, 1) forwards',
+        'acorn-drop': 'acornDrop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+        'leaf-grow': 'leafGrow 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
       },
       keyframes: {
         revealUp: {
@@ -176,8 +173,8 @@ module.exports = {
           '75%': { transform: 'translateY(10px) rotate(-1deg)' },
         },
         glow: {
-          '0%, 100%': { boxShadow: '0 0 20px rgba(74, 222, 128, 0.3)' },
-          '50%': { boxShadow: '0 0 40px rgba(74, 222, 128, 0.6), 0 0 60px rgba(74, 222, 128, 0.3)' },
+          '0%, 100%': { boxShadow: '0 0 20px rgba(212, 160, 23, 0.3)' },
+          '50%': { boxShadow: '0 0 40px rgba(212, 160, 23, 0.6), 0 0 60px rgba(212, 160, 23, 0.3)' },
         },
         'shimmer-forest': {
           '0%': { backgroundPosition: '-200% center' },
@@ -199,17 +196,27 @@ module.exports = {
           '0%': { strokeDashoffset: '1000', opacity: '0' },
           '100%': { strokeDashoffset: '0', opacity: '1' },
         },
+        acornDrop: {
+          '0%': { transform: 'translateY(-8px) scale(0.85)', opacity: '0' },
+          '60%': { transform: 'translateY(2px) scale(1.05)' },
+          '100%': { transform: 'translateY(0) scale(1)', opacity: '1' },
+        },
+        leafGrow: {
+          '0%': { transform: 'scale(0) rotate(-20deg)', opacity: '0' },
+          '60%': { transform: 'scale(1.1) rotate(3deg)' },
+          '100%': { transform: 'scale(1) rotate(0deg)', opacity: '1' },
+        },
       },
       boxShadow: {
-        'forest': '0 4px 20px -4px rgba(74, 222, 128, 0.3)',
-        'forest-lg': '0 8px 30px -4px rgba(74, 222, 128, 0.4)',
+        'amber': '0 4px 20px -4px rgba(212, 160, 23, 0.4)',
+        'amber-lg': '0 8px 30px -4px rgba(212, 160, 23, 0.5)',
+        'forest': '0 4px 20px -4px rgba(90, 158, 106, 0.25)',
         'bark': '0 4px 20px -4px rgba(61, 43, 31, 0.5)',
-        'amber': '0 4px 20px -4px rgba(251, 191, 36, 0.3)',
       },
       backgroundImage: {
-        'gradient-forest': 'linear-gradient(135deg, #4ade80 0%, #2d6a3f 100%)',
-        'gradient-bark': 'linear-gradient(135deg, #1e4a28 0%, #0f1f15 100%)',
-        'gradient-canopy': 'linear-gradient(135deg, #86efac 0%, #4ade80 50%, #2d6a3f 100%)',
+        'gradient-amber': 'linear-gradient(135deg, #D4A017 0%, #c8870f 100%)',
+        'gradient-bark': 'linear-gradient(135deg, #3d2412 0%, #1a1008 100%)',
+        'gradient-forest': 'linear-gradient(135deg, #5a9e6a 0%, #2d5c35 100%)',
       },
     },
   },

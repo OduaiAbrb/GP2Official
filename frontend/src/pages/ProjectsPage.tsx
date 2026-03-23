@@ -1,54 +1,442 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { Layout } from '@/components/Layout';
 import {
-  Plus,
-  FolderOpen,
-  Calendar,
-  Upload,
-  Lightbulb,
-  HelpCircle,
-  MoreVertical,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  Loader2,
-  Sparkles,
-  ArrowRight,
-  TrendingUp,
-  Search,
-  Filter,
-  Grid3X3,
-  List,
-  Trash2,
-  Edit3,
-  ExternalLink,
-  BarChart3,
-  FileText,
-  Building2,
-  Briefcase,
-  Users,
-  TreePine
+  Plus, Search, Trash2, Edit3, ExternalLink, MoreVertical,
+  Grid3X3, List, Calendar, FileText, Clock, CheckCircle,
+  AlertCircle, Loader2, TrendingUp
 } from 'lucide-react';
 import type { Project } from '@/types';
 
-const quickActions = [
-  { icon: Plus,       label: 'New Project',   description: 'Start from scratch',       action: 'new',     color: 'forest' },
-  { icon: Upload,     label: 'Import',         description: 'Upload documents',          action: 'import',  color: 'sage' },
-  { icon: Lightbulb, label: 'AI Insights',    description: 'Get recommendations',       action: 'insights',color: 'amber' },
-  { icon: HelpCircle,label: 'Documentation',  description: 'Learn more',                action: 'docs',    color: 'green' },
-];
+// ── Acorn SVG ────────────────────────────────────────────────────────────────
+const AcornSVG: React.FC<{ size?: number; golden?: boolean; className?: string }> = ({
+  size = 48, golden = false, className = ''
+}) => (
+  <svg width={size} height={size * 1.25} viewBox="0 0 48 60" fill="none" className={className}>
+    {golden && <ellipse cx="24" cy="54" rx="20" ry="5" fill="rgba(212,160,23,0.3)" />}
+    <ellipse cx="24" cy="18" rx="17" ry="10" fill={golden ? '#5c3820' : '#3d2412'} />
+    <ellipse cx="24" cy="18" rx="13" ry="7" fill={golden ? '#3d2412' : '#221508'} />
+    <rect x="22" y="8" width="4" height="12" rx="2" fill={golden ? '#3d2412' : '#221508'} />
+    <ellipse cx="24" cy="42" rx="16" ry="20" fill={golden ? '#D4A017' : '#8B5E3C'} />
+    <ellipse cx="24" cy="37" rx="13" ry="17" fill={golden ? '#e8bf40' : '#c8895a'} />
+    <ellipse cx="18" cy="33" rx="4" ry="6" fill="rgba(255,255,255,0.12)" />
+    {golden && (
+      <>
+        <circle cx="36" cy="22" r="3" fill="#f5df90" opacity="0.8" style={{ animation: 'pulse 2s ease-in-out infinite' }} />
+        <circle cx="38" cy="28" r="2" fill="#f5df90" opacity="0.6" />
+      </>
+    )}
+  </svg>
+);
 
+// ── Leaf SVG (live project = green leaf) ─────────────────────────────────────
+const LeafSVG: React.FC<{ size?: number; color?: string }> = ({ size = 44, color = '#3d7a4a' }) => (
+  <svg width={size} height={size} viewBox="0 0 44 44" fill="none">
+    <path
+      d="M22 40 C22 40 8 30 6 18 C4 8 14 4 22 6 C30 4 40 8 38 18 C36 30 22 40 22 40Z"
+      fill={color} stroke="rgba(255,255,255,0.1)" strokeWidth="1"
+    />
+    <path d="M22 40 L22 10" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" strokeLinecap="round" />
+    <path d="M22 28 L12 20" stroke="rgba(255,255,255,0.15)" strokeWidth="1" strokeLinecap="round" />
+    <path d="M22 22 L30 16" stroke="rgba(255,255,255,0.15)" strokeWidth="1" strokeLinecap="round" />
+    <path d="M22 34 L14 28" stroke="rgba(255,255,255,0.12)" strokeWidth="1" strokeLinecap="round" />
+  </svg>
+);
+
+// ── Living Projects Tree SVG ─────────────────────────────────────────────────
+interface ProjectNodeData {
+  project: Project;
+  x: number;
+  y: number;
+  angle: number;
+  branchLength: number;
+}
+
+const ProjectsTree: React.FC<{
+  projects: Project[];
+  onProjectClick: (id: string) => void;
+  onDeleteProject: (id: string) => void;
+  onNewProject: () => void;
+}> = ({ projects, onProjectClick, onDeleteProject, onNewProject }) => {
+  const [hovered, setHovered] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
+
+  // Arrange projects in a tree
+  const nodeData: ProjectNodeData[] = projects.slice(0, 12).map((p, i) => {
+    const total = Math.max(projects.length, 1);
+    const angle = -90 + (i / Math.max(total, 1)) * 180;
+    const rad = (angle * Math.PI) / 180;
+    const branchLength = 130 + (i % 3) * 35;
+    const spread = (i % 2 === 0 ? -1 : 1) * (30 + (Math.floor(i / 2) * 20));
+    return {
+      project: p,
+      x: 400 + Math.cos(rad) * branchLength + spread,
+      y: 300 - Math.abs(Math.sin(rad)) * branchLength * 0.8 + (i % 3) * 10,
+      angle,
+      branchLength,
+    };
+  });
+
+  const isCompleted = (p: Project) =>
+    (p.status || '').toLowerCase() === 'completed';
+  const isActive = (p: Project) =>
+    ['active', 'planning', 'in_progress'].includes((p.status || '').toLowerCase());
+
+  const getNodeColor = (p: Project) => {
+    if (isCompleted(p)) return '#D4A017';
+    if (isActive(p)) return '#3d7a4a';
+    return '#5c3820';
+  };
+
+  const selectedProject = projects.find(p => (p.id || p.project_id) === selected);
+
+  return (
+    <div className="relative w-full" style={{ height: 600 }}>
+      <svg width="100%" height="100%" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
+        {/* Ground shadow */}
+        <ellipse cx="400" cy="598" rx="120" ry="10" fill="#0c0702" fillOpacity="0.6" />
+
+        {/* Roots */}
+        {[
+          [400, 560, 340, 598, 8],
+          [400, 570, 460, 598, 8],
+          [400, 575, 290, 598, 6],
+          [400, 580, 510, 598, 6],
+          [400, 585, 240, 598, 4],
+          [400, 580, 555, 598, 4],
+        ].map(([x1, y1, x2, y2, w], i) => (
+          <line key={i}
+            x1={x1} y1={y1} x2={x2} y2={y2}
+            stroke="#2c1b0e" strokeWidth={w} strokeLinecap="round"
+            opacity={0.8 - i * 0.08}
+          />
+        ))}
+
+        {/* Trunk */}
+        <path d="M 400 560 C 400 540, 398 500, 400 450 C 402 400, 400 370, 400 340"
+          stroke="#3d2412" strokeWidth="22" fill="none" strokeLinecap="round" />
+        <path d="M 400 560 C 400 540, 398 500, 400 450 C 402 400, 400 370, 400 340"
+          stroke="#5c3820" strokeWidth="12" fill="none" strokeLinecap="round" opacity="0.5" />
+        <path d="M 400 560 C 400 540, 398 500, 400 450 C 402 400, 400 370, 400 340"
+          stroke="#8B5E3C" strokeWidth="5" fill="none" strokeLinecap="round" opacity="0.25" />
+
+        {/* Branch to each project */}
+        {nodeData.map((nd, i) => {
+          const proj = nd.project;
+          const pid = proj.id || proj.project_id || '';
+          const midX = (400 + nd.x) / 2;
+          const midY = (340 + nd.y) / 2;
+          const branchColor = isCompleted(proj) ? '#8B5E3C' : '#3d2412';
+          const isHov = hovered === pid;
+
+          return (
+            <path key={pid}
+              d={`M 400 340 C ${midX} ${midY - 30}, ${nd.x} ${nd.y + 30}, ${nd.x} ${nd.y}`}
+              stroke={isHov ? '#5c3820' : branchColor}
+              strokeWidth={isHov ? 5 : 3.5}
+              fill="none"
+              strokeLinecap="round"
+              style={{ transition: 'stroke 0.3s ease, stroke-width 0.3s ease' }}
+            />
+          );
+        })}
+
+        {/* "New Project" bud */}
+        <g
+          onClick={onNewProject}
+          style={{ cursor: 'pointer' }}
+          onMouseEnter={() => setHovered('__new')}
+          onMouseLeave={() => setHovered(null)}
+        >
+          <circle cx="400" cy="320" r={hovered === '__new' ? 28 : 22}
+            fill={hovered === '__new' ? 'rgba(212,160,23,0.2)' : 'rgba(212,160,23,0.08)'}
+            stroke="#D4A017" strokeWidth="2" strokeDasharray="5 3"
+            style={{ transition: 'all 0.3s ease' }}
+          />
+          <text x="400" y="316" textAnchor="middle" fill="#D4A017" fontSize="18" fontWeight="700">+</text>
+          <text x="400" y="330" textAnchor="middle" fill="#D4A017" fontSize="7.5" fontWeight="600">New Project</text>
+        </g>
+
+        {/* Project nodes */}
+        {nodeData.map((nd) => {
+          const proj = nd.project;
+          const pid  = proj.id || proj.project_id || '';
+          const isHov = hovered === pid;
+          const done  = isCompleted(proj);
+          const active = isActive(proj);
+          const r     = isHov ? 46 : 40;
+
+          return (
+            <g key={pid}
+              onClick={() => { setSelected(sel => sel === pid ? null : pid); onProjectClick(pid); }}
+              onMouseEnter={() => setHovered(pid)}
+              onMouseLeave={() => setHovered(null)}
+              style={{ cursor: 'pointer' }}
+            >
+              {/* Glow ring */}
+              <circle cx={nd.x} cy={nd.y} r={r + 16}
+                fill={getNodeColor(proj)}
+                fillOpacity={isHov ? 0.18 : 0.06}
+                style={{ transition: 'all 0.35s ease' }}
+              />
+
+              {/* Leaf or acorn visual background */}
+              {done ? (
+                // Acorn shape for completed
+                <ellipse cx={nd.x} cy={nd.y} rx={r} ry={r}
+                  fill="#D4A017"
+                  stroke={isHov ? '#f5df90' : 'rgba(212,160,23,0.4)'}
+                  strokeWidth={isHov ? 3 : 1.5}
+                  style={{ transition: 'all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                    filter: isHov ? 'drop-shadow(0 0 16px rgba(212,160,23,0.6))' : 'none' }}
+                />
+              ) : active ? (
+                // Leaf-green for active
+                <ellipse cx={nd.x} cy={nd.y} rx={r} ry={r}
+                  fill="#2d5c35"
+                  stroke={isHov ? '#5a9e6a' : 'rgba(93,158,106,0.35)'}
+                  strokeWidth={isHov ? 3 : 1.5}
+                  style={{ transition: 'all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                    filter: isHov ? 'drop-shadow(0 0 14px rgba(90,158,106,0.5))' : 'none' }}
+                />
+              ) : (
+                // Bark/brown for draft
+                <ellipse cx={nd.x} cy={nd.y} rx={r} ry={r}
+                  fill="#3d2412"
+                  stroke={isHov ? '#8B5E3C' : 'rgba(92,56,32,0.4)'}
+                  strokeWidth={isHov ? 3 : 1.5}
+                  style={{ transition: 'all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                    filter: isHov ? 'drop-shadow(0 0 12px rgba(139,94,60,0.4))' : 'none' }}
+                />
+              )}
+
+              {/* Icon inside */}
+              {done ? (
+                <text x={nd.x} y={nd.y - 4} textAnchor="middle" fontSize="18">🌰</text>
+              ) : active ? (
+                <text x={nd.x} y={nd.y - 4} textAnchor="middle" fontSize="18">🍃</text>
+              ) : (
+                <text x={nd.x} y={nd.y - 4} textAnchor="middle" fontSize="16">🌿</text>
+              )}
+
+              {/* Project name */}
+              <text x={nd.x} y={nd.y + 14} textAnchor="middle"
+                fill={done ? '#0c0702' : active ? '#f0e4c8' : '#c8b090'}
+                fontSize="8" fontWeight="700" fontFamily="Inter, sans-serif"
+                style={{ pointerEvents: 'none' }}>
+                {proj.name.length > 12 ? proj.name.slice(0, 12) + '…' : proj.name}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Ambient particles */}
+        {[0,1,2,3,4,5].map(i => (
+          <circle key={i}
+            cx={100 + i * 110} cy={40 + (i % 3) * 25} r={2 + i % 2}
+            fill="#D4A017" fillOpacity={0.12 + i * 0.04}
+            style={{ animation: `float ${4 + i * 0.8}s ease-in-out ${i * 0.5}s infinite` }}
+          />
+        ))}
+      </svg>
+
+      {/* Info panel for selected/hovered project (shown next to tree) */}
+      {hovered && hovered !== '__new' && (() => {
+        const proj = projects.find(p => (p.id || p.project_id) === hovered);
+        if (!proj) return null;
+        const pid = proj.id || proj.project_id || '';
+        const done = isCompleted(proj);
+        const active = isActive(proj);
+        return (
+          <div
+            className="absolute right-4 top-1/2 -translate-y-1/2 rounded-2xl p-5 z-20 pointer-events-none"
+            style={{
+              width: 240,
+              background: '#1a1008',
+              border: `1px solid ${done ? 'rgba(212,160,23,0.35)' : active ? 'rgba(90,158,106,0.3)' : 'rgba(61,36,18,0.6)'}`,
+              boxShadow: '0 16px 48px rgba(0,0,0,0.5)',
+              animation: 'revealRight 0.2s ease-out',
+            }}
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">{done ? '🌰' : active ? '🍃' : '🌿'}</span>
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full"
+                style={{
+                  background: done ? 'rgba(212,160,23,0.15)' : active ? 'rgba(90,158,106,0.15)' : 'rgba(61,36,18,0.5)',
+                  color: done ? '#D4A017' : active ? '#5a9e6a' : '#8a7055',
+                }}>
+                {done ? 'Completed' : active ? 'Active' : 'Draft'}
+              </span>
+            </div>
+            <h4 className="font-bold mb-1 text-sm" style={{ color: '#f0e4c8' }}>{proj.name}</h4>
+            <p className="text-xs leading-relaxed mb-3 line-clamp-2" style={{ color: '#8a7055' }}>
+              {proj.description || 'No description provided'}
+            </p>
+            <p className="text-xs" style={{ color: '#5c3820' }}>
+              {new Date(proj.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            </p>
+          </div>
+        );
+      })()}
+    </div>
+  );
+};
+
+// ── Project Card (list/grid view) ────────────────────────────────────────────
+const ProjectCard: React.FC<{
+  project: Project;
+  viewMode: 'grid' | 'list';
+  index: number;
+  onOpen: () => void;
+  onDelete: () => void;
+}> = ({ project, viewMode, index, onOpen, onDelete }) => {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [hovered, setHovered] = useState(false);
+
+  const status = (project.status || 'draft').toLowerCase();
+  const done = status === 'completed';
+  const active = ['active', 'planning', 'in_progress'].includes(status);
+
+  const statusConfig = done
+    ? { icon: CheckCircle,  color: '#D4A017', bg: 'rgba(212,160,23,0.12)', border: 'rgba(212,160,23,0.3)', label: 'Completed', emoji: '🌰' }
+    : active
+    ? { icon: Loader2,      color: '#5a9e6a', bg: 'rgba(90,158,106,0.12)', border: 'rgba(90,158,106,0.3)', label: 'Active', emoji: '🍃' }
+    : { icon: Clock,        color: '#8a7055', bg: 'rgba(61,36,18,0.3)',    border: 'rgba(92,56,32,0.4)', label: 'Draft', emoji: '🌿' };
+
+  const Icon = statusConfig.icon;
+
+  const formatDate = (d: string) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  if (viewMode === 'list') {
+    return (
+      <div
+        className="group flex items-center gap-5 p-4 rounded-xl cursor-pointer transition-all duration-300 animate-reveal-up"
+        style={{
+          background: hovered ? '#221508' : '#1a1008',
+          border: `1px solid ${hovered ? 'rgba(212,160,23,0.25)' : '#3d2412'}`,
+          animationDelay: `${index * 50}ms`,
+        }}
+        onClick={onOpen}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
+        <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 text-lg"
+          style={{ background: statusConfig.bg, border: `1px solid ${statusConfig.border}` }}>
+          {statusConfig.emoji}
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold truncate transition-colors" style={{ color: hovered ? '#D4A017' : '#f0e4c8' }}>
+            {project.name}
+          </h3>
+          <p className="text-sm truncate" style={{ color: '#8a7055' }}>
+            {project.description || 'No description'}
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold flex-shrink-0"
+          style={{ background: statusConfig.bg, color: statusConfig.color, border: `1px solid ${statusConfig.border}` }}>
+          <Icon className="w-3 h-3" />
+          {statusConfig.label}
+        </div>
+        <div className="text-sm hidden md:block flex-shrink-0" style={{ color: '#5c3820' }}>
+          {formatDate(project.created_at)}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="group relative p-5 rounded-2xl cursor-pointer transition-all duration-300 animate-reveal-up"
+      style={{
+        background: '#1a1008',
+        border: `1px solid ${hovered ? 'rgba(212,160,23,0.3)' : '#3d2412'}`,
+        transform: hovered ? 'translateY(-6px)' : 'none',
+        boxShadow: hovered ? '0 12px 40px rgba(0,0,0,0.4)' : 'none',
+        animationDelay: `${index * 75}ms`,
+      }}
+      onClick={onOpen}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {/* Top shine */}
+      <div className="absolute top-0 left-0 right-0 h-px transition-opacity"
+        style={{
+          background: 'linear-gradient(90deg, transparent, rgba(212,160,23,0.6), transparent)',
+          opacity: hovered ? 1 : 0,
+        }} />
+
+      {/* Status badge */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
+          style={{ background: statusConfig.bg, color: statusConfig.color, border: `1px solid ${statusConfig.border}` }}>
+          <span>{statusConfig.emoji}</span>
+          {statusConfig.label}
+        </div>
+
+        <div className="relative" onClick={e => e.stopPropagation()}>
+          <button
+            className="p-1.5 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+            style={{ color: '#8a7055', background: '#2c1b0e' }}
+            onClick={() => setMenuOpen(!menuOpen)}
+          >
+            <MoreVertical className="w-4 h-4" />
+          </button>
+          {menuOpen && (
+            <div className="absolute top-full right-0 mt-1 w-36 rounded-xl overflow-hidden z-10"
+              style={{ background: '#221508', border: '1px solid #3d2412', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }}>
+              <button
+                className="w-full flex items-center gap-2 px-4 py-3 text-sm transition-colors"
+                style={{ color: '#c8b090' }}
+                onMouseEnter={e => (e.currentTarget.style.background = '#2c1b0e')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                onClick={() => { setMenuOpen(false); onOpen(); }}
+              >
+                <Edit3 className="w-3.5 h-3.5" /> Open
+              </button>
+              <button
+                className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-400 transition-colors"
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.08)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                onClick={() => { setMenuOpen(false); onDelete(); }}
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Delete
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <h3 className="text-lg font-semibold mb-2 line-clamp-1 transition-colors"
+        style={{ color: hovered ? '#D4A017' : '#f0e4c8' }}>
+        {project.name}
+      </h3>
+      <p className="text-sm mb-4 line-clamp-2" style={{ color: '#8a7055' }}>
+        {project.description || 'No description provided'}
+      </p>
+
+      <div className="flex items-center justify-between text-xs" style={{ color: '#5c3820' }}>
+        <div className="flex items-center gap-1.5">
+          <Calendar className="w-3.5 h-3.5" />
+          {formatDate(project.created_at)}
+        </div>
+        <div className="flex items-center gap-1.5">
+          <FileText className="w-3.5 h-3.5" />
+          {project.template_type || 'Custom'}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
 export const ProjectsPage: React.FC = () => {
   const navigate = useNavigate();
-  const [projects, setProjects]         = useState<Project[]>([]);
-  const [loading, setLoading]           = useState(true);
-  const [isVisible, setIsVisible]       = useState(false);
-  const [searchQuery, setSearchQuery]   = useState('');
-  const [viewMode, setViewMode]         = useState<'grid' | 'list'>('grid');
-  const [hoveredProject, setHoveredProject] = useState<string | null>(null);
-  const [activeMenu, setActiveMenu]     = useState<string | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading]   = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<'tree' | 'grid' | 'list'>('tree');
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     loadProjects();
@@ -59,62 +447,41 @@ export const ProjectsPage: React.FC = () => {
     try {
       const data = await api.getProjects();
       setProjects(data);
-    } catch (error) {
-      console.error('Failed to load projects:', error);
+    } catch (err) {
+      console.error('Failed to load projects:', err);
     } finally {
       setLoading(false);
     }
   };
 
   const deleteProject = async (projectId: string) => {
-    if (!window.confirm('Are you sure you want to delete this project?')) return;
+    if (!window.confirm('Delete this project? This cannot be undone.')) return;
     try {
       await api.deleteProject(projectId);
       setProjects(prev => prev.filter(p => (p.id || p.project_id) !== projectId));
-    } catch (error) {
-      console.error('Failed to delete project:', error);
+    } catch (err) {
+      console.error('Failed to delete project:', err);
     }
-    setActiveMenu(null);
   };
 
-  const getStatusConfig = (status: string) => {
-    const configs: Record<string, { color: string; bgColor: string; borderColor: string; icon: React.ElementType; label: string }> = {
-      draft:     { color: 'text-[#6b9e7a]',   bgColor: 'bg-[#1e4a28]/20',   borderColor: 'border-[#1e4a28]/50',  icon: Clock,        label: 'Draft' },
-      planning:  { color: 'text-[#86efac]',   bgColor: 'bg-[#4ade80]/10',   borderColor: 'border-[#4ade80]/30',  icon: Loader2,      label: 'Planning' },
-      active:    { color: 'text-[#4ade80]',   bgColor: 'bg-[#4ade80]/15',   borderColor: 'border-[#4ade80]/40',  icon: CheckCircle,  label: 'Active' },
-      completed: { color: 'text-[#fbbf24]',   bgColor: 'bg-[#fbbf24]/10',   borderColor: 'border-[#fbbf24]/30',  icon: CheckCircle,  label: 'Completed' },
-      archived:  { color: 'text-[#a8d5a8]',   bgColor: 'bg-[#1e4a28]/10',   borderColor: 'border-[#1e4a28]/30',  icon: AlertCircle,  label: 'Archived' },
-    };
-    return configs[status] || configs.draft;
-  };
-
-  const handleQuickAction = (action: string) => {
-    if (action === 'new' || action === 'import') navigate('/projects/new');
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short', day: 'numeric', year: 'numeric'
-    });
-  };
-
-  const filteredProjects = projects.filter(project =>
-    project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    project.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredProjects = projects.filter(p =>
+    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const stats = {
+    total: projects.length,
+    active: projects.filter(p => ['active', 'planning', 'in_progress'].includes((p.status || '').toLowerCase())).length,
+    completed: projects.filter(p => (p.status || '').toLowerCase() === 'completed').length,
+  };
 
   if (loading) {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <div className="relative">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#4ade80] to-[#3d8a55] flex items-center justify-center mx-auto mb-6 animate-pulse">
-                <TreePine className="w-8 h-8 text-[#0a150e]" />
-              </div>
-              <div className="absolute inset-0 w-16 h-16 mx-auto rounded-2xl bg-[#4ade80]/20 blur-xl animate-pulse" />
-            </div>
-            <p className="text-[#6b9e7a] text-lg">Loading your projects...</p>
+            <div className="text-6xl mb-4 animate-bounce">🌰</div>
+            <p className="text-lg" style={{ color: '#8a7055' }}>Growing your forest…</p>
           </div>
         </div>
       </Layout>
@@ -124,283 +491,147 @@ export const ProjectsPage: React.FC = () => {
   return (
     <Layout>
       <div className="min-h-screen pb-12">
+
         {/* Header */}
-        <div className={`mb-10 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+        <div className={`mb-8 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
             <div>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-2 h-8 bg-gradient-to-b from-[#4ade80] to-[#2d6a3f] rounded-full" />
-                <h1 className="text-4xl font-bold text-[#e8f5e0]">Projects</h1>
+              <div className="flex items-center gap-3 mb-1">
+                <div className="w-1.5 h-8 rounded-full" style={{ background: 'linear-gradient(to bottom, #D4A017, #8B5E3C)' }} />
+                <h1 className="text-4xl font-bold" style={{ color: '#f0e4c8' }}>The Grove</h1>
               </div>
-              <p className="text-[#6b9e7a] text-lg ml-5">
-                Manage and track all your enterprise project plans
+              <p className="ml-5 text-lg" style={{ color: '#8a7055' }}>
+                Each project grows from a seed into a golden acorn
               </p>
             </div>
 
-            <button
-              onClick={() => navigate('/projects/new')}
-              className="btn-primary group"
-              data-testid="new-project-btn"
-            >
-              <Plus className="w-5 h-5" />
-              New Project
-              <ArrowRight className="w-4 h-4 opacity-0 -ml-2 group-hover:opacity-100 group-hover:ml-0 transition-all duration-300" />
-            </button>
+            <div className="flex items-center gap-3">
+              {/* View toggle */}
+              <div className="flex items-center rounded-xl p-1" style={{ background: '#1a1008', border: '1px solid #3d2412' }}>
+                {([['tree', '🌳'], ['grid', '⊞'], ['list', '≡']] as [typeof viewMode, string][]).map(([mode, icon]) => (
+                  <button key={mode} onClick={() => setViewMode(mode)}
+                    className="px-3 py-2 rounded-lg text-sm font-medium transition-all"
+                    style={{
+                      background: viewMode === mode ? '#D4A017' : 'transparent',
+                      color: viewMode === mode ? '#130c07' : '#8a7055',
+                    }}>
+                    {icon}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => navigate('/projects/new')}
+                className="btn-primary"
+                data-testid="new-project-btn"
+              >
+                <Plus className="w-5 h-5" />
+                New Project
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 mb-10 transition-all duration-700 delay-100 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          {quickActions.map((action, index) => {
-            const Icon = action.icon;
-            const colorClasses = {
-              forest: 'from-[#4ade80] to-[#2d6a3f] hover:shadow-[#4ade80]/20',
-              sage:   'from-[#86efac] to-[#4a7a56] hover:shadow-[#86efac]/20',
-              amber:  'from-[#fbbf24] to-[#d97706] hover:shadow-[#fbbf24]/20',
-              green:  'from-emerald-500 to-emerald-600 hover:shadow-emerald-500/20',
-            }[action.color] || 'from-[#4ade80] to-[#2d6a3f]';
-
-            return (
-              <button
-                key={index}
-                onClick={() => handleQuickAction(action.action)}
-                className="group relative p-6 rounded-2xl bg-[#0f1f15] border border-[#1e4a28]/50 hover:border-[#4ade80]/30 transition-all duration-500 text-left overflow-hidden hover-lift"
-                style={{ animationDelay: `${index * 75}ms` }}
-              >
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${colorClasses} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-500`}>
-                  <Icon className="w-5 h-5 text-white" />
+        {/* Stats strip */}
+        {projects.length > 0 && (
+          <div className="grid grid-cols-3 gap-4 mb-8">
+            {[
+              { label: 'Total Seeds', value: stats.total, emoji: '🌿', color: '#8a7055' },
+              { label: 'Growing', value: stats.active, emoji: '🍃', color: '#5a9e6a' },
+              { label: 'Acorns', value: stats.completed, emoji: '🌰', color: '#D4A017' },
+            ].map(({ label, value, emoji, color }) => (
+              <div key={label} className="rounded-2xl p-4 flex items-center gap-4"
+                style={{ background: '#1a1008', border: '1px solid #3d2412' }}>
+                <span className="text-2xl">{emoji}</span>
+                <div>
+                  <div className="text-2xl font-bold" style={{ color }}>{value}</div>
+                  <div className="text-xs" style={{ color: '#5c3820' }}>{label}</div>
                 </div>
-                <h3 className="font-semibold text-[#e8f5e0] mb-1">{action.label}</h3>
-                <p className="text-sm text-[#6b9e7a]">{action.description}</p>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Search & Filters */}
-        <div className={`flex flex-col md:flex-row gap-4 mb-8 transition-all duration-700 delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#6b9e7a]" />
-            <input
-              type="text"
-              placeholder="Search projects..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="input pl-12 w-full"
-              data-testid="search-projects-input"
-            />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button className="btn-secondary px-4 py-3">
-              <Filter className="w-5 h-5" />
-              <span className="hidden md:inline">Filters</span>
-            </button>
-
-            <div className="flex items-center bg-[#0f1f15] rounded-xl p-1 border border-[#1e4a28]/50">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2.5 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-[#4ade80] text-[#0a150e]' : 'text-[#6b9e7a] hover:text-[#e8f5e0]'}`}
-              >
-                <Grid3X3 className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2.5 rounded-lg transition-all ${viewMode === 'list' ? 'bg-[#4ade80] text-[#0a150e]' : 'text-[#6b9e7a] hover:text-[#e8f5e0]'}`}
-              >
-                <List className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Projects */}
-        {filteredProjects.length === 0 ? (
-          <div className={`text-center py-20 transition-all duration-700 delay-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-            <div className="w-24 h-24 rounded-2xl bg-[#142b1a] flex items-center justify-center mx-auto mb-6 border border-[#1e4a28]/50">
-              <FolderOpen className="w-12 h-12 text-[#2d6a3f]" />
-            </div>
-            <h3 className="text-2xl font-bold text-[#e8f5e0] mb-3">No projects yet</h3>
-            <p className="text-[#6b9e7a] mb-8 max-w-md mx-auto">
-              Plant your first project seed and let AI help grow comprehensive documentation
-            </p>
-            <button onClick={() => navigate('/projects/new')} className="btn-primary">
-              <Plus className="w-5 h-5" />
-              Create First Project
-            </button>
-          </div>
-        ) : (
-          <div className={`transition-all duration-700 delay-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-            {viewMode === 'grid' ? (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredProjects.map((project, index) => {
-                  const projectId    = project.id || project.project_id || '';
-                  const statusConfig = getStatusConfig(project.status);
-                  const StatusIcon   = statusConfig.icon;
-                  const isHovered    = hoveredProject === projectId;
-
-                  return (
-                    <div
-                      key={projectId}
-                      className="group relative card p-6 cursor-pointer animate-reveal-up"
-                      onClick={() => navigate(`/projects/${projectId}`)}
-                      onMouseEnter={() => setHoveredProject(projectId)}
-                      onMouseLeave={() => setHoveredProject(null)}
-                      style={{ animationDelay: `${index * 75}ms` }}
-                      data-testid={`project-card-${projectId}`}
-                    >
-                      {/* Status Badge */}
-                      <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${statusConfig.bgColor} ${statusConfig.color} border ${statusConfig.borderColor} mb-4`}>
-                        <StatusIcon className="w-3 h-3" />
-                        {statusConfig.label}
-                      </div>
-
-                      {/* Project Info */}
-                      <h3 className="text-xl font-semibold text-[#e8f5e0] mb-2 group-hover:text-[#4ade80] transition-colors line-clamp-1">
-                        {project.name}
-                      </h3>
-                      <p className="text-[#6b9e7a] text-sm mb-6 line-clamp-2">
-                        {project.description || 'No description provided'}
-                      </p>
-
-                      {/* Meta Info */}
-                      <div className="flex items-center justify-between text-xs text-[#6b9e7a]">
-                        <div className="flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5" />
-                          {formatDate(project.created_at)}
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <FileText className="w-3.5 h-3.5" />
-                          {project.template_type || 'Custom'}
-                        </div>
-                      </div>
-
-                      {/* Hover Actions */}
-                      <div className={`absolute top-4 right-4 flex items-center gap-1 transition-all duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/projects/${projectId}`);
-                          }}
-                          className="p-2 rounded-lg bg-[#1e4a28]/50 hover:bg-[#4ade80] text-[#6b9e7a] hover:text-[#0a150e] transition-all"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveMenu(activeMenu === projectId ? null : projectId);
-                          }}
-                          className="p-2 rounded-lg bg-[#1e4a28]/50 hover:bg-[#1e4a28] text-[#6b9e7a] hover:text-[#e8f5e0] transition-all"
-                        >
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
-
-                        {/* Dropdown Menu */}
-                        {activeMenu === projectId && (
-                          <div
-                            className="absolute top-full right-0 mt-2 w-40 bg-[#142b1a] border border-[#1e4a28]/50 rounded-xl shadow-xl overflow-hidden z-10 animate-reveal-down"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <button
-                              onClick={() => navigate(`/projects/${projectId}`)}
-                              className="w-full flex items-center gap-2 px-4 py-3 text-sm text-[#a8d5a8] hover:bg-[#1e4a28]/30 transition-colors"
-                            >
-                              <Edit3 className="w-4 h-4" />
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => deleteProject(projectId)}
-                              className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              Delete
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
               </div>
-            ) : (
-              <div className="space-y-3">
-                {filteredProjects.map((project, index) => {
-                  const projectId    = project.id || project.project_id || '';
-                  const statusConfig = getStatusConfig(project.status);
-                  const StatusIcon   = statusConfig.icon;
-
-                  return (
-                    <div
-                      key={projectId}
-                      className="group flex items-center gap-6 p-5 rounded-xl bg-[#0f1f15] border border-[#1e4a28]/50 hover:border-[#4ade80]/30 cursor-pointer transition-all duration-300 animate-reveal-up"
-                      onClick={() => navigate(`/projects/${projectId}`)}
-                      style={{ animationDelay: `${index * 50}ms` }}
-                    >
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#4ade80]/20 to-[#2d6a3f]/20 flex items-center justify-center flex-shrink-0 border border-[#4ade80]/30">
-                        <FolderOpen className="w-6 h-6 text-[#4ade80]" />
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-semibold text-[#e8f5e0] group-hover:text-[#4ade80] transition-colors truncate">
-                          {project.name}
-                        </h3>
-                        <p className="text-sm text-[#6b9e7a] truncate">
-                          {project.description || 'No description'}
-                        </p>
-                      </div>
-
-                      <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${statusConfig.bgColor} ${statusConfig.color} border ${statusConfig.borderColor}`}>
-                        <StatusIcon className="w-3 h-3" />
-                        {statusConfig.label}
-                      </div>
-
-                      <div className="text-sm text-[#6b9e7a] hidden md:block">
-                        {formatDate(project.created_at)}
-                      </div>
-
-                      <ArrowRight className="w-5 h-5 text-[#2d6a3f] group-hover:text-[#4ade80] group-hover:translate-x-1 transition-all" />
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            ))}
           </div>
         )}
 
-        {/* Stats Banner */}
-        {projects.length > 0 && (
-          <div className={`mt-12 p-8 rounded-2xl bg-gradient-to-r from-[#4ade80]/10 to-[#1e4a28]/20 border border-[#4ade80]/20 transition-all duration-700 delay-400 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-            <div className="flex flex-wrap items-center justify-between gap-8">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-xl bg-[#4ade80]/20 flex items-center justify-center border border-[#4ade80]/30">
-                  <TrendingUp className="w-7 h-7 text-[#4ade80]" />
-                </div>
-                <div>
-                  <h4 className="text-xl font-bold text-[#e8f5e0]">Project Overview</h4>
-                  <p className="text-sm text-[#6b9e7a]">Your enterprise portfolio at a glance</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-12">
-                <div className="text-center">
-                  <div className="text-4xl font-bold text-[#4ade80]">{projects.length}</div>
-                  <div className="text-xs text-[#6b9e7a] mt-1">Total Projects</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-4xl font-bold text-[#86efac]">
-                    {projects.filter(p => p.status === 'active' || p.status === 'completed').length}
-                  </div>
-                  <div className="text-xs text-[#6b9e7a] mt-1">Active</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-4xl font-bold text-[#fbbf24]">
-                    {projects.filter(p => p.status === 'draft' || p.status === 'planning').length}
-                  </div>
-                  <div className="text-xs text-[#6b9e7a] mt-1">In Progress</div>
-                </div>
-              </div>
+        {/* Search */}
+        {viewMode !== 'tree' && (
+          <div className="mb-6">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: '#5c3820' }} />
+              <input
+                type="text"
+                placeholder="Search your grove…"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="input pl-12 w-full"
+                style={{ background: '#1a1008', borderColor: '#3d2412', color: '#f0e4c8' }}
+                data-testid="search-projects-input"
+              />
             </div>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {filteredProjects.length === 0 && (
+          <div className="text-center py-24">
+            <div className="text-8xl mb-6 animate-bounce">🌱</div>
+            <h3 className="text-2xl font-bold mb-3" style={{ color: '#f0e4c8' }}>Your grove is empty</h3>
+            <p className="mb-8" style={{ color: '#8a7055' }}>
+              Plant your first project seed and watch it grow into an acorn
+            </p>
+            <button onClick={() => navigate('/projects/new')} className="btn-primary">
+              <Plus className="w-5 h-5" />
+              Plant First Seed
+            </button>
+          </div>
+        )}
+
+        {/* Tree view */}
+        {viewMode === 'tree' && filteredProjects.length > 0 && (
+          <div className="rounded-2xl overflow-hidden" style={{ background: '#0c0702', border: '1px solid #3d2412' }}>
+            <ProjectsTree
+              projects={filteredProjects}
+              onProjectClick={id => navigate(`/projects/${id}`)}
+              onDeleteProject={deleteProject}
+              onNewProject={() => navigate('/projects/new')}
+            />
+            <div className="px-6 pb-5 flex items-center gap-6 text-xs" style={{ color: '#5c3820' }}>
+              <span className="flex items-center gap-1.5">🌿 Draft</span>
+              <span className="flex items-center gap-1.5">🍃 Active</span>
+              <span className="flex items-center gap-1.5">🌰 Completed</span>
+              <span className="flex items-center gap-1.5">· Click a leaf to open project</span>
+            </div>
+          </div>
+        )}
+
+        {/* Grid view */}
+        {viewMode === 'grid' && filteredProjects.length > 0 && (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filteredProjects.map((project, index) => (
+              <ProjectCard
+                key={project.id || project.project_id}
+                project={project}
+                viewMode="grid"
+                index={index}
+                onOpen={() => navigate(`/projects/${project.id || project.project_id}`)}
+                onDelete={() => deleteProject(project.id || project.project_id || '')}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* List view */}
+        {viewMode === 'list' && filteredProjects.length > 0 && (
+          <div className="space-y-3">
+            {filteredProjects.map((project, index) => (
+              <ProjectCard
+                key={project.id || project.project_id}
+                project={project}
+                viewMode="list"
+                index={index}
+                onOpen={() => navigate(`/projects/${project.id || project.project_id}`)}
+                onDelete={() => deleteProject(project.id || project.project_id || '')}
+              />
+            ))}
           </div>
         )}
       </div>

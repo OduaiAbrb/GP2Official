@@ -119,8 +119,8 @@ const ConflictResultView: React.FC<{ data: any }> = ({ data }) => (
     <div className="flex items-center gap-3 p-3 rounded-xl"
       style={{ background: 'rgba(15,31,21,0.8)', border: '1px solid rgba(30,74,40,0.4)' }}>
       <div className="text-center">
-        <p className="text-2xl font-bold text-[#e8f5e0]">{data.summary?.total_conflicts ?? 0}</p>
-        <p className="text-xs text-[#6b9e7a]">Total Conflicts</p>
+        <p className="text-2xl font-bold text-[#f0e4c8]">{data.summary?.total_conflicts ?? 0}</p>
+        <p className="text-xs text-[#8a7055]">Total Conflicts</p>
       </div>
       <div className="flex gap-3 text-sm">
         {[['critical','#C1440E'], ['high','#D4A017'], ['medium','#5F7A8A'], ['low','#7BA05B']].map(([k, c]) => (
@@ -130,16 +130,16 @@ const ConflictResultView: React.FC<{ data: any }> = ({ data }) => (
           </span>
         ))}
       </div>
-      <p className="text-xs text-[#6b9e7a] flex-1">Score: {data.summary?.overall_quality_score ?? '—'}/100</p>
+      <p className="text-xs text-[#8a7055] flex-1">Score: {data.summary?.overall_quality_score ?? '—'}/100</p>
     </div>
     {(data.conflicts || []).map((c: any) => (
       <div key={c.conflict_id} className="p-3 rounded-xl" style={{ background: '#142b1a', border: '1px solid rgba(30,74,40,0.5)' }}>
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[#e8f5e0] text-sm font-semibold">{c.title}</span>
+          <span className="text-[#f0e4c8] text-sm font-semibold">{c.title}</span>
           <SeverityBadge severity={c.severity} />
         </div>
-        <p className="text-xs text-[#6b9e7a] mb-1.5">{c.description}</p>
-        <p className="text-xs text-[#4ade80]">💡 {c.suggested_resolution}</p>
+        <p className="text-xs text-[#8a7055] mb-1.5">{c.description}</p>
+        <p className="text-xs text-[#D4A017]">💡 {c.suggested_resolution}</p>
       </div>
     ))}
   </div>
@@ -149,14 +149,14 @@ const TechStackResultView: React.FC<{ data: any }> = ({ data }) => {
   const stack = data.recommended_stack || {};
   return (
     <div className="space-y-3">
-      <p className="text-xs text-[#6b9e7a]">{data.summary}</p>
+      <p className="text-xs text-[#8a7055]">{data.summary}</p>
       <div className="grid grid-cols-2 gap-3">
         {Object.entries(stack).map(([layer, info]: [string, any]) => (
           <div key={layer} className="p-3 rounded-xl" style={{ background: '#142b1a', border: '1px solid rgba(30,74,40,0.5)' }}>
-            <p className="text-xs font-bold text-[#4ade80] uppercase mb-2">{layer}</p>
+            <p className="text-xs font-bold text-[#D4A017] uppercase mb-2">{layer}</p>
             {typeof info === 'object' && Object.entries(info).filter(([k]) => k !== 'rationale').map(([k, v]) => (
-              <p key={k} className="text-xs text-[#a8d5a8]">
-                <span className="text-[#6b9e7a]">{k}: </span>{String(v)}
+              <p key={k} className="text-xs text-[#c8b090]">
+                <span className="text-[#8a7055]">{k}: </span>{String(v)}
               </p>
             ))}
           </div>
@@ -173,20 +173,20 @@ const SecurityResultView: React.FC<{ data: any }> = ({ data }) => (
         <p className="text-2xl font-bold" style={{ color: data.security_score > 70 ? '#4ade80' : data.security_score > 50 ? '#D4A017' : '#C1440E' }}>
           {data.security_score}/100
         </p>
-        <p className="text-xs text-[#6b9e7a]">Security Score</p>
+        <p className="text-xs text-[#8a7055]">Security Score</p>
       </div>
       <SeverityBadge severity={data.risk_level} />
-      <p className="text-xs text-[#6b9e7a] flex-1">{data.executive_summary}</p>
+      <p className="text-xs text-[#8a7055] flex-1">{data.executive_summary}</p>
     </div>
     {(data.findings || []).map((f: any) => (
       <div key={f.finding_id} className="p-3 rounded-xl" style={{ background: '#142b1a', border: '1px solid rgba(30,74,40,0.5)' }}>
         <div className="flex items-center justify-between mb-1">
-          <span className="text-[#e8f5e0] text-sm font-semibold">{f.title}</span>
+          <span className="text-[#f0e4c8] text-sm font-semibold">{f.title}</span>
           <SeverityBadge severity={f.severity} />
         </div>
-        <p className="text-xs text-[#6b9e7a] mb-1">{f.description}</p>
+        <p className="text-xs text-[#8a7055] mb-1">{f.description}</p>
         <p className="text-xs text-[#D4A017]">OWASP: {f.owasp_category}</p>
-        <p className="text-xs text-[#4ade80] mt-1">Fix: {f.recommendation}</p>
+        <p className="text-xs text-[#D4A017] mt-1">Fix: {f.recommendation}</p>
       </div>
     ))}
   </div>
@@ -194,7 +194,7 @@ const SecurityResultView: React.FC<{ data: any }> = ({ data }) => (
 
 const GenericJsonView: React.FC<{ data: any; color: string }> = ({ data, color }) => (
   <div className="rounded-xl overflow-hidden" style={{ background: '#0a150e', border: '1px solid rgba(30,74,40,0.5)' }}>
-    <pre className="text-xs text-[#a8d5a8] p-4 overflow-auto max-h-80">
+    <pre className="text-xs text-[#c8b090] p-4 overflow-auto max-h-80">
       {JSON.stringify(data, null, 2)}
     </pre>
   </div>
@@ -264,11 +264,11 @@ export const AIAgentsPanel: React.FC<Props> = ({
           <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4"
             style={{ background: '#0f1f15', borderBottom: '1px solid rgba(30,74,40,0.4)' }}>
             <div>
-              <h2 className="font-bold text-[#e8f5e0]">AI Agents</h2>
-              <p className="text-xs text-[#6b9e7a]">Specialized analysis tools</p>
+              <h2 className="font-bold text-[#f0e4c8]">AI Agents</h2>
+              <p className="text-xs text-[#8a7055]">Specialized analysis tools</p>
             </div>
             <button onClick={() => setIsOpen(false)}
-              className="w-8 h-8 flex items-center justify-center rounded-lg text-[#6b9e7a] hover:text-[#e8f5e0] hover:bg-[#1e4a28] transition-all">
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-[#8a7055] hover:text-[#f0e4c8] hover:bg-[#3d2412] transition-all">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -290,8 +290,8 @@ export const AIAgentsPanel: React.FC<Props> = ({
                           {agent.icon}
                         </div>
                         <div>
-                          <p className="font-semibold text-[#e8f5e0] text-sm">{agent.name}</p>
-                          <p className="text-xs text-[#6b9e7a] mt-0.5">{agent.description}</p>
+                          <p className="font-semibold text-[#f0e4c8] text-sm">{agent.name}</p>
+                          <p className="text-xs text-[#8a7055] mt-0.5">{agent.description}</p>
                         </div>
                       </div>
                       <button

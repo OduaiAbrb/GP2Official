@@ -135,7 +135,7 @@ export const PersonaGenerator: React.FC<PersonaGeneratorProps> = ({ projectId, o
         <button
           onClick={() => setActiveTab('personas')}
           className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all ${
-            activeTab === 'personas' ? 'text-[#0a150e] shadow-lg' : 'text-gray-400 hover:text-white'
+            activeTab === 'personas' ? 'text-[#130c07] shadow-lg' : 'text-gray-400 hover:text-white'
           }`}
           style={activeTab === 'personas' ? { background: 'linear-gradient(to right, #4ade80, #b8962e)' } : {}}
         >
@@ -145,7 +145,7 @@ export const PersonaGenerator: React.FC<PersonaGeneratorProps> = ({ projectId, o
         <button
           onClick={() => setActiveTab('stories')}
           className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all ${
-            activeTab === 'stories' ? 'text-[#0a150e] shadow-lg' : 'text-gray-400 hover:text-white'
+            activeTab === 'stories' ? 'text-[#130c07] shadow-lg' : 'text-gray-400 hover:text-white'
           }`}
           style={activeTab === 'stories' ? { background: 'linear-gradient(to right, #4ade80, #b8962e)' } : {}}
         >

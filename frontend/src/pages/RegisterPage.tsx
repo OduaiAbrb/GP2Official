@@ -98,12 +98,12 @@ export const RegisterPage: React.FC = () => {
           </div>
 
           {/* Headline */}
-          <h1 className={`text-5xl xl:text-6xl font-bold text-[#e8f5e0] leading-[1.1] mb-8 transition-all duration-1000 delay-200 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-12'}`}>
+          <h1 className={`text-5xl xl:text-6xl font-bold text-[#f0e4c8] leading-[1.1] mb-8 transition-all duration-1000 delay-200 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-12'}`}>
             Plant the Seed of
             <span className="block mt-3" style={{ background: 'linear-gradient(to right, #4ade80, #86efac)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Your Next Project</span>
           </h1>
 
-          <p className={`text-xl text-[#6b9e7a] mb-16 max-w-lg leading-relaxed transition-all duration-1000 delay-300 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-12'}`}>
+          <p className={`text-xl text-[#8a7055] mb-16 max-w-lg leading-relaxed transition-all duration-1000 delay-300 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-12'}`}>
             Transform complex requirements into a living, growing plan with AI-powered project planning.
           </p>
 
@@ -124,8 +124,8 @@ export const RegisterPage: React.FC = () => {
                   <badge.icon className="w-6 h-6" style={{ color: '#4ade80' }} />
                 </div>
                 <div>
-                  <p className="font-semibold text-[#e8f5e0]">{badge.label}</p>
-                  <p className="text-sm text-[#6b9e7a]">{badge.desc}</p>
+                  <p className="font-semibold text-[#f0e4c8]">{badge.label}</p>
+                  <p className="text-sm text-[#8a7055]">{badge.desc}</p>
                 </div>
               </div>
             ))}
@@ -164,7 +164,7 @@ export const RegisterPage: React.FC = () => {
                     >
                       {step > s ? <CheckCircle className="w-5 h-5" /> : s}
                     </div>
-                    <span className={`text-sm font-medium transition-colors ${step >= s ? 'text-[#e8f5e0]' : 'text-[#6b9e7a]'}`}>
+                    <span className={`text-sm font-medium transition-colors ${step >= s ? 'text-[#f0e4c8]' : 'text-[#8a7055]'}`}>
                       {s === 1 ? 'Profile' : 'Account'}
                     </span>
                   </div>
@@ -189,10 +189,10 @@ export const RegisterPage: React.FC = () => {
             }}
           >
             <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-[#e8f5e0] mb-2">
+              <h1 className="text-3xl font-bold text-[#f0e4c8] mb-2">
                 {step === 1 ? 'Create Your Profile' : 'Secure Your Account'}
               </h1>
-              <p className="text-[#6b9e7a]">
+              <p className="text-[#8a7055]">
                 {step === 1 ? 'Tell us about yourself' : 'Set up your login credentials'}
               </p>
             </div>
@@ -209,51 +209,51 @@ export const RegisterPage: React.FC = () => {
               {step === 1 && (
                 <div className="space-y-5">
                   <div className="group">
-                    <label className="block text-sm font-medium text-[#a8d5a8] mb-2">Full Name</label>
+                    <label className="block text-sm font-medium text-[#c8b090] mb-2">Full Name</label>
                     <div className="relative">
-                      <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#6b9e7a] group-focus-within:text-[#4ade80] transition-colors" />
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#8a7055] group-focus-within:text-[#D4A017] transition-colors" />
                       <input
                         type="text"
                         value={formData.full_name}
                         onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                         placeholder="John Doe"
                         data-testid="register-fullname-input"
-                        className="w-full pl-12 pr-4 py-4 rounded-xl text-[#e8f5e0] placeholder-[#6b9e7a] transition-all focus:outline-none focus:ring-2 focus:ring-[#4ade80]/30"
+                        className="w-full pl-12 pr-4 py-4 rounded-xl text-[#f0e4c8] placeholder-[#6b9e7a] transition-all focus:outline-none focus:ring-2 focus:ring-[#D4A017]/30"
                         style={{ backgroundColor: '#0f1f15', border: '1px solid #1e4a28' }}
                       />
                     </div>
                   </div>
 
                   <div className="group">
-                    <label className="block text-sm font-medium text-[#a8d5a8] mb-2">Organization</label>
+                    <label className="block text-sm font-medium text-[#c8b090] mb-2">Organization</label>
                     <div className="relative">
-                      <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#6b9e7a] group-focus-within:text-[#4ade80] transition-colors" />
+                      <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#8a7055] group-focus-within:text-[#D4A017] transition-colors" />
                       <input
                         type="text"
                         value={formData.organization}
                         onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
                         placeholder="Your Company"
                         data-testid="register-org-input"
-                        className="w-full pl-12 pr-4 py-4 rounded-xl text-[#e8f5e0] placeholder-[#6b9e7a] transition-all focus:outline-none focus:ring-2 focus:ring-[#4ade80]/30"
+                        className="w-full pl-12 pr-4 py-4 rounded-xl text-[#f0e4c8] placeholder-[#6b9e7a] transition-all focus:outline-none focus:ring-2 focus:ring-[#D4A017]/30"
                         style={{ backgroundColor: '#0f1f15', border: '1px solid #1e4a28' }}
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-[#a8d5a8] mb-2">Your Role</label>
+                    <label className="block text-sm font-medium text-[#c8b090] mb-2">Your Role</label>
                     <select
                       value={formData.role}
                       onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                       data-testid="register-role-select"
-                      className="w-full px-4 py-4 rounded-xl text-[#e8f5e0] transition-all focus:outline-none focus:ring-2 focus:ring-[#4ade80]/30"
+                      className="w-full px-4 py-4 rounded-xl text-[#f0e4c8] transition-all focus:outline-none focus:ring-2 focus:ring-[#D4A017]/30"
                       style={{ backgroundColor: '#0f1f15', border: '1px solid #1e4a28' }}
                     >
                       {ROLE_OPTIONS.map((role) => (
                         <option key={role.id} value={role.id} style={{ backgroundColor: '#0f1f15' }}>{role.label}</option>
                       ))}
                     </select>
-                    <p className="mt-2 text-xs text-[#6b9e7a]">
+                    <p className="mt-2 text-xs text-[#8a7055]">
                       {ROLE_OPTIONS.find((r) => r.id === formData.role)?.description}
                     </p>
                   </div>
@@ -279,9 +279,9 @@ export const RegisterPage: React.FC = () => {
               {step === 2 && (
                 <div className="space-y-5">
                   <div className="group">
-                    <label className="block text-sm font-medium text-[#a8d5a8] mb-2">Email Address</label>
+                    <label className="block text-sm font-medium text-[#c8b090] mb-2">Email Address</label>
                     <div className="relative">
-                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#6b9e7a] group-focus-within:text-[#4ade80] transition-colors" />
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#8a7055] group-focus-within:text-[#D4A017] transition-colors" />
                       <input
                         type="email"
                         value={formData.email}
@@ -289,7 +289,7 @@ export const RegisterPage: React.FC = () => {
                         onBlur={() => setTouched({ ...touched, email: true })}
                         placeholder="you@example.com"
                         data-testid="register-email-input"
-                        className="w-full pl-12 pr-12 py-4 rounded-xl text-[#e8f5e0] placeholder-[#6b9e7a] transition-all focus:outline-none focus:ring-2 focus:ring-[#4ade80]/30"
+                        className="w-full pl-12 pr-12 py-4 rounded-xl text-[#f0e4c8] placeholder-[#6b9e7a] transition-all focus:outline-none focus:ring-2 focus:ring-[#D4A017]/30"
                         style={{
                           backgroundColor: '#0f1f15',
                           border: touched.email && !validateEmail(formData.email) && formData.email
@@ -298,29 +298,29 @@ export const RegisterPage: React.FC = () => {
                         }}
                       />
                       {touched.email && validateEmail(formData.email) && (
-                        <CheckCircle className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#4ade80]" />
+                        <CheckCircle className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#D4A017]" />
                       )}
                     </div>
                   </div>
 
                   <div className="group">
-                    <label className="block text-sm font-medium text-[#a8d5a8] mb-2">Password</label>
+                    <label className="block text-sm font-medium text-[#c8b090] mb-2">Password</label>
                     <div className="relative">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#6b9e7a] group-focus-within:text-[#4ade80] transition-colors" />
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#8a7055] group-focus-within:text-[#D4A017] transition-colors" />
                       <input
                         type="password"
                         value={formData.password}
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                         placeholder="Create a strong password"
                         data-testid="register-password-input"
-                        className="w-full pl-12 pr-4 py-4 rounded-xl text-[#e8f5e0] placeholder-[#6b9e7a] transition-all focus:outline-none focus:ring-2 focus:ring-[#4ade80]/30"
+                        className="w-full pl-12 pr-4 py-4 rounded-xl text-[#f0e4c8] placeholder-[#6b9e7a] transition-all focus:outline-none focus:ring-2 focus:ring-[#D4A017]/30"
                         style={{ backgroundColor: '#0f1f15', border: '1px solid #1e4a28' }}
                       />
                     </div>
 
                     {formData.password && (
                       <div className="mt-4 p-4 rounded-xl" style={{ backgroundColor: '#0f1f15', border: '1px solid #1e4a28' }}>
-                        <p className="text-xs font-medium text-[#6b9e7a] mb-3">Password must have:</p>
+                        <p className="text-xs font-medium text-[#8a7055] mb-3">Password must have:</p>
                         <div className="grid grid-cols-2 gap-3">
                           {[
                             { key: 'length',    label: '8+ characters' },
@@ -337,11 +337,11 @@ export const RegisterPage: React.FC = () => {
                                 }}
                               >
                                 {passwordChecks[key as keyof typeof passwordChecks] && (
-                                  <CheckCircle className="w-3 h-3 text-[#0a150e]" />
+                                  <CheckCircle className="w-3 h-3 text-[#130c07]" />
                                 )}
                               </div>
                               <span className={`text-sm transition-colors ${
-                                passwordChecks[key as keyof typeof passwordChecks] ? 'text-[#4ade80] font-medium' : 'text-[#6b9e7a]'
+                                passwordChecks[key as keyof typeof passwordChecks] ? 'text-[#D4A017] font-medium' : 'text-[#8a7055]'
                               }`}>
                                 {label}
                               </span>
@@ -357,7 +357,7 @@ export const RegisterPage: React.FC = () => {
                       type="button"
                       variant="outline"
                       onClick={() => setStep(1)}
-                      className="flex-1 py-4 rounded-xl text-[#a8d5a8]"
+                      className="flex-1 py-4 rounded-xl text-[#c8b090]"
                       style={{ border: '1px solid #1e4a28', backgroundColor: 'transparent' }}
                     >
                       <ArrowLeft className="w-4 h-4 mr-2 inline" />
@@ -392,7 +392,7 @@ export const RegisterPage: React.FC = () => {
             </form>
 
             <div className="mt-8 text-center pt-6" style={{ borderTop: '1px solid #1e4a28' }}>
-              <p className="text-[#6b9e7a]">
+              <p className="text-[#8a7055]">
                 Already have an account?{' '}
                 <Link to="/login" className="font-bold hover:underline" style={{ color: '#4ade80' }}>
                   Sign In
@@ -402,7 +402,7 @@ export const RegisterPage: React.FC = () => {
           </div>
 
           <div className="text-center mt-6">
-            <Link to="/" className="text-sm text-[#6b9e7a] hover:text-[#4ade80] transition-colors inline-flex items-center gap-2 group">
+            <Link to="/" className="text-sm text-[#8a7055] hover:text-[#D4A017] transition-colors inline-flex items-center gap-2 group">
               <span className="group-hover:-translate-x-1 transition-transform">←</span>
               Back to Home
             </Link>

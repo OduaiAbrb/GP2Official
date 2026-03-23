@@ -141,7 +141,7 @@ export const ExportCenterPage: React.FC = () => {
                               key={format}
                               onClick={() => setSelectedFormats(prev => ({ ...prev, [option.id]: format }))}
                               className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
-                                selectedFormats[option.id] === format ? 'text-[#0a150e]' : 'text-gray-400'
+                                selectedFormats[option.id] === format ? 'text-[#130c07]' : 'text-gray-400'
                               }`}
                               style={{
                                 backgroundColor: selectedFormats[option.id] === format ? '#4ade80' : '#152238',

@@ -154,15 +154,15 @@ export const AIChatAssistant: React.FC<Props> = ({
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center"
                 style={{ background: accentColor }}>
-                <Sparkles className="w-4 h-4 text-[#0a150e]" />
+                <Sparkles className="w-4 h-4 text-[#130c07]" />
               </div>
               <div>
-                <p className="font-bold text-[#e8f5e0] text-sm">Athena</p>
+                <p className="font-bold text-[#f0e4c8] text-sm">Athena</p>
                 <p className="text-xs" style={{ color: accentColor }}>{phaseName} Phase</p>
               </div>
             </div>
             <button onClick={() => setIsOpen(false)}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-[#6b9e7a] hover:text-[#e8f5e0] hover:bg-[#1e4a28] transition-all">
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-[#8a7055] hover:text-[#f0e4c8] hover:bg-[#3d2412] transition-all">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -196,7 +196,7 @@ export const AIChatAssistant: React.FC<Props> = ({
             {isSending && (
               <div className="flex justify-start">
                 <div className="px-3 py-2.5 rounded-xl" style={{ background: 'rgba(20,43,26,0.8)', border: '1px solid rgba(30,74,40,0.5)' }}>
-                  <Loader2 className="w-4 h-4 animate-spin text-[#4ade80]" />
+                  <Loader2 className="w-4 h-4 animate-spin text-[#D4A017]" />
                 </div>
               </div>
             )}
@@ -235,7 +235,7 @@ export const AIChatAssistant: React.FC<Props> = ({
                 onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
                 placeholder="Ask about this phase..."
                 disabled={isSending}
-                className="flex-1 bg-transparent outline-none text-sm text-[#e8f5e0] placeholder-[#4a7a56] disabled:opacity-50"
+                className="flex-1 bg-transparent outline-none text-sm text-[#f0e4c8] placeholder-[#4a7a56] disabled:opacity-50"
               />
               <button
                 onClick={() => sendMessage()}
@@ -244,12 +244,12 @@ export const AIChatAssistant: React.FC<Props> = ({
                 style={{ background: accentColor }}
               >
                 {isSending
-                  ? <Loader2 className="w-3.5 h-3.5 animate-spin text-[#0a150e]" />
-                  : <Send className="w-3.5 h-3.5 text-[#0a150e]" />
+                  ? <Loader2 className="w-3.5 h-3.5 animate-spin text-[#130c07]" />
+                  : <Send className="w-3.5 h-3.5 text-[#130c07]" />
                 }
               </button>
             </div>
-            <p className="text-xs text-center mt-1.5 text-[#2d6a3f]">Powered by Gemini 2.0 Flash</p>
+            <p className="text-xs text-center mt-1.5 text-[#5c3820]">Powered by Gemini 2.0 Flash</p>
           </div>
         </div>
       )}

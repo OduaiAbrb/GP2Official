@@ -1,6 +1,6 @@
 # Acorn - AI Planning Platform
 
-An AI-powered software planning platform that helps teams plan projects through structured phases, requirement gathering, feasibility studies, system design, and more.
+An AI-powered software planning platform that helps teams plan projects through structured phases, requirement gathering, feasibility studies, system design, and more. Features a warm bark-brown/amber acorn forest theme throughout.
 
 ## Project Structure
 
@@ -11,8 +11,8 @@ An AI-powered software planning platform that helps teams plan projects through 
 
 ### Frontend
 - React 18 with TypeScript
-- Vite (dev server on port 5000)
-- Tailwind CSS
+- Vite (dev server on port 5000, `allowedHosts: true`)
+- Tailwind CSS with custom bark-brown/amber theme
 - React Router DOM
 - Zustand (state management)
 - ReactFlow (diagram editor)
@@ -23,7 +23,7 @@ An AI-powered software planning platform that helps teams plan projects through 
 - PostgreSQL via AsyncPG
 - JWT authentication
 - Google Gemini AI (primary LLM provider)
-- Redis (optional caching)
+- Redis (optional caching, disabled if not configured)
 
 ## Workflows
 
@@ -36,10 +36,30 @@ Uses Replit's built-in PostgreSQL database. The backend auto-creates all tables 
 
 Key tables: `users`, `projects`, `artifacts`, `requirements`, `tasks`, `ai_runs`, `workspace_invites`, `refresh_tokens`
 
+## Theme / Design System
+
+Bark-brown/amber acorn forest theme (replaced previous neon green):
+
+- **Primary (acorn gold)**: `#D4A017`
+- **Background darkest (bark 900)**: `#130c07`
+- **Background dark (bark 800)**: `#1a1008`
+- **Background medium (bark 700)**: `#221508`
+- **Border**: `#3d2412`
+- **Text (parchment)**: `#f0e4c8`
+- **Muted text**: `#8a7055` / `#9a7a55`
+- **Nature accent (leaves only)**: `#5a9e6a`
+
+Key design features:
+- LandingPage: Cracked-acorn drop intro animation (sessionStorage-gated), then interactive SVG tree
+- ProjectsPage: Living tree SVG with project nodes as 🌿/🍂/🌰 by status
+- ProjectDetailPage: Phase tree with acorn SVG cap on completed phases, leaf-green for active
+- Animations: `acornDrop`, `leafGrow`, `leafSway` in `index.css`
+- CSS classes: `glow-orb-amber`, `glow-orb-bark`, `bg-grid`, `card-glass`, `text-gradient-forest` (outputs amber)
+
 ## Configuration
 
 - `backend/config.py` - All app settings via Pydantic Settings (reads from env vars)
-- `frontend/vite.config.ts` - Vite config with proxy to backend at `/api`
+- `frontend/vite.config.ts` - Vite config with proxy to backend at `/api`, `allowedHosts: true`
 - `DATABASE_URL` env var is set automatically by Replit
 
 ## API Structure

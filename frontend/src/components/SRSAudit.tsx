@@ -222,7 +222,7 @@ export const SRSAudit: React.FC<SRSAuditProps> = ({ projectId, onAuditComplete }
                 key={category}
                 onClick={() => setSelectedCategory(category)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  selectedCategory === category ? 'text-[#0a150e]' : 'text-gray-400 hover:text-white'
+                  selectedCategory === category ? 'text-[#130c07]' : 'text-gray-400 hover:text-white'
                 }`}
                 style={{
                   backgroundColor: selectedCategory === category ? '#4ade80' : '#152238',

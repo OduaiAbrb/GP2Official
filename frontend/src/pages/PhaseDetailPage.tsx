@@ -341,7 +341,7 @@ export const PhaseDetailPage: React.FC = () => {
         <summary className="cursor-pointer font-medium text-gray-600">
           Show raw AI output
         </summary>
-        <pre className="mt-2 whitespace-pre-wrap rounded-lg border border-[#1e4a28] bg-[#1e4a28]/50 p-3 text-[11px] leading-relaxed text-gray-300 overflow-x-auto">
+        <pre className="mt-2 whitespace-pre-wrap rounded-lg border border-[#3d2412] bg-[#3d2412]/50 p-3 text-[11px] leading-relaxed text-gray-300 overflow-x-auto">
           {phaseRawMarkdown}
         </pre>
       </details>
@@ -1305,9 +1305,9 @@ export const PhaseDetailPage: React.FC = () => {
   if (!project || !phaseConfig) {
     return (
       <Layout>
-        <div className="text-center py-16 bg-[#0a150e]">
+        <div className="text-center py-16 bg-[#130c07]">
           <h2 className="text-2xl font-bold text-white mb-4">Phase not found</h2>
-          <Button onClick={() => navigate(`/projects/${id}`)} className="bg-gradient-to-r from-[#4ade80] to-[#b8962e] hover:from-[#e6c358] hover:to-[#4ade80] text-[#0a150e] font-semibold">Back to Project</Button>
+          <Button onClick={() => navigate(`/projects/${id}`)} className="bg-gradient-to-r from-[#D4A017] to-[#b8962e] hover:from-[#e6c358] hover:to-[#D4A017] text-[#130c07] font-semibold">Back to Project</Button>
         </div>
       </Layout>
     );
@@ -1336,7 +1336,7 @@ export const PhaseDetailPage: React.FC = () => {
   const PhaseWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     return (
       <Layout>
-        <div className="min-h-[calc(100vh-4rem)] bg-[#0a150e]">
+        <div className="min-h-[calc(100vh-4rem)] bg-[#130c07]">
           {/* Horizontal Navigation */}
           <PhaseNavigation projectId={id} variant="horizontal" phaseStatus={phaseStatus} />
 
@@ -1357,7 +1357,7 @@ export const PhaseDetailPage: React.FC = () => {
                           style={{ color: phaseAccentColor }}>
                           Phase {(phaseConfig.order || 0) + 1} of {phaseConfigs.length}
                         </p>
-                        <h1 className="text-xl sm:text-2xl font-bold text-[#e8f5e0]">
+                        <h1 className="text-xl sm:text-2xl font-bold text-[#f0e4c8]">
                           {phaseConfig.title}
                         </h1>
                       </div>
@@ -1366,7 +1366,7 @@ export const PhaseDetailPage: React.FC = () => {
                       <Button
                         variant="outline"
                         onClick={() => navigate(`/projects/${id}`)}
-                        className="text-[#6b9e7a] bg-transparent"
+                        className="text-[#8a7055] bg-transparent"
                         style={{ borderColor: 'rgba(30,74,40,0.6)' }}
                       >
                         <ArrowLeft className="mr-2 h-4 w-4" />
@@ -1376,7 +1376,7 @@ export const PhaseDetailPage: React.FC = () => {
                         <Button
                           variant="outline"
                           onClick={handleDownload}
-                          className="text-[#6b9e7a] bg-transparent"
+                          className="text-[#8a7055] bg-transparent"
                           style={{ borderColor: 'rgba(30,74,40,0.6)' }}
                         >
                           <Download className="mr-2 h-4 w-4" />
@@ -1396,7 +1396,7 @@ export const PhaseDetailPage: React.FC = () => {
                     </div>
                   </div>
                   {phaseConfig.description && (
-                    <p className="mt-2 text-sm text-[#6b9e7a] max-w-2xl ml-16">{phaseConfig.description}</p>
+                    <p className="mt-2 text-sm text-[#8a7055] max-w-2xl ml-16">{phaseConfig.description}</p>
                   )}
                 </div>
               </div>
@@ -1408,7 +1408,7 @@ export const PhaseDetailPage: React.FC = () => {
                   <Shield className="h-5 w-5 text-[#D4A017] flex-shrink-0" />
                   <div>
                     <p className="font-medium text-[#D4A017] text-sm">Limited Access</p>
-                    <p className="text-[#6b9e7a] text-xs">You have {user?.role_label || 'reviewer'} access. A Program Manager must trigger AI generation.</p>
+                    <p className="text-[#8a7055] text-xs">You have {user?.role_label || 'reviewer'} access. A Program Manager must trigger AI generation.</p>
                   </div>
                 </div>
               )}
@@ -1423,8 +1423,8 @@ export const PhaseDetailPage: React.FC = () => {
                       {nextPhase.stepNumber}
                     </span>
                     <div>
-                      <p className="text-[10px] uppercase tracking-wider font-semibold text-[#4ade80]">Continue to Next</p>
-                      <p className="font-semibold text-[#e8f5e0]">{nextPhase.title}</p>
+                      <p className="text-[10px] uppercase tracking-wider font-semibold text-[#D4A017]">Continue to Next</p>
+                      <p className="font-semibold text-[#f0e4c8]">{nextPhase.title}</p>
                     </div>
                   </div>
                   <Button
@@ -1448,24 +1448,24 @@ export const PhaseDetailPage: React.FC = () => {
 
               {/* Compact AI Regenerate Bar - only show if content exists or generating */}
               {phaseId !== 'validation' && (
-                <div className="bg-[#0a150e] rounded-xl border border-[#1e4a28] overflow-hidden">
+                <div className="bg-[#130c07] rounded-xl border border-[#3d2412] overflow-hidden">
                   <div className="p-3 sm:p-4">
                     {isGenerating ? (
                       <div className="flex items-center justify-center gap-3 py-2">
-                        <Loader2 className="h-5 w-5 animate-spin text-[#4ade80]" />
+                        <Loader2 className="h-5 w-5 animate-spin text-[#D4A017]" />
                         <span className="text-sm font-medium text-gray-300">Generating content with AI...</span>
                       </div>
                     ) : (
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
-                          <Sparkles className="h-4 w-4 text-[#4ade80]" />
+                          <Sparkles className="h-4 w-4 text-[#D4A017]" />
                           <span className="text-sm text-gray-400">Content auto-generated</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <input
                             ref={regenerateInputRef}
                             type="text"
-                            className="w-48 sm:w-64 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-500 border border-[#1e4a28] bg-[#152238] focus:border-[#4ade80] focus:ring-1 focus:ring-[#4ade80]/30 transition-all"
+                            className="w-48 sm:w-64 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-500 border border-[#3d2412] bg-[#152238] focus:border-[#D4A017] focus:ring-1 focus:ring-[#D4A017]/30 transition-all"
                             placeholder="Custom prompt (optional)"
                           />
                           <Button
@@ -1474,7 +1474,7 @@ export const PhaseDetailPage: React.FC = () => {
                               const prompt = regenerateInputRef.current?.value || `Regenerate ${phaseId?.replace('_', ' ')} content`;
                               handleGenerate(prompt);
                             }}
-                            className="bg-[#152238] hover:bg-[#1e4a28] text-[#4ade80] border border-[#4ade80]/30 hover:border-[#4ade80] text-sm px-3 py-1.5 font-medium"
+                            className="bg-[#152238] hover:bg-[#3d2412] text-[#D4A017] border border-[#D4A017]/30 hover:border-[#D4A017] text-sm px-3 py-1.5 font-medium"
                           >
                             <Undo2 className="h-3.5 w-3.5 mr-1.5" />
                             Regenerate
@@ -1546,7 +1546,7 @@ export const PhaseDetailPage: React.FC = () => {
         <div className="space-y-6">
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-[#0a150e] border border-[#1e4a28]/50 rounded-xl p-4">
+            <div className="bg-[#130c07] border border-[#3d2412]/50 rounded-xl p-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-500/20 rounded-lg border border-blue-500/30">
                   <FileText className="h-5 w-5 text-blue-400" />
@@ -1559,7 +1559,7 @@ export const PhaseDetailPage: React.FC = () => {
             </div>
 
             {/* Cost vs Benefit Comparison card removed here; lives in cost_benefit phase instead */}
-            <div className="bg-[#0a150e] border border-[#1e4a28]/50 rounded-xl p-4">
+            <div className="bg-[#130c07] border border-[#3d2412]/50 rounded-xl p-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-emerald-500/20 rounded-lg border border-emerald-500/30">
                   <Shield className="h-5 w-5 text-emerald-400" />
@@ -1570,10 +1570,10 @@ export const PhaseDetailPage: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="bg-[#0a150e] border border-[#1e4a28]/50 rounded-xl p-4">
+            <div className="bg-[#130c07] border border-[#3d2412]/50 rounded-xl p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-[#4ade80]/20 rounded-lg border border-[#4ade80]/30">
-                  <TrendingUp className="h-5 w-5 text-[#4ade80]" />
+                <div className="p-2 bg-[#D4A017]/20 rounded-lg border border-[#D4A017]/30">
+                  <TrendingUp className="h-5 w-5 text-[#D4A017]" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-white">{requirements.filter(r => r.priority === 'high').length}</p>
@@ -1584,8 +1584,8 @@ export const PhaseDetailPage: React.FC = () => {
           </div>
 
           {/* Requirements Catalog */}
-          <div className="bg-[#0a150e] border border-[#1e4a28]/50 rounded-2xl overflow-hidden">
-            <div className="p-5 border-b border-[#1e4a28]/30">
+          <div className="bg-[#130c07] border border-[#3d2412]/50 rounded-2xl overflow-hidden">
+            <div className="p-5 border-b border-[#3d2412]/30">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h3 className="font-bold text-white">Requirements Catalog</h3>
@@ -1596,7 +1596,7 @@ export const PhaseDetailPage: React.FC = () => {
                   variant="outline"
                   size="sm"
                   onClick={handleSyncRequirements}
-                  className="border-[#1e4a28] text-gray-400 hover:border-[#4ade80]/50 hover:text-[#4ade80]"
+                  className="border-[#3d2412] text-gray-400 hover:border-[#D4A017]/50 hover:text-[#D4A017]"
                 >
                   Sync Validation
                 </Button>
@@ -1604,14 +1604,14 @@ export const PhaseDetailPage: React.FC = () => {
             </div>
             <div className="p-6">
               {/* Add Requirement */}
-              <div className="mb-6 p-4 border border-dashed border-[#1e4a28] rounded-lg bg-[#152238]/50 space-y-3">
+              <div className="mb-6 p-4 border border-dashed border-[#3d2412] rounded-lg bg-[#152238]/50 space-y-3">
                 <div className="flex items-center justify-between gap-2 mb-2">
                   <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-[#4ade80]" />
+                    <FileText className="h-4 w-4 text-[#D4A017]" />
                     <span className="text-sm font-medium text-white">Add Requirement</span>
                   </div>
                   <select
-                    className="text-xs border border-[#1e4a28] rounded px-2 py-1 bg-[#152238] text-gray-300"
+                    className="text-xs border border-[#3d2412] rounded px-2 py-1 bg-[#152238] text-gray-300"
                     value={requirementDraft.type}
                     onChange={(e) => setRequirementDraft({ ...requirementDraft, type: e.target.value })}
                   >
@@ -1620,20 +1620,20 @@ export const PhaseDetailPage: React.FC = () => {
                   </select>
                 </div>
                 <input
-                  className="w-full border border-[#1e4a28] rounded-lg px-3 py-2 text-sm bg-[#152238] text-white placeholder-gray-500 focus:border-[#4ade80] focus:ring-1 focus:ring-[#4ade80]/30"
+                  className="w-full border border-[#3d2412] rounded-lg px-3 py-2 text-sm bg-[#152238] text-white placeholder-gray-500 focus:border-[#D4A017] focus:ring-1 focus:ring-[#D4A017]/30"
                   placeholder="Requirement title..."
                   value={requirementDraft.title}
                   onChange={(e) => setRequirementDraft({ ...requirementDraft, title: e.target.value })}
                 />
                 <textarea
-                  className="w-full border border-[#1e4a28] rounded-lg px-3 py-2 text-sm bg-[#152238] text-white placeholder-gray-500 focus:border-[#4ade80] focus:ring-1 focus:ring-[#4ade80]/30 min-h-[70px]"
+                  className="w-full border border-[#3d2412] rounded-lg px-3 py-2 text-sm bg-[#152238] text-white placeholder-gray-500 focus:border-[#D4A017] focus:ring-1 focus:ring-[#D4A017]/30 min-h-[70px]"
                   placeholder="Requirement description..."
                   value={requirementDraft.description}
                   onChange={(e) => setRequirementDraft({ ...requirementDraft, description: e.target.value })}
                 />
                 <div className="flex flex-wrap items-center gap-3">
                   <select
-                    className="border border-[#1e4a28] rounded-lg px-2 py-1.5 text-xs bg-[#152238] text-gray-300"
+                    className="border border-[#3d2412] rounded-lg px-2 py-1.5 text-xs bg-[#152238] text-gray-300"
                     value={requirementDraft.priority}
                     onChange={(e) => setRequirementDraft({ ...requirementDraft, priority: e.target.value })}
                   >
@@ -1643,7 +1643,7 @@ export const PhaseDetailPage: React.FC = () => {
                     <option value="critical">Critical</option>
                   </select>
                   <select
-                    className="border border-[#1e4a28] rounded-lg px-2 py-1.5 text-xs bg-[#152238] text-gray-300"
+                    className="border border-[#3d2412] rounded-lg px-2 py-1.5 text-xs bg-[#152238] text-gray-300"
                     value={requirementDraft.status}
                     onChange={(e) => setRequirementDraft({ ...requirementDraft, status: e.target.value })}
                   >
@@ -1654,7 +1654,7 @@ export const PhaseDetailPage: React.FC = () => {
                   </select>
                   <Button
                     size="sm"
-                    className="ml-auto bg-gradient-to-r from-[#4ade80] to-[#b8962e] hover:from-[#e6c358] hover:to-[#4ade80] text-[#0a150e] font-semibold"
+                    className="ml-auto bg-gradient-to-r from-[#D4A017] to-[#b8962e] hover:from-[#e6c358] hover:to-[#D4A017] text-[#130c07] font-semibold"
                     disabled={!requirementDraft.title.trim()}
                     onClick={async () => {
                       if (!id || !requirementDraft.title.trim()) return;
@@ -1694,7 +1694,7 @@ export const PhaseDetailPage: React.FC = () => {
               ) : (
                 <div className="space-y-3">
                   {requirements.map((req) => (
-                    <div key={req.requirement_id} className="p-4 border border-[#1e4a28]/50 rounded-lg bg-[#152238]/30 hover:bg-[#152238] transition-colors">
+                    <div key={req.requirement_id} className="p-4 border border-[#3d2412]/50 rounded-lg bg-[#152238]/30 hover:bg-[#152238] transition-colors">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
@@ -1712,14 +1712,14 @@ export const PhaseDetailPage: React.FC = () => {
                           {editingRequirementId === req.requirement_id ? (
                             <div className="space-y-2 mt-1">
                               <input
-                                className="w-full border border-[#1e4a28] rounded-lg px-3 py-1.5 text-sm"
+                                className="w-full border border-[#3d2412] rounded-lg px-3 py-1.5 text-sm"
                                 value={editingRequirementDraft.title}
                                 onChange={(e) =>
                                   setEditingRequirementDraft((prev) => ({ ...prev, title: e.target.value }))
                                 }
                               />
                               <textarea
-                                className="w-full border border-[#1e4a28] rounded-lg px-3 py-1.5 text-sm"
+                                className="w-full border border-[#3d2412] rounded-lg px-3 py-1.5 text-sm"
                                 rows={3}
                                 value={editingRequirementDraft.description}
                                 onChange={(e) =>
@@ -1728,7 +1728,7 @@ export const PhaseDetailPage: React.FC = () => {
                               />
                               <div className="flex flex-wrap items-center gap-2">
                                 <select
-                                  className="border border-[#1e4a28] rounded-lg px-2 py-1.5 text-xs bg-[#152238]"
+                                  className="border border-[#3d2412] rounded-lg px-2 py-1.5 text-xs bg-[#152238]"
                                   value={editingRequirementDraft.priority}
                                   onChange={(e) =>
                                     setEditingRequirementDraft((prev) => ({ ...prev, priority: e.target.value }))
@@ -1740,7 +1740,7 @@ export const PhaseDetailPage: React.FC = () => {
                                   <option value="critical">Critical</option>
                                 </select>
                                 <select
-                                  className="border border-[#1e4a28] rounded-lg px-2 py-1.5 text-xs bg-[#152238]"
+                                  className="border border-[#3d2412] rounded-lg px-2 py-1.5 text-xs bg-[#152238]"
                                   value={editingRequirementDraft.status}
                                   onChange={(e) =>
                                     setEditingRequirementDraft((prev) => ({ ...prev, status: e.target.value }))
@@ -1819,11 +1819,11 @@ export const PhaseDetailPage: React.FC = () => {
                 </div>
               )}
 
-              <div className="mt-4 pt-2 border-t border-dashed border-[#1e4a28] flex items-center justify-between text-[11px] text-gray-500">
+              <div className="mt-4 pt-2 border-t border-dashed border-[#3d2412] flex items-center justify-between text-[11px] text-gray-500">
                 <label className="inline-flex items-center gap-2 cursor-pointer select-none">
                   <input
                     type="checkbox"
-                    className="rounded border-[#1e4a28] bg-[#152238] text-[#4ade80] focus:ring-[#4ade80]"
+                    className="rounded border-[#3d2412] bg-[#152238] text-[#D4A017] focus:ring-[#D4A017]"
                     checked={useCustomRoi}
                     onChange={(e) => setUseCustomRoi(e.target.checked)}
                   />
@@ -1839,29 +1839,29 @@ export const PhaseDetailPage: React.FC = () => {
           </div>
 
           {/* AI Generation */}
-          <div className="bg-[#0a150e] border border-[#1e4a28]/50 rounded-2xl overflow-hidden">
-            <div className="p-5 border-b border-[#1e4a28]/30">
+          <div className="bg-[#130c07] border border-[#3d2412]/50 rounded-2xl overflow-hidden">
+            <div className="p-5 border-b border-[#3d2412]/30">
               <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-[#4ade80]" />
+                <Sparkles className="h-5 w-5 text-[#D4A017]" />
                 <h3 className="font-bold text-white">AI Requirements Assistant</h3>
               </div>
               <p className="text-sm text-gray-500 mt-1">Generate requirements from your project description</p>
             </div>
             <div className="p-6 space-y-4">
               <textarea
-                className="w-full border border-[#1e4a28] rounded-lg px-3 py-2 text-sm bg-[#152238] text-white placeholder-gray-500 focus:border-[#4ade80] focus:ring-1 focus:ring-[#4ade80]/30 min-h-[100px]"
+                className="w-full border border-[#3d2412] rounded-lg px-3 py-2 text-sm bg-[#152238] text-white placeholder-gray-500 focus:border-[#D4A017] focus:ring-1 focus:ring-[#D4A017]/30 min-h-[100px]"
                 placeholder="Describe what you want AI to help with: Generate functional requirements, create acceptance criteria, suggest non-functional requirements..."
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
               />
               <div className="flex gap-2 flex-wrap">
-                <Button onClick={() => handleGenerate()} disabled={isGenerating || status === 'locked'} className="bg-gradient-to-r from-[#4ade80] to-[#b8962e] hover:from-[#e6c358] hover:to-[#4ade80] text-[#0a150e] font-semibold">
+                <Button onClick={() => handleGenerate()} disabled={isGenerating || status === 'locked'} className="bg-gradient-to-r from-[#D4A017] to-[#b8962e] hover:from-[#e6c358] hover:to-[#D4A017] text-[#130c07] font-semibold">
                   {isGenerating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</> : <><Sparkles className="mr-2 h-4 w-4" /> Generate Requirements</>}
                 </Button>
-                <Button variant="outline" onClick={() => handleGenerate('Generate functional requirements based on the project brief')} className="border-[#1e4a28] text-gray-400 hover:border-[#4ade80]/50 hover:text-[#4ade80]">
+                <Button variant="outline" onClick={() => handleGenerate('Generate functional requirements based on the project brief')} className="border-[#3d2412] text-gray-400 hover:border-[#D4A017]/50 hover:text-[#D4A017]">
                   <Wand2 className="mr-2 h-4 w-4" /> Auto-Generate FR
                 </Button>
-                <Button variant="outline" onClick={() => handleGenerate('Generate non-functional requirements (performance, security, scalability)')} className="border-[#1e4a28] text-gray-400 hover:border-[#4ade80]/50 hover:text-[#4ade80]">
+                <Button variant="outline" onClick={() => handleGenerate('Generate non-functional requirements (performance, security, scalability)')} className="border-[#3d2412] text-gray-400 hover:border-[#D4A017]/50 hover:text-[#D4A017]">
                   <Shield className="mr-2 h-4 w-4" /> Auto-Generate NFR
                 </Button>
               </div>
@@ -1901,8 +1901,8 @@ export const PhaseDetailPage: React.FC = () => {
           <div className="rounded-2xl p-6" style={{ background: 'linear-gradient(135deg, #0f1f15, #142b1a)', border: '1px solid rgba(107,76,138,0.4)' }}>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-xl font-bold text-[#e8f5e0]">System Design</h2>
-                <p className="text-sm text-[#6b9e7a] mt-1">Architecture overview, component diagrams, data models, and API specs</p>
+                <h2 className="text-xl font-bold text-[#f0e4c8]">System Design</h2>
+                <p className="text-sm text-[#8a7055] mt-1">Architecture overview, component diagrams, data models, and API specs</p>
               </div>
               <div className="flex items-center gap-3">
                 <Button onClick={() => handleGenerate()} disabled={isGenerating || status === 'locked'}
@@ -2069,7 +2069,7 @@ export const PhaseDetailPage: React.FC = () => {
                     {riskDraft.overview.map((item, idx) => (
                       <div key={idx} className="flex items-start gap-2">
                         <textarea
-                          className="flex-1 min-h-[50px] border border-[#1e4a28] rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-red-200"
+                          className="flex-1 min-h-[50px] border border-[#3d2412] rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-red-200"
                           value={item}
                           onChange={(e) =>
                             setRiskDraft((prev) => {
@@ -2135,16 +2135,16 @@ export const PhaseDetailPage: React.FC = () => {
                 <CardContent>
                   {isEditingRisks ? (
                     <div className="space-y-3">
-                      <div className="overflow-x-auto border border-[#1e4a28] rounded-lg">
+                      <div className="overflow-x-auto border border-[#3d2412] rounded-lg">
                         <table className="w-full text-xs border-collapse">
-                          <thead className="bg-[#1e4a28]/50">
+                          <thead className="bg-[#3d2412]/50">
                             <tr>
-                              <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#1e4a28]">Risk</th>
-                              <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#1e4a28]">Impact</th>
-                              <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#1e4a28]">Likelihood</th>
-                              <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#1e4a28]">Mitigation</th>
-                              <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#1e4a28]">Owner</th>
-                              <th className="px-2 py-2 text-right font-semibold text-gray-300 border-b border-[#1e4a28] sr-only">Actions</th>
+                              <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#3d2412]">Risk</th>
+                              <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#3d2412]">Impact</th>
+                              <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#3d2412]">Likelihood</th>
+                              <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#3d2412]">Mitigation</th>
+                              <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#3d2412]">Owner</th>
+                              <th className="px-2 py-2 text-right font-semibold text-gray-300 border-b border-[#3d2412] sr-only">Actions</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -2152,7 +2152,7 @@ export const PhaseDetailPage: React.FC = () => {
                               <tr key={idx} className="bg-[#152238]">
                                 <td className="px-2 py-2 border-b border-gray-100">
                                   <input
-                                    className="w-full border border-[#1e4a28] rounded px-2 py-1 text-xs"
+                                    className="w-full border border-[#3d2412] rounded px-2 py-1 text-xs"
                                     placeholder="Risk description"
                                     value={row.risk}
                                     onChange={(e) =>
@@ -2166,7 +2166,7 @@ export const PhaseDetailPage: React.FC = () => {
                                 </td>
                                 <td className="px-2 py-2 border-b border-gray-100">
                                   <select
-                                    className="w-full border border-[#1e4a28] rounded px-2 py-1 text-xs bg-[#152238]"
+                                    className="w-full border border-[#3d2412] rounded px-2 py-1 text-xs bg-[#152238]"
                                     value={row.impact}
                                     onChange={(e) =>
                                       setRiskDraft((prev) => {
@@ -2183,7 +2183,7 @@ export const PhaseDetailPage: React.FC = () => {
                                 </td>
                                 <td className="px-2 py-2 border-b border-gray-100">
                                   <select
-                                    className="w-full border border-[#1e4a28] rounded px-2 py-1 text-xs bg-[#152238]"
+                                    className="w-full border border-[#3d2412] rounded px-2 py-1 text-xs bg-[#152238]"
                                     value={row.likelihood}
                                     onChange={(e) =>
                                       setRiskDraft((prev) => {
@@ -2200,7 +2200,7 @@ export const PhaseDetailPage: React.FC = () => {
                                 </td>
                                 <td className="px-2 py-2 border-b border-gray-100">
                                   <textarea
-                                    className="w-full border border-[#1e4a28] rounded px-2 py-1 text-xs min-h-[60px]"
+                                    className="w-full border border-[#3d2412] rounded px-2 py-1 text-xs min-h-[60px]"
                                     placeholder="Mitigation strategy"
                                     value={row.mitigation}
                                     onChange={(e) =>
@@ -2214,7 +2214,7 @@ export const PhaseDetailPage: React.FC = () => {
                                 </td>
                                 <td className="px-2 py-2 border-b border-gray-100">
                                   <input
-                                    className="w-full border border-[#1e4a28] rounded px-2 py-1 text-xs"
+                                    className="w-full border border-[#3d2412] rounded px-2 py-1 text-xs"
                                     placeholder="Owner"
                                     value={row.owner}
                                     onChange={(e) =>
@@ -2261,15 +2261,15 @@ export const PhaseDetailPage: React.FC = () => {
                       </div>
                     </div>
                   ) : parsedRisks && parsedRisks.riskRows.length ? (
-                    <div className="overflow-x-auto border border-[#1e4a28] rounded-lg">
+                    <div className="overflow-x-auto border border-[#3d2412] rounded-lg">
                       <table className="w-full text-xs border-collapse">
-                        <thead className="bg-[#1e4a28]/50">
+                        <thead className="bg-[#3d2412]/50">
                           <tr>
-                            <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#1e4a28]">Risk</th>
-                            <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#1e4a28]">Impact</th>
-                            <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#1e4a28]">Likelihood</th>
-                            <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#1e4a28]">Mitigation</th>
-                            <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#1e4a28]">Owner</th>
+                            <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#3d2412]">Risk</th>
+                            <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#3d2412]">Impact</th>
+                            <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#3d2412]">Likelihood</th>
+                            <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#3d2412]">Mitigation</th>
+                            <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#3d2412]">Owner</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -2288,11 +2288,11 @@ export const PhaseDetailPage: React.FC = () => {
                               if (lower.startsWith('low')) {
                                 return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-medium">🟢 {level}</span>;
                               }
-                              return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#1e4a28]/50 text-gray-600 text-[10px] font-medium">{level}</span>;
+                              return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#3d2412]/50 text-gray-600 text-[10px] font-medium">{level}</span>;
                             };
 
                             return (
-                              <tr key={idx} className={idx % 2 === 0 ? 'bg-[#152238]' : 'bg-[#1e4a28]/50/60'}>
+                              <tr key={idx} className={idx % 2 === 0 ? 'bg-[#152238]' : 'bg-[#3d2412]/50/60'}>
                                 <td className="align-top px-2 py-2 border-b border-gray-100 text-white font-medium w-48">
                                   {row.risk}
                                 </td>
@@ -2328,14 +2328,14 @@ export const PhaseDetailPage: React.FC = () => {
                 <CardContent>
                   {isEditingRisks ? (
                     <div className="space-y-3">
-                      <div className="overflow-x-auto border border-[#1e4a28] rounded-lg">
+                      <div className="overflow-x-auto border border-[#3d2412] rounded-lg">
                         <table className="w-full text-xs border-collapse">
-                          <thead className="bg-[#1e4a28]/50">
+                          <thead className="bg-[#3d2412]/50">
                             <tr>
-                              <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#1e4a28]">Aspect</th>
-                              <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#1e4a28]">Before</th>
-                              <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#1e4a28]">After</th>
-                              <th className="px-2 py-2 text-right font-semibold text-gray-300 border-b border-[#1e4a28] sr-only">Actions</th>
+                              <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#3d2412]">Aspect</th>
+                              <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#3d2412]">Before</th>
+                              <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#3d2412]">After</th>
+                              <th className="px-2 py-2 text-right font-semibold text-gray-300 border-b border-[#3d2412] sr-only">Actions</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -2343,7 +2343,7 @@ export const PhaseDetailPage: React.FC = () => {
                               <tr key={idx} className="bg-[#152238]">
                                 <td className="px-2 py-2 border-b border-gray-100">
                                   <input
-                                    className="w-full border border-[#1e4a28] rounded px-2 py-1 text-xs"
+                                    className="w-full border border-[#3d2412] rounded px-2 py-1 text-xs"
                                     placeholder="Aspect"
                                     value={row.aspect}
                                     onChange={(e) =>
@@ -2357,7 +2357,7 @@ export const PhaseDetailPage: React.FC = () => {
                                 </td>
                                 <td className="px-2 py-2 border-b border-gray-100">
                                   <textarea
-                                    className="w-full border border-[#1e4a28] rounded px-2 py-1 text-xs min-h-[50px]"
+                                    className="w-full border border-[#3d2412] rounded px-2 py-1 text-xs min-h-[50px]"
                                     placeholder="Before mitigation"
                                     value={row.before}
                                     onChange={(e) =>
@@ -2371,7 +2371,7 @@ export const PhaseDetailPage: React.FC = () => {
                                 </td>
                                 <td className="px-2 py-2 border-b border-gray-100">
                                   <textarea
-                                    className="w-full border border-[#1e4a28] rounded px-2 py-1 text-xs min-h-[50px]"
+                                    className="w-full border border-[#3d2412] rounded px-2 py-1 text-xs min-h-[50px]"
                                     placeholder="After mitigation"
                                     value={row.after}
                                     onChange={(e) =>
@@ -2415,18 +2415,18 @@ export const PhaseDetailPage: React.FC = () => {
                       </Button>
                     </div>
                   ) : parsedRisks && parsedRisks.beforeAfter.length ? (
-                    <div className="overflow-x-auto border border-[#1e4a28] rounded-lg">
+                    <div className="overflow-x-auto border border-[#3d2412] rounded-lg">
                       <table className="w-full text-xs border-collapse">
-                        <thead className="bg-[#1e4a28]/50">
+                        <thead className="bg-[#3d2412]/50">
                           <tr>
-                            <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#1e4a28]">Aspect</th>
-                            <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#1e4a28]">Before</th>
-                            <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#1e4a28]">After</th>
+                            <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#3d2412]">Aspect</th>
+                            <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#3d2412]">Before</th>
+                            <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#3d2412]">After</th>
                           </tr>
                         </thead>
                         <tbody>
                           {parsedRisks.beforeAfter.map((row, idx) => (
-                            <tr key={idx} className={idx % 2 === 0 ? 'bg-[#152238]' : 'bg-[#1e4a28]/50/60'}>
+                            <tr key={idx} className={idx % 2 === 0 ? 'bg-[#152238]' : 'bg-[#3d2412]/50/60'}>
                               <td className="px-2 py-2 border-b border-gray-100 text-white font-medium">{row.aspect}</td>
                               <td className="px-2 py-2 border-b border-gray-100 text-gray-300">{row.before}</td>
                               <td className="px-2 py-2 border-b border-gray-100 text-gray-300">{row.after}</td>
@@ -2458,7 +2458,7 @@ export const PhaseDetailPage: React.FC = () => {
                       {riskDraft.actions.map((action, idx) => (
                         <div key={idx} className="flex items-start gap-2">
                           <textarea
-                            className="flex-1 min-h-[45px] border border-[#1e4a28] rounded px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-200"
+                            className="flex-1 min-h-[45px] border border-[#3d2412] rounded px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-200"
                             placeholder="Describe the recommended action..."
                             value={action}
                             onChange={(e) =>
@@ -2620,13 +2620,13 @@ export const PhaseDetailPage: React.FC = () => {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <input
-                      className="w-full border border-[#1e4a28] rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                      className="w-full border border-[#3d2412] rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-400 focus:border-transparent"
                       placeholder="Task title..."
                       value={newTask.title}
                       onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
                     />
                     <textarea
-                      className="w-full border border-[#1e4a28] rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-400 focus:border-transparent resize-none"
+                      className="w-full border border-[#3d2412] rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-400 focus:border-transparent resize-none"
                       placeholder="Description..."
                       value={newTask.description}
                       onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
@@ -2637,7 +2637,7 @@ export const PhaseDetailPage: React.FC = () => {
                         <label className="text-xs text-gray-500 mb-1 block">Start Date</label>
                         <input
                           type="date"
-                          className="w-full border border-[#1e4a28] rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-400 focus:border-transparent cursor-pointer hover:border-purple-300 transition-colors"
+                          className="w-full border border-[#3d2412] rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-400 focus:border-transparent cursor-pointer hover:border-purple-300 transition-colors"
                           value={newTask.start_date}
                           onChange={(e) => setNewTask({ ...newTask, start_date: e.target.value })}
                         />
@@ -2646,7 +2646,7 @@ export const PhaseDetailPage: React.FC = () => {
                         <label className="text-xs text-gray-500 mb-1 block">Due Date</label>
                         <input
                           type="date"
-                          className="w-full border border-[#1e4a28] rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-400 focus:border-transparent cursor-pointer hover:border-purple-300 transition-colors"
+                          className="w-full border border-[#3d2412] rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-400 focus:border-transparent cursor-pointer hover:border-purple-300 transition-colors"
                           value={newTask.due_date}
                           onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
                           min={newTask.start_date || undefined}
@@ -2655,7 +2655,7 @@ export const PhaseDetailPage: React.FC = () => {
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <select
-                        className="border border-[#1e4a28] rounded-lg px-2 py-1.5 text-sm"
+                        className="border border-[#3d2412] rounded-lg px-2 py-1.5 text-sm"
                         value={newTask.priority}
                         onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
                       >
@@ -2664,7 +2664,7 @@ export const PhaseDetailPage: React.FC = () => {
                         <option value="high">🔴 High</option>
                       </select>
                       <select
-                        className="border border-[#1e4a28] rounded-lg px-2 py-1.5 text-sm"
+                        className="border border-[#3d2412] rounded-lg px-2 py-1.5 text-sm"
                         value={newTask.status}
                         onChange={(e) => setNewTask({ ...newTask, status: e.target.value })}
                       >
@@ -2676,7 +2676,7 @@ export const PhaseDetailPage: React.FC = () => {
                     <div>
                       <label className="text-xs text-gray-500 mb-1 block">Dependencies (task titles or IDs, comma separated)</label>
                       <input
-                        className="w-full border border-[#1e4a28] rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                        className="w-full border border-[#3d2412] rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-purple-400 focus:border-transparent"
                         placeholder="e.g. Design UI, Implement API"
                         value={newTask.dependencies}
                         onChange={(e) => setNewTask({ ...newTask, dependencies: e.target.value })}
@@ -2770,7 +2770,7 @@ export const PhaseDetailPage: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-sm">Task List</CardTitle>
                       <select
-                        className="text-xs border border-[#1e4a28] rounded px-2 py-1"
+                        className="text-xs border border-[#3d2412] rounded px-2 py-1"
                         value={taskFilter}
                         onChange={(e) => setTaskFilter(e.target.value as any)}
                       >
@@ -2846,7 +2846,7 @@ export const PhaseDetailPage: React.FC = () => {
                           <button onClick={() => setGanttViewMode('list')} className={`px-2 py-1 rounded text-xs ${ganttViewMode === 'list' ? 'bg-[#152238] shadow' : ''}`}>List</button>
                           <button onClick={() => setGanttViewMode('board')} className={`px-2 py-1 rounded text-xs ${ganttViewMode === 'board' ? 'bg-[#152238] shadow' : ''}`}>Board</button>
                         </div>
-                        <select className="text-xs border border-[#1e4a28] rounded-lg px-2 py-1" value={ganttScale} onChange={(e) => setGanttScale(e.target.value as any)}>
+                        <select className="text-xs border border-[#3d2412] rounded-lg px-2 py-1" value={ganttScale} onChange={(e) => setGanttScale(e.target.value as any)}>
                           <option value="auto">Auto</option>
                           <option value="2w">2 Weeks</option>
                           <option value="1m">1 Month</option>
@@ -2863,10 +2863,10 @@ export const PhaseDetailPage: React.FC = () => {
                   </CardHeader>
                   <CardContent>
                     {ganttViewMode === 'chart' && (
-                      <div className="relative border border-[#1e4a28] rounded-xl bg-gradient-to-b from-gray-50 to-white p-4 overflow-x-auto" style={{ minHeight: Math.max(300, ganttData.height), transform: `scale(${ganttZoom / 100})`, transformOrigin: 'top left' }}>
+                      <div className="relative border border-[#3d2412] rounded-xl bg-gradient-to-b from-gray-50 to-white p-4 overflow-x-auto" style={{ minHeight: Math.max(300, ganttData.height), transform: `scale(${ganttZoom / 100})`, transformOrigin: 'top left' }}>
                         <div className="min-w-[800px]">
                           {/* Timeline Header */}
-                          <div className="flex items-center justify-between text-xs text-gray-500 mb-4 pb-2 border-b border-[#1e4a28]">
+                          <div className="flex items-center justify-between text-xs text-gray-500 mb-4 pb-2 border-b border-[#3d2412]">
                             {Array.from({ length: 7 }).map((_, idx) => {
                               const date = new Date(ganttData.start.getTime() + ((ganttData.end.getTime() - ganttData.start.getTime()) * idx) / 6);
                               return <span key={idx} className="font-medium">{date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>;
@@ -2915,11 +2915,11 @@ export const PhaseDetailPage: React.FC = () => {
                     {ganttViewMode === 'board' && (
                       <div className="grid grid-cols-3 gap-4">
                         {['planned', 'in_progress', 'completed'].map((status) => (
-                          <div key={status} className="bg-[#1e4a28]/50 rounded-xl p-3">
+                          <div key={status} className="bg-[#3d2412]/50 rounded-xl p-3">
                             <h4 className="font-medium text-sm text-gray-300 mb-3 capitalize">{status.replace('_', ' ')}</h4>
                             <div className="space-y-2">
                               {tasks.filter(t => (localTaskStatus[t.task_id] || t.status || '').toLowerCase() === status).map(task => (
-                                <div key={task.task_id} className="bg-[#152238] p-3 rounded-lg border border-[#1e4a28] shadow-sm">
+                                <div key={task.task_id} className="bg-[#152238] p-3 rounded-lg border border-[#3d2412] shadow-sm">
                                   <p className="text-sm font-medium">{task.title}</p>
                                   <p className="text-xs text-gray-500 truncate">{task.description}</p>
                                 </div>
@@ -2932,7 +2932,7 @@ export const PhaseDetailPage: React.FC = () => {
                     {ganttViewMode === 'list' && (
                       <div className="overflow-x-auto">
                         <table className="w-full text-sm">
-                          <thead className="bg-[#1e4a28]/50">
+                          <thead className="bg-[#3d2412]/50">
                             <tr>
                               <th className="text-left p-2 font-medium text-gray-600">Task</th>
                               <th className="text-left p-2 font-medium text-gray-600">Status</th>
@@ -2944,7 +2944,7 @@ export const PhaseDetailPage: React.FC = () => {
                           </thead>
                           <tbody>
                             {tasks.map(task => (
-                              <tr key={task.task_id} className="border-b border-gray-100 hover:bg-[#1e4a28]/50">
+                              <tr key={task.task_id} className="border-b border-gray-100 hover:bg-[#3d2412]/50">
                                 <td className="p-2">{task.title}</td>
                                 <td className="p-2"><Badge variant={task.status === 'completed' ? 'success' : task.status === 'in_progress' ? 'warning' : 'secondary'}>{task.status}</Badge></td>
                                 <td className="p-2 capitalize">{task.priority}</td>
@@ -2974,7 +2974,7 @@ export const PhaseDetailPage: React.FC = () => {
                         { label: 'Do First', color: 'bg-red-50 border-red-200', tasks: matrixBuckets.urgentImportant, icon: '🔥' },
                         { label: 'Schedule', color: 'bg-blue-50 border-blue-200', tasks: matrixBuckets.notUrgentImportant, icon: '📅' },
                         { label: 'Delegate', color: 'bg-amber-50 border-amber-200', tasks: matrixBuckets.urgentNotImportant, icon: '👥' },
-                        { label: 'Eliminate', color: 'bg-[#1e4a28]/50 border-[#1e4a28]', tasks: matrixBuckets.notUrgentNotImportant, icon: '🗑️' },
+                        { label: 'Eliminate', color: 'bg-[#3d2412]/50 border-[#3d2412]', tasks: matrixBuckets.notUrgentNotImportant, icon: '🗑️' },
                       ].map(({ label, color, tasks: bucketTasks, icon }) => (
                         <div key={label} className={`${color} border rounded-xl p-3`}>
                           <p className="font-medium text-sm mb-2">{icon} {label}</p>
@@ -3384,11 +3384,11 @@ export const PhaseDetailPage: React.FC = () => {
                       <span className="font-mono">{isFinite(customRoi) ? `${customRoi.toFixed(0)}%` : 'N/A'}</span>
                     </div>
 
-                    <div className="border-t border-[#1e4a28] pt-2 space-y-1 max-h-48 overflow-y-auto">
+                    <div className="border-t border-[#3d2412] pt-2 space-y-1 max-h-48 overflow-y-auto">
                       {customCostItems.map((item) => {
                         const itemRoi = item.cost > 0 ? ((item.benefit - item.cost) / item.cost) * 100 : 0;
                         return (
-                          <div key={item.id} className="flex items-center justify-between text-[11px] bg-[#1e4a28]/50 rounded-lg px-2 py-1.5">
+                          <div key={item.id} className="flex items-center justify-between text-[11px] bg-[#3d2412]/50 rounded-lg px-2 py-1.5">
                             <div className="min-w-0">
                               <p className="font-medium text-gray-800 truncate">{item.description}</p>
                               <p className="text-[10px] text-gray-500">
@@ -3930,7 +3930,7 @@ export const PhaseDetailPage: React.FC = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 {validationTechniques.map((technique) => (
-                  <div key={technique.id} className="p-4 rounded-xl border border-[#1e4a28] hover:border-blue-300 hover:shadow-md transition-all cursor-pointer bg-[#152238]">
+                  <div key={technique.id} className="p-4 rounded-xl border border-[#3d2412] hover:border-blue-300 hover:shadow-md transition-all cursor-pointer bg-[#152238]">
                     <div className="flex items-start gap-3">
                       <div className="p-2 bg-blue-100 rounded-lg">
                         <technique.icon className="h-5 w-5 text-blue-600" />
@@ -4031,7 +4031,7 @@ export const PhaseDetailPage: React.FC = () => {
           )}
 
           {latestArtifact && (
-            <Card className="border border-dashed border-[#1e4a28]">
+            <Card className="border border-dashed border-[#3d2412]">
               <CardContent className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <p className="text-xs uppercase text-gray-500">Last generated</p>
@@ -4050,7 +4050,7 @@ export const PhaseDetailPage: React.FC = () => {
             </Card>
           )}
 
-          <Card className="bg-[#1e4a28]/50 border border-[#1e4a28]">
+          <Card className="bg-[#3d2412]/50 border border-[#3d2412]">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-gray-600" />
@@ -4061,7 +4061,7 @@ export const PhaseDetailPage: React.FC = () => {
             <CardContent className="space-y-3">
               <textarea
                 ref={unifiedPromptRef}
-                className="w-full border border-[#1e4a28] rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                className="w-full border border-[#3d2412] rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:border-transparent"
                 rows={3}
                 placeholder="E.g., 'Generate the validation checklist with stakeholder signoff steps'"
               />
@@ -4101,7 +4101,7 @@ export const PhaseDetailPage: React.FC = () => {
                 {diagramTypes.map((diagram) => {
                   const artifact = artifacts.find(a => a.type?.toLowerCase().includes(diagram.id));
                   return (
-                    <div key={diagram.id} className={`p-4 rounded-xl border-2 transition-all cursor-pointer ${artifact ? 'border-violet-300 bg-violet-50' : 'border-dashed border-gray-300 bg-[#1e4a28]/50 hover:border-violet-300'}`} onClick={() => navigate(`/projects/${id}/uml/${diagram.id}`)}>
+                    <div key={diagram.id} className={`p-4 rounded-xl border-2 transition-all cursor-pointer ${artifact ? 'border-violet-300 bg-violet-50' : 'border-dashed border-gray-300 bg-[#3d2412]/50 hover:border-violet-300'}`} onClick={() => navigate(`/projects/${id}/uml/${diagram.id}`)}>
                       <div className="flex items-center gap-3 mb-3">
                         <div className={`p-2 rounded-lg ${artifact ? 'bg-violet-200' : 'bg-gray-200'}`}>
                           <diagram.icon className={`h-5 w-5 ${artifact ? 'text-violet-600' : 'text-gray-500'}`} />
@@ -4214,7 +4214,7 @@ export const PhaseDetailPage: React.FC = () => {
                 </p>
               </div>
               <textarea
-                className="w-full border border-[#1e4a28] rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent min-h-[150px] resize-none"
+                className="w-full border border-[#3d2412] rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent min-h-[150px] resize-none"
                 placeholder={`What would you like to accomplish in the ${phaseConfig.title} phase?`}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -4229,9 +4229,9 @@ export const PhaseDetailPage: React.FC = () => {
               </div>
 
               {/* Document Preview */}
-              <div className="border-t border-[#1e4a28] pt-4 mt-4">
+              <div className="border-t border-[#3d2412] pt-4 mt-4">
                 <p className="text-sm font-medium text-gray-300 mb-3">Phase Document</p>
-                <div className="border border-[#1e4a28] rounded-lg bg-[#152238] p-4 min-h-[300px] max-h-[500px] overflow-y-auto">
+                <div className="border border-[#3d2412] rounded-lg bg-[#152238] p-4 min-h-[300px] max-h-[500px] overflow-y-auto">
                   {phaseMarkdown ? (
                     <div className="prose prose-sm max-w-none">
                       <ReactMarkdown>{phaseMarkdown}</ReactMarkdown>
