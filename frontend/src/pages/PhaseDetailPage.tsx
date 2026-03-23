@@ -198,7 +198,7 @@ export const PhaseDetailPage: React.FC = () => {
   const [savingRisks, setSavingRisks] = useState(false);
   const { user } = useAuthStore();
   const userAuthority = user?.role_authority || 0;
-  const canTriggerAi = userAuthority >= 3;
+  const canTriggerAi = true; // All authenticated users can use AI generation
 
   const handleUpdateTask = async (taskId: string, patch: Partial<Task>) => {
     try {

@@ -28,30 +28,33 @@ const PhaseTree: React.FC<{
   const [hoveredPhase, setHoveredPhase] = useState<string | null>(null);
 
   // Tree layout: trunk center-bottom, branches spreading up
-  // 9 phases arranged as a living tree
+  // All 10 phases with correct backend IDs
   const treeNodes = [
-    { id: 'feasibility_study',      x: 400, y: 480, label: 'Feasibility',  level: 1 },
-    { id: 'requirements_gathering', x: 250, y: 375, label: 'Requirements', level: 2 },
-    { id: 'system_design',          x: 560, y: 375, label: 'System Design', level: 2 },
-    { id: 'design',                 x: 140, y: 265, label: 'Design',       level: 3 },
-    { id: 'planning_roadmap',       x: 355, y: 255, label: 'Roadmap',      level: 3 },
-    { id: 'development',            x: 620, y: 265, label: 'Development',  level: 3 },
-    { id: 'gantt_chart',            x: 215, y: 152, label: 'Timeline',     level: 4 },
-    { id: 'validation',             x: 535, y: 152, label: 'Validation',   level: 4 },
-    { id: 'summary',                x: 375, y: 62,  label: 'Summary',      level: 5 },
+    { id: 'planning',               x: 400, y: 490, label: 'Planning',      level: 1 },
+    { id: 'feasibility_study',      x: 240, y: 395, label: 'Feasibility',   level: 2 },
+    { id: 'validation',             x: 560, y: 395, label: 'Validation',    level: 2 },
+    { id: 'requirements_gathering', x: 130, y: 295, label: 'Requirements',  level: 3 },
+    { id: 'design',                 x: 395, y: 290, label: 'Design',        level: 3 },
+    { id: 'development',            x: 650, y: 295, label: 'Development',   level: 3 },
+    { id: 'tasks',                  x: 195, y: 190, label: 'Tasks',         level: 4 },
+    { id: 'cost_benefit',           x: 400, y: 185, label: 'Cost/Benefit',  level: 4 },
+    { id: 'risks',                  x: 610, y: 190, label: 'Risks',         level: 4 },
+    { id: 'summary',                x: 400, y: 80,  label: 'Summary',       level: 5 },
   ];
 
   // Branch connections (parent → child)
   const branches = [
+    ['planning',               'feasibility_study'],
+    ['planning',               'validation'],
     ['feasibility_study',      'requirements_gathering'],
-    ['feasibility_study',      'system_design'],
-    ['requirements_gathering', 'design'],
-    ['requirements_gathering', 'planning_roadmap'],
-    ['system_design',          'development'],
-    ['planning_roadmap',       'gantt_chart'],
-    ['development',            'validation'],
-    ['gantt_chart',            'summary'],
-    ['validation',             'summary'],
+    ['feasibility_study',      'design'],
+    ['validation',             'development'],
+    ['requirements_gathering', 'tasks'],
+    ['design',                 'cost_benefit'],
+    ['development',            'risks'],
+    ['tasks',                  'summary'],
+    ['cost_benefit',           'summary'],
+    ['risks',                  'summary'],
   ];
 
   const getNodeColor = (phaseId: string) => {
@@ -500,7 +503,7 @@ export const ProjectDetailPage: React.FC = () => {
 
   const statusPillStyles: Record<string, string> = {
     completed:   'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
-    ready:       'bg-[#4ade80]/20 text-[#4ade80] border border-[#4ade80]/30',
+    ready:       'bg-[#D4A017]/20 text-[#D4A017] border border-[#D4A017]/30',
     in_progress: 'bg-[#fbbf24]/20 text-[#fbbf24] border border-[#fbbf24]/30',
     locked:      'bg-[#3d2412]/30 text-[#8a7055] border border-[#3d2412]',
   };
@@ -530,7 +533,7 @@ export const ProjectDetailPage: React.FC = () => {
       <Layout>
         <div className="text-center py-16">
           <h2 className="text-2xl font-bold text-[#f0e4c8] mb-4">Project not found</h2>
-          <Button onClick={() => navigate('/projects')} className="bg-gradient-to-r from-[#4ade80] to-[#3d8a55] text-[#130c07]">Back to Projects</Button>
+          <Button onClick={() => navigate('/projects')} className="bg-gradient-to-r from-[#D4A017] to-[#c8870f] text-[#130c07]">Back to Projects</Button>
         </div>
       </Layout>
     );
@@ -654,7 +657,7 @@ export const ProjectDetailPage: React.FC = () => {
                   <dl className="mt-4 space-y-3 text-sm text-[#8a7055]">
                     <div className="flex justify-between">
                       <span>Status</span>
-                      <span className="font-medium text-[#4ade80]">{project.status}</span>
+                      <span className="font-medium text-[#D4A017]">{project.status}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Type</span>
@@ -686,10 +689,10 @@ export const ProjectDetailPage: React.FC = () => {
                       <button
                         key={metric.label}
                         onClick={() => navigate(`/projects/${project.project_id || project.id}/phases/${metric.phase}`)}
-                        className="rounded-xl border border-[#3d2412] px-3 py-4 bg-[#221508] text-center hover:border-[#4ade80]/50 hover:bg-[#2c1b0e] transition-all cursor-pointer group"
+                        className="rounded-xl border border-[#3d2412] px-3 py-4 bg-[#221508] text-center hover:border-[#D4A017]/50 hover:bg-[#2c1b0e] transition-all cursor-pointer group"
                       >
-                        <div className="text-2xl font-semibold text-[#f0e4c8] group-hover:text-[#4ade80] transition-colors">{metric.value}</div>
-                        <div className="text-xs text-[#8a7055] group-hover:text-[#4ade80]/80 transition-colors">{metric.label}</div>
+                        <div className="text-2xl font-semibold text-[#f0e4c8] group-hover:text-[#D4A017] transition-colors">{metric.value}</div>
+                        <div className="text-xs text-[#8a7055] group-hover:text-[#D4A017]/80 transition-colors">{metric.label}</div>
                       </button>
                     ))}
                   </div>
@@ -706,7 +709,7 @@ export const ProjectDetailPage: React.FC = () => {
                         handleUnlockPhases();
                       }
                     }}
-                    className="text-[#4ade80] font-medium hover:text-[#86efac] cursor-pointer"
+                    className="text-[#D4A017] font-medium hover:text-[#e8bf40] cursor-pointer"
                   >
                     Unlock all phases
                   </span>
@@ -716,7 +719,7 @@ export const ProjectDetailPage: React.FC = () => {
               <div className="bg-[#1a1008] border border-[#3d2412]/50 rounded-2xl p-6 shadow-lg space-y-3">
                 <div className="flex items-center justify-between">
                   <h2 className="text-base font-semibold text-[#f0e4c8]">Project Brief</h2>
-                  <Button variant="outline" size="sm" onClick={() => goToDraft('overview')} className="border-[#3d2412] text-[#8a7055] hover:border-[#4ade80]/50 hover:text-[#4ade80]">
+                  <Button variant="outline" size="sm" onClick={() => goToDraft('overview')} className="border-[#3d2412] text-[#8a7055] hover:border-[#D4A017]/50 hover:text-[#D4A017]">
                     Open Draft
                   </Button>
                 </div>
@@ -729,10 +732,10 @@ export const ProjectDetailPage: React.FC = () => {
                 <h2 className="text-base font-semibold text-[#f0e4c8]">Governance &amp; Updates</h2>
                 <p className="text-sm text-[#8a7055]">Manage membership, branching, and development logs.</p>
                 <div className="flex flex-col gap-2">
-                  <Button variant="outline" onClick={() => navigate(`/projects/${project.project_id || project.id}/governance`)} className="border-[#3d2412] text-[#8a7055] hover:border-[#4ade80]/50 hover:text-[#4ade80]">
+                  <Button variant="outline" onClick={() => navigate(`/projects/${project.project_id || project.id}/governance`)} className="border-[#3d2412] text-[#8a7055] hover:border-[#D4A017]/50 hover:text-[#D4A017]">
                     Governance hub
                   </Button>
-                  <Button onClick={() => navigate(`/projects/${project.project_id || project.id}/updates`)} className="bg-gradient-to-r from-[#4ade80] to-[#3d8a55] text-[#130c07] font-semibold">
+                  <Button onClick={() => navigate(`/projects/${project.project_id || project.id}/updates`)} className="bg-gradient-to-r from-[#D4A017] to-[#c8870f] text-[#130c07] font-semibold">
                     Development updates
                   </Button>
                 </div>
@@ -770,7 +773,7 @@ export const ProjectDetailPage: React.FC = () => {
                       List
                     </button>
                   </div>
-                  <Button variant="outline" size="sm" onClick={handleExportAllPhases} disabled={!Object.keys(phaseOutputs).length} className="border-[#3d2412] text-[#8a7055] hover:border-[#4ade80]/50 hover:text-[#4ade80]">
+                  <Button variant="outline" size="sm" onClick={handleExportAllPhases} disabled={!Object.keys(phaseOutputs).length} className="border-[#3d2412] text-[#8a7055] hover:border-[#D4A017]/50 hover:text-[#D4A017]">
                     Export All
                   </Button>
                 </div>
@@ -840,7 +843,7 @@ export const ProjectDetailPage: React.FC = () => {
                         className={`w-full text-left ${phaseRowPadding} hover:bg-[#2c1b0e] transition cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4ade80] rounded-xl`}
                       >
                         <div className="flex items-start gap-3 sm:gap-4">
-                          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#4ade80]/20 text-[#4ade80] border border-[#4ade80]/30 flex items-center justify-center text-xs sm:text-sm font-semibold flex-shrink-0">
+                          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#D4A017]/20 text-[#D4A017] border border-[#D4A017]/30 flex items-center justify-center text-xs sm:text-sm font-semibold flex-shrink-0">
                             {phase.stepNumber}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -865,7 +868,7 @@ export const ProjectDetailPage: React.FC = () => {
                                         handleExportPhase(phase.id);
                                       }
                                     }}
-                                    className="text-xs font-semibold text-[#4ade80] hover:text-[#86efac]"
+                                    className="text-xs font-semibold text-[#D4A017] hover:text-[#e8bf40]"
                                   >
                                     Export
                                   </span>
