@@ -4,7 +4,8 @@ import logging
 import json
 import asyncio
 import time
-import google.generativeai as genai
+from google import genai as _genai_module
+from google.genai import types as genai_types
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -18,6 +19,8 @@ from config import settings
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+_genai_client = _genai_module.Client(api_key=settings.gemini_api_key) if settings.gemini_api_key else None
 phase_service = PhaseFlowService()
 project_service = ProjectService()
 
@@ -137,16 +140,15 @@ async def stream_phase_generation(
                 "Produce a structured Markdown response with headings, bullet lists, and clear action items."
             )
 
-            model = genai.GenerativeModel(
-                model_name=settings.gemini_pro_model,
-                system_instruction=system_message,
-            )
-
             collected_text = ""
-            async for chunk in await model.generate_content_async(
-                full_prompt,
-                generation_config=genai.GenerationConfig(max_output_tokens=4000, temperature=0.7),
-                stream=True,
+            async for chunk in _genai_client.aio.models.generate_content_stream(
+                model=settings.gemini_pro_model,
+                contents=full_prompt,
+                config=genai_types.GenerateContentConfig(
+                    system_instruction=system_message,
+                    max_output_tokens=4000,
+                    temperature=0.7,
+                ),
             ):
                 if chunk.text:
                     collected_text += chunk.text

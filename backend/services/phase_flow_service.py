@@ -3,7 +3,8 @@
 from typing import Dict, Tuple, Optional
 import logging
 import time
-import google.generativeai as genai
+from google import genai
+from google.genai import types as genai_types
 
 from config import settings
 from repositories.project_repository import ProjectRepository
@@ -14,9 +15,10 @@ from services.markdown_formatter import MarkdownFormatter
 
 logger = logging.getLogger(__name__)
 
-# Configure Gemini once at module level
+# Configure Gemini client once at module level
+_genai_client = None
 if settings.gemini_api_key:
-    genai.configure(api_key=settings.gemini_api_key)
+    _genai_client = genai.Client(api_key=settings.gemini_api_key)
 
 PHASE_ORDER = [
     "planning",
@@ -297,17 +299,15 @@ class PhaseFlowService:
         started_at = time.perf_counter()
         try:
             logger.info(f"Calling Gemini API with model: {self.model_name} for phase: {phase}")
-            model = genai.GenerativeModel(
-                model_name=self.model_name,
-                system_instruction=system_message,
-            )
             full_prompt = f"{prompt}\n\nProduce a structured Markdown response with clear headings, bullet lists, and actionable items."
-            response_obj = await model.generate_content_async(
-                full_prompt,
-                generation_config=genai.GenerationConfig(
+            response_obj = await _genai_client.aio.models.generate_content(
+                model=self.model_name,
+                contents=full_prompt,
+                config=genai_types.GenerateContentConfig(
+                    system_instruction=system_message,
                     max_output_tokens=4000,
                     temperature=0.7,
-                )
+                ),
             )
             response = response_obj.text
             duration = int((time.perf_counter() - started_at) * 1000)

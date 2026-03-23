@@ -10,9 +10,11 @@ from typing import Literal, Optional
 import httpx
 
 try:
-    import google.generativeai as genai
+    from google import genai as _google_genai
+    from google.genai import types as _genai_types
 except ImportError:  # pragma: no cover - optional dependency
-    genai = None
+    _google_genai = None
+    _genai_types = None
 
 logger = logging.getLogger(__name__)
 
@@ -86,37 +88,23 @@ class LlmChat:
         return f"[Mock {self.provider}:{self.model}] {prompt}"
 
     async def _send_via_gemini(self, prompt: str) -> str:
-        if not self.api_key or genai is None:
+        if not self.api_key or _google_genai is None:
             logger.warning("Gemini provider selected but API key or dependency missing, falling back to mock")
             return await self._send_via_mock(prompt)
 
-        def _run_request() -> str:
-            try:
-                genai.configure(api_key=self.api_key)
-                model_name = self.model or "gemini-1.5-flash"
-                model = genai.GenerativeModel(model_name)
-                response = model.generate_content(prompt)
-                if hasattr(response, "text") and response.text:
-                    return response.text
-                # Fallback through candidates/parts
-                for candidate in getattr(response, "candidates", []) or []:
-                    content = getattr(candidate, "content", None)
-                    if not content:
-                        continue
-                    parts = getattr(content, "parts", None)
-                    if not parts:
-                        continue
-                    texts = [getattr(part, "text", "") for part in parts if getattr(part, "text", "")]
-                    if texts:
-                        return "\n".join(texts)
-                return ""
-            except Exception as exc:  # pragma: no cover - network call
-                logger.error("Gemini request failed: %s", exc)
-                return ""
+        try:
+            client = _google_genai.Client(api_key=self.api_key)
+            model_name = self.model or "gemini-2.0-flash"
+            response = await client.aio.models.generate_content(
+                model=model_name,
+                contents=prompt,
+            )
+            if hasattr(response, "text") and response.text:
+                return response.text
+            return ""
+        except Exception as exc:  # pragma: no cover - network call
+            logger.error("Gemini request failed: %s", exc)
 
-        text = await asyncio.to_thread(_run_request)
-        if text:
-            return text
         return await self._send_via_mock(prompt)
 
     async def _send_via_huggingface(self, prompt: str) -> str:
