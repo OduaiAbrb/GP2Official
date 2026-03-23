@@ -12,6 +12,7 @@ import { workspacePresets } from '@/constants/workspacePresets';
 import { useAuthStore } from '@/store/authStore';
 import ReactMarkdown from 'react-markdown';
 import { PhaseNavigation } from '@/components/PhaseNavigation';
+import { ArchitectureDiagram, parseArchitectureJson } from '@/components/ArchitectureDiagram';
 import {
   FeasibilityStudyPhase,
   PlanningRoadmapPhase,
@@ -1261,7 +1262,7 @@ export const PhaseDetailPage: React.FC = () => {
       const x = Math.max(0, ((t.start.getTime() - min.getTime()) / totalMs) * 100);
       const width = Math.max(4, ((t.end.getTime() - t.start.getTime()) / totalMs) * 100);
       const status = (localTaskStatus[t.task_id] || t.status || '').toLowerCase();
-      const color = status === 'completed' ? '#16a34a' : status === 'in_progress' ? '#2563eb' : '#c084fc';
+      const color = status === 'completed' ? '#D4A017' : status === 'in_progress' ? '#c8870f' : '#5c3820';
       const isMilestone = (t.tags || []).includes('milestone');
       return { id: t.task_id, title: t.title, x, width, y: 50 + idx * (barHeight + 16), color, isMilestone };
     });
@@ -1326,9 +1327,9 @@ export const PhaseDetailPage: React.FC = () => {
   // Phase-specific accent color for the header
   const phaseAccentColor = (() => {
     const colors: Record<string, string> = {
-      planning: '#D4A017', feasibility_study: '#7BA05B', requirements_gathering: '#3d8a55',
-      validation: '#5F7A8A', design: '#6B4C8A', development: '#8B5E3C',
-      tasks: '#D4A017', cost_benefit: '#2A9D8F', risks: '#C1440E', summary: '#a0845c',
+      planning: '#D4A017', feasibility_study: '#c8895a', requirements_gathering: '#a86d0e',
+      validation: '#e8bf40', design: '#D4A017', development: '#8B5E3C',
+      tasks: '#D4A017', cost_benefit: '#c8870f', risks: '#C1440E', summary: '#a0845c',
     };
     return colors[phaseId || ''] || '#D4A017';
   })();
@@ -1890,15 +1891,16 @@ export const PhaseDetailPage: React.FC = () => {
   }
 
   // ============================================
-  // DESIGN PHASE (AI Content + PlantUML)
+  // DESIGN PHASE (AI Content + Architecture Diagram)
   // ============================================
   if (phaseId === 'design') {
     const status = phaseStatus['design'] || 'locked';
+    const archData = phaseMarkdown ? parseArchitectureJson(phaseMarkdown) : null;
     return (
       <PhaseWrapper>
         <div className="space-y-6">
           {/* AI Generate Card */}
-          <div className="rounded-2xl p-6" style={{ background: 'linear-gradient(135deg, #1a1008, #221508)', border: '1px solid rgba(107,76,138,0.4)' }}>
+          <div className="rounded-2xl p-6" style={{ background: 'linear-gradient(135deg, #1a1008, #221508)', border: '1px solid rgba(212,160,23,0.3)' }}>
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-xl font-bold text-[#f0e4c8]">System Design</h2>
@@ -1906,7 +1908,7 @@ export const PhaseDetailPage: React.FC = () => {
               </div>
               <div className="flex items-center gap-3">
                 <Button onClick={() => handleGenerate()} disabled={isGenerating || status === 'locked'}
-                  style={{ background: 'linear-gradient(135deg, #6B4C8A, #8B68B0)', color: '#fff', border: 'none' }}>
+                  style={{ background: 'linear-gradient(135deg, #D4A017, #c8870f)', color: '#130c07', border: 'none', fontWeight: 700 }}>
                   {isGenerating
                     ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Designing...</>
                     : <><Sparkles className="mr-2 h-4 w-4" />Generate Design</>
@@ -1917,16 +1919,28 @@ export const PhaseDetailPage: React.FC = () => {
                 </Button>
               </div>
             </div>
+
+            {/* Architecture Diagram (parsed from AI JSON) */}
+            {archData && (
+              <div className="mb-5">
+                <ArchitectureDiagram data={archData} />
+              </div>
+            )}
+
             {phaseMarkdown && (
-              <div className="rounded-xl p-5 mt-2" style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(107,76,138,0.2)' }}>
-                <div className="prose prose-sm max-w-none" style={{ color: '#a8d5a8' }}>
+              <div className="rounded-xl p-5 mt-2" style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(212,160,23,0.15)' }}>
+                <div className="flex items-center gap-2 mb-3">
+                  <Sparkles className="w-3.5 h-3.5 text-[#D4A017]" />
+                  <span style={{ color: '#D4A017', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>AI Design Document</span>
+                </div>
+                <div className="prose prose-sm max-w-none text-[#f0e4c8]">
                   <ReactMarkdown>{phaseMarkdown}</ReactMarkdown>
                   <RawMarkdownDisclosure />
                 </div>
               </div>
             )}
             {!phaseMarkdown && !isGenerating && (
-              <div className="text-center py-12 text-[#4a7a56]">
+              <div className="text-center py-12 text-[#8a7055]">
                 <Layers className="w-12 h-12 mx-auto mb-3 opacity-30" />
                 <p className="font-medium">No design content yet</p>
                 <p className="text-sm mt-1">Click "Generate Design" to create your system architecture</p>
@@ -1935,7 +1949,7 @@ export const PhaseDetailPage: React.FC = () => {
           </div>
 
           {/* PlantUML Diagram Editor */}
-          <div className="rounded-2xl p-2" style={{ border: '1px solid rgba(107,76,138,0.3)' }}>
+          <div className="rounded-2xl p-2" style={{ border: '1px solid rgba(212,160,23,0.2)' }}>
             <DesignPhase projectId={id || ''} onOpenCanvas={handleOpenCanvas} />
           </div>
         </div>

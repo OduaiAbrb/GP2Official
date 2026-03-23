@@ -219,8 +219,24 @@ class PhaseFlowService:
                 "acceptance criteria verification, and traceability matrix for requirements."
             ),
             "design": (
-                "Deliver the Design Document: system architecture overview, component diagrams, data models, "
-                "API specifications, UX wireframe descriptions, and integration touchpoints."
+                "Deliver the Design Document. Begin with a ## System Architecture section that includes a JSON block "
+                "for visualization in this exact format:\n"
+                "```json\n"
+                "{\n"
+                "  \"components\": [\n"
+                "    {\"id\": \"web\", \"name\": \"React Frontend\", \"type\": \"frontend\", \"description\": \"UI layer\"},\n"
+                "    {\"id\": \"api\", \"name\": \"FastAPI Backend\", \"type\": \"backend\", \"description\": \"REST API\"},\n"
+                "    {\"id\": \"db\", \"name\": \"PostgreSQL\", \"type\": \"database\", \"description\": \"Primary DB\"}\n"
+                "  ],\n"
+                "  \"connections\": [\n"
+                "    {\"from\": \"web\", \"to\": \"api\", \"label\": \"HTTPS\"},\n"
+                "    {\"from\": \"api\", \"to\": \"db\", \"label\": \"SQL\"}\n"
+                "  ]\n"
+                "}\n"
+                "```\n"
+                "Use component types: frontend, backend, database, external, cache, queue. "
+                "Include 4-8 components and 4-8 connections relevant to this specific project. "
+                "Then continue with: data models, API specifications, UX wireframe descriptions, and integration touchpoints."
             ),
             "development": (
                 "Regenerate a complete Development Plan using all available project context (planning, feasibility, "

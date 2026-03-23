@@ -50,9 +50,14 @@ Bark-brown/amber acorn forest theme (replaced previous neon green):
 - **Nature accent (leaves only)**: `#5a9e6a`
 
 Key design features:
-- LandingPage: Cracked-acorn drop intro animation (sessionStorage-gated), then interactive SVG tree
+- LandingPage: Cracked-acorn drop intro animation (sessionStorage-gated), then interactive SVG oak tree with 10 hanging acorn nodes, each linking to a phase. Breeze sound via Web Audio API.
 - ProjectsPage: Living tree SVG with project nodes as 🌿/🍂/🌰 by status
 - ProjectDetailPage: Phase tree with acorn SVG cap on completed phases, leaf-green for active
+- ArchitectureDiagram: `frontend/src/components/ArchitectureDiagram.tsx` — Renders an interactive SVG system architecture diagram from AI-generated JSON. Parses JSON from markdown code blocks, places components in columns by type (frontend/backend/database/external/cache/queue), draws bezier connections with amber arrows. Hover highlights connected nodes.
+- Design phase: Updated AI prompt to include structured JSON architecture block + ArchitectureDiagram rendered inline
+- Phase accent colors: All amber/bark-brown. No purple or non-theme greens.
+- Gantt task bar colors: completed=#D4A017, in_progress=#c8870f, planned=#5c3820
+- google-genai package installed; backend uses `from google import genai` syntax
 - Animations: `acornDrop`, `leafGrow`, `leafSway` in `index.css`
 - CSS classes: `glow-orb-amber`, `glow-orb-bark`, `bg-grid`, `card-glass`, `text-gradient-forest` (outputs amber)
 
