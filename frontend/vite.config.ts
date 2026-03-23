@@ -86,24 +86,18 @@ export default defineConfig({
   },
   // Development server optimization
   server: {
-    // Enable HMR
     hmr: {
       overlay: true
     },
-    // Optimize dev build
     fs: {
       strict: false
     },
     host: '0.0.0.0',
-    port: 3000,
-    allowedHosts: [
-      '.preview.emergentagent.com',
-      '.emergentagent.com',
-      'localhost'
-    ],
+    port: 5000,
+    allowedHosts: 'all',
     proxy: {
       '/api': {
-        target: 'http://localhost:8002',
+        target: 'http://localhost:8000',
         changeOrigin: true,
       },
     },
