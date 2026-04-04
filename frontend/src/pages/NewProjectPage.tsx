@@ -7,11 +7,11 @@ import { Input } from '@/components/ui/Input';
 import { ArrowLeft, TreePine, Rocket, Zap, Target, Code, Smartphone, Cloud, Box, CheckCircle, Layers, FileText, Sparkles, X } from 'lucide-react';
 
 const templateTypes = [
-  { value: 'web_app',     label: 'Web Application', icon: Code,        color: 'from-[#4ade80] to-[#2d6a3f]',    bgColor: 'bg-[#4ade80]/10',   borderColor: 'border-[#4ade80]/30',   description: 'Full-featured web platform with modern frontend' },
-  { value: 'mobile_app',  label: 'Mobile App',       icon: Smartphone,  color: 'from-[#86efac] to-[#4a7a56]',    bgColor: 'bg-[#86efac]/10',   borderColor: 'border-[#86efac]/30',   description: 'Native iOS & Android applications' },
+  { value: 'web_app',     label: 'Web Application', icon: Code,        color: 'from-[var(--blue-400)] to-[var(--blue-600)]',    bgColor: 'bg-[var(--blue-400)]/10',   borderColor: 'border-[var(--blue-400)]/30',   description: 'Full-featured web platform with modern frontend' },
+  { value: 'mobile_app',  label: 'Mobile App',       icon: Smartphone,  color: 'from-[var(--blue-300)] to-[#4a7a56]',    bgColor: 'bg-[var(--blue-300)]/10',   borderColor: 'border-[var(--blue-300)]/30',   description: 'Native iOS & Android applications' },
   { value: 'api',         label: 'API Service',       icon: Zap,         color: 'from-emerald-500 to-teal-600',   bgColor: 'bg-emerald-500/10', borderColor: 'border-emerald-500/30', description: 'RESTful or GraphQL backend APIs' },
-  { value: 'desktop',     label: 'Desktop App',       icon: Box,         color: 'from-[#fbbf24] to-[#d97706]',    bgColor: 'bg-[#fbbf24]/10',   borderColor: 'border-[#fbbf24]/30',   description: 'Cross-platform desktop software' },
-  { value: 'other',       label: 'Other',             icon: Cloud,       color: 'from-[#6b9e7a] to-[#4a7a56]',    bgColor: 'bg-[#6b9e7a]/10',   borderColor: 'border-[#6b9e7a]/30',   description: 'Custom project type' },
+  { value: 'desktop',     label: 'Desktop App',       icon: Box,         color: 'from-[var(--orange-400)] to-[var(--orange-600)]',    bgColor: 'bg-[var(--orange-400)]/10',   borderColor: 'border-[var(--orange-400)]/30',   description: 'Cross-platform desktop software' },
+  { value: 'other',       label: 'Other',             icon: Cloud,       color: 'from-[var(--text-muted)] to-[#4a7a56]',    bgColor: 'bg-[var(--text-muted)]/10',   borderColor: 'border-[var(--text-muted)]/30',   description: 'Custom project type' },
 ];
 
 const stepInfo = [
@@ -88,13 +88,13 @@ export const NewProjectPage: React.FC = () => {
 
   return (
     <Layout>
-      <div className="min-h-[calc(100vh-80px)] bg-[#0a150e]">
+      <div className="min-h-[calc(100vh-80px)] bg-[var(--brand-900)]">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
           {/* Header */}
           <div className="mb-8">
             <button
               onClick={() => navigate('/projects')}
-              className="inline-flex items-center gap-2 text-sm text-[#6b9e7a] hover:text-[#4ade80] transition-colors mb-6 group"
+              className="inline-flex items-center gap-2 text-sm text-[var(--text-muted)] hover:text-[var(--blue-400)] transition-colors mb-6 group"
             >
               <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
               Back to Projects
@@ -102,23 +102,23 @@ export const NewProjectPage: React.FC = () => {
 
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
               <div className="flex items-center gap-4">
-                <div className="p-4 bg-gradient-to-br from-[#4ade80] to-[#3d8a55] rounded-2xl shadow-lg shadow-[#4ade80]/25">
-                  <TreePine className="w-8 h-8 text-[#0a150e]" />
+                <div className="p-4 bg-gradient-to-br from-[var(--blue-400)] to-[var(--blue-500)] rounded-2xl shadow-lg shadow-[var(--blue-400)]/25">
+                  <TreePine className="w-8 h-8 text-[var(--brand-900)]" />
                 </div>
                 <div>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-[#e8f5e0]">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)]">
                     Plant a New Project
                   </h1>
-                  <p className="text-[#6b9e7a] mt-1">Set up your project with AI-powered planning</p>
+                  <p className="text-[var(--text-muted)] mt-1">Set up your project with AI-powered planning</p>
                 </div>
               </div>
 
               {/* Live Preview Badge */}
               {formData.name && (
-                <div className="hidden lg:flex items-center gap-3 px-4 py-2 bg-[#0f1f15] rounded-xl border border-[#1e4a28]">
-                  <div className="w-2 h-2 bg-[#4ade80] rounded-full animate-pulse" />
-                  <span className="text-sm text-[#6b9e7a]">Preview:</span>
-                  <span className="font-semibold text-[#e8f5e0]">{formData.name}</span>
+                <div className="hidden lg:flex items-center gap-3 px-4 py-2 bg-[var(--brand-850)] rounded-xl border border-[var(--brand-700)]">
+                  <div className="w-2 h-2 bg-[var(--blue-400)] rounded-full animate-pulse" />
+                  <span className="text-sm text-[var(--text-muted)]">Preview:</span>
+                  <span className="font-semibold text-[var(--text-primary)]">{formData.name}</span>
                 </div>
               )}
             </div>
@@ -126,13 +126,13 @@ export const NewProjectPage: React.FC = () => {
 
           {/* Template Picker */}
           {showTemplatePicker ? (
-            <div className="mb-8 bg-[#0f1f15] rounded-2xl border border-[#1e4a28]/50 p-6">
+            <div className="mb-8 bg-[var(--brand-850)] rounded-2xl border border-[var(--brand-700)]/50 p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <Sparkles className="w-5 h-5 text-[#4ade80]" />
-                  <h2 className="text-lg font-bold text-[#e8f5e0]">Choose a Template</h2>
+                  <Sparkles className="w-5 h-5 text-[var(--blue-400)]" />
+                  <h2 className="text-lg font-bold text-[var(--text-primary)]">Choose a Template</h2>
                 </div>
-                <button onClick={() => setShowTemplatePicker(false)} className="text-[#6b9e7a] hover:text-[#e8f5e0] transition-colors">
+                <button onClick={() => setShowTemplatePicker(false)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -144,14 +144,14 @@ export const NewProjectPage: React.FC = () => {
                       key={tpl.id}
                       type="button"
                       onClick={() => applyTemplate(tpl)}
-                      className="flex flex-col items-start gap-2 p-4 rounded-xl bg-[#142b1a] border border-[#1e4a28] hover:border-[#4ade80]/50 hover:bg-[#1a3520] transition-all text-left group"
+                      className="flex flex-col items-start gap-2 p-4 rounded-xl bg-[var(--brand-800)] border border-[var(--brand-700)] hover:border-[var(--blue-400)]/50 hover:bg-[var(--brand-750)] transition-all text-left group"
                     >
-                      <div className="w-9 h-9 rounded-lg bg-[#4ade80]/15 border border-[#4ade80]/30 flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <TplIcon className="w-4 h-4 text-[#4ade80]" />
+                      <div className="w-9 h-9 rounded-lg bg-[var(--blue-400)]/15 border border-[var(--blue-400)]/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <TplIcon className="w-4 h-4 text-[var(--blue-400)]" />
                       </div>
                       <div>
-                        <p className="font-semibold text-[#e8f5e0] text-sm">{tpl.label}</p>
-                        <p className="text-xs text-[#6b9e7a] line-clamp-2 mt-0.5">{tpl.description}</p>
+                        <p className="font-semibold text-[var(--text-primary)] text-sm">{tpl.label}</p>
+                        <p className="text-xs text-[var(--text-muted)] line-clamp-2 mt-0.5">{tpl.description}</p>
                       </div>
                     </button>
                   );
@@ -163,7 +163,7 @@ export const NewProjectPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowTemplatePicker(true)}
-                className="inline-flex items-center gap-2 text-sm text-[#6b9e7a] hover:text-[#4ade80] transition-colors"
+                className="inline-flex items-center gap-2 text-sm text-[var(--text-muted)] hover:text-[var(--blue-400)] transition-colors"
               >
                 <Sparkles className="w-4 h-4" />
                 Start from a template
@@ -172,7 +172,7 @@ export const NewProjectPage: React.FC = () => {
           )}
 
           {/* Progress Steps */}
-          <div className="flex items-center justify-between mb-8 bg-[#0f1f15] rounded-2xl p-2 border border-[#1e4a28]/50">
+          <div className="flex items-center justify-between mb-8 bg-[var(--brand-850)] rounded-2xl p-2 border border-[var(--brand-700)]/50">
             {stepInfo.map((step, index) => (
               <React.Fragment key={step.number}>
                 <button
@@ -184,14 +184,14 @@ export const NewProjectPage: React.FC = () => {
                   }}
                   className={`flex-1 flex items-center justify-center gap-2 sm:gap-3 py-3 px-2 sm:px-4 rounded-xl transition-all ${
                     currentStep === step.number
-                      ? 'bg-gradient-to-r from-[#4ade80] to-[#3d8a55] text-[#0a150e] shadow-lg shadow-[#4ade80]/25'
+                      ? 'bg-gradient-to-r from-[var(--blue-400)] to-[var(--blue-500)] text-[var(--brand-900)] shadow-lg shadow-[var(--blue-400)]/25'
                       : currentStep > step.number
-                      ? 'bg-[#4ade80]/15 text-[#4ade80]'
-                      : 'text-[#6b9e7a] hover:text-[#a8d5a8]'
+                      ? 'bg-[var(--blue-400)]/15 text-[var(--blue-400)]'
+                      : 'text-[var(--text-muted)] hover:text-[#a8d5a8]'
                   }`}
                 >
                   {currentStep > step.number ? (
-                    <CheckCircle className="w-5 h-5 text-[#4ade80]" />
+                    <CheckCircle className="w-5 h-5 text-[var(--blue-400)]" />
                   ) : (
                     <step.icon className="w-5 h-5" />
                   )}
@@ -200,7 +200,7 @@ export const NewProjectPage: React.FC = () => {
                 </button>
                 {index < stepInfo.length - 1 && (
                   <div className={`hidden sm:block w-8 h-0.5 mx-1 rounded-full transition-colors ${
-                    currentStep > step.number ? 'bg-[#4ade80]/50' : 'bg-[#1e4a28]'
+                    currentStep > step.number ? 'bg-[var(--blue-400)]/50' : 'bg-[var(--brand-700)]'
                   }`} />
                 )}
               </React.Fragment>
@@ -208,18 +208,18 @@ export const NewProjectPage: React.FC = () => {
           </div>
 
           {/* Form */}
-          <div className="bg-[#0f1f15] rounded-3xl border border-[#1e4a28]/50 overflow-hidden">
+          <div className="bg-[var(--brand-850)] rounded-3xl border border-[var(--brand-700)]/50 overflow-hidden">
             <form onSubmit={handleSubmit}>
               {/* Step 1: Basic Info */}
               <div className={`transition-all duration-300 ${currentStep === 1 ? 'block' : 'hidden'}`}>
-                <div className="p-6 sm:p-8 border-b border-[#1e4a28]/30">
+                <div className="p-6 sm:p-8 border-b border-[var(--brand-700)]/30">
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="p-2 bg-[#4ade80]/20 rounded-lg border border-[#4ade80]/30">
-                      <Target className="w-5 h-5 text-[#4ade80]" />
+                    <div className="p-2 bg-[var(--blue-400)]/20 rounded-lg border border-[var(--blue-400)]/30">
+                      <Target className="w-5 h-5 text-[var(--blue-400)]" />
                     </div>
-                    <h2 className="text-xl font-bold text-[#e8f5e0]">Basic Information</h2>
+                    <h2 className="text-xl font-bold text-[var(--text-primary)]">Basic Information</h2>
                   </div>
-                  <p className="text-[#6b9e7a] ml-11">Give your project a name and brief description</p>
+                  <p className="text-[var(--text-muted)] ml-11">Give your project a name and brief description</p>
                 </div>
 
                 <div className="p-6 sm:p-8 space-y-6">
@@ -233,7 +233,7 @@ export const NewProjectPage: React.FC = () => {
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       placeholder="e.g., E-commerce Platform, Healthcare App"
                       required
-                      className="w-full h-12 text-lg bg-[#1a3520] border-[#1e4a28] text-[#e8f5e0] placeholder-[#6b9e7a] focus:border-[#4ade80] focus:ring-[#4ade80]/20"
+                      className="w-full h-12 text-lg bg-[var(--brand-750)] border-[var(--brand-700)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--blue-400)] focus:ring-[var(--blue-400)]/20"
                     />
                   </div>
 
@@ -244,7 +244,7 @@ export const NewProjectPage: React.FC = () => {
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       placeholder="A brief one-line overview of your project"
-                      className="w-full h-12 bg-[#1a3520] border-[#1e4a28] text-[#e8f5e0] placeholder-[#6b9e7a] focus:border-[#4ade80] focus:ring-[#4ade80]/20"
+                      className="w-full h-12 bg-[var(--brand-750)] border-[var(--brand-700)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--blue-400)] focus:ring-[var(--blue-400)]/20"
                     />
                   </div>
 
@@ -253,7 +253,7 @@ export const NewProjectPage: React.FC = () => {
                       type="button"
                       onClick={nextStep}
                       disabled={!formData.name}
-                      className="w-full h-12 bg-gradient-to-r from-[#4ade80] to-[#3d8a55] hover:from-[#86efac] hover:to-[#4ade80] text-[#0a150e] font-semibold shadow-lg shadow-[#4ade80]/25 disabled:opacity-50 disabled:shadow-none"
+                      className="w-full h-12 bg-gradient-to-r from-[var(--blue-400)] to-[var(--blue-500)] hover:from-[var(--blue-300)] hover:to-[var(--blue-400)] text-[var(--brand-900)] font-semibold shadow-lg shadow-[var(--blue-400)]/25 disabled:opacity-50 disabled:shadow-none"
                     >
                       Continue to Project Type
                       <TreePine className="w-5 h-5 ml-2" />
@@ -264,14 +264,14 @@ export const NewProjectPage: React.FC = () => {
 
               {/* Step 2: Project Type */}
               <div className={`transition-all duration-300 ${currentStep === 2 ? 'block' : 'hidden'}`}>
-                <div className="p-6 sm:p-8 border-b border-[#1e4a28]/30">
+                <div className="p-6 sm:p-8 border-b border-[var(--brand-700)]/30">
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="p-2 bg-[#86efac]/20 rounded-lg border border-[#86efac]/30">
-                      <Layers className="w-5 h-5 text-[#86efac]" />
+                    <div className="p-2 bg-[var(--blue-300)]/20 rounded-lg border border-[var(--blue-300)]/30">
+                      <Layers className="w-5 h-5 text-[var(--blue-300)]" />
                     </div>
-                    <h2 className="text-xl font-bold text-[#e8f5e0]">Project Type</h2>
+                    <h2 className="text-xl font-bold text-[var(--text-primary)]">Project Type</h2>
                   </div>
-                  <p className="text-[#6b9e7a] ml-11">What kind of software are you building?</p>
+                  <p className="text-[var(--text-muted)] ml-11">What kind of software are you building?</p>
                 </div>
 
                 <div className="p-6 sm:p-8 space-y-6">
@@ -284,7 +284,7 @@ export const NewProjectPage: React.FC = () => {
                         className={`relative p-5 rounded-2xl border-2 text-left transition-all ${
                           formData.template_type === template.value
                             ? `${template.borderColor} ${template.bgColor} shadow-md`
-                            : 'border-[#1e4a28] bg-[#1a3520] hover:border-[#4ade80]/30 hover:shadow-sm'
+                            : 'border-[var(--brand-700)] bg-[var(--brand-750)] hover:border-[var(--blue-400)]/30 hover:shadow-sm'
                         }`}
                       >
                         <div className="flex items-start gap-4">
@@ -292,13 +292,13 @@ export const NewProjectPage: React.FC = () => {
                             <template.icon className="w-5 h-5 text-white" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-[#e8f5e0] mb-1">{template.label}</h3>
-                            <p className="text-sm text-[#6b9e7a] line-clamp-2">{template.description}</p>
+                            <h3 className="font-semibold text-[var(--text-primary)] mb-1">{template.label}</h3>
+                            <p className="text-sm text-[var(--text-muted)] line-clamp-2">{template.description}</p>
                           </div>
                         </div>
                         {formData.template_type === template.value && (
                           <div className="absolute top-3 right-3">
-                            <CheckCircle className="w-5 h-5 text-[#4ade80]" />
+                            <CheckCircle className="w-5 h-5 text-[var(--blue-400)]" />
                           </div>
                         )}
                       </button>
@@ -310,7 +310,7 @@ export const NewProjectPage: React.FC = () => {
                       type="button"
                       onClick={prevStep}
                       variant="outline"
-                      className="flex-1 h-12 border-[#1e4a28] text-[#6b9e7a] hover:border-[#4ade80]/50 hover:text-[#4ade80] bg-transparent"
+                      className="flex-1 h-12 border-[var(--brand-700)] text-[var(--text-muted)] hover:border-[var(--blue-400)]/50 hover:text-[var(--blue-400)] bg-transparent"
                     >
                       <ArrowLeft className="w-4 h-4 mr-2" />
                       Back
@@ -318,7 +318,7 @@ export const NewProjectPage: React.FC = () => {
                     <Button
                       type="button"
                       onClick={nextStep}
-                      className="flex-1 h-12 bg-gradient-to-r from-[#4ade80] to-[#3d8a55] hover:from-[#86efac] hover:to-[#4ade80] text-[#0a150e] font-semibold shadow-lg shadow-[#4ade80]/25"
+                      className="flex-1 h-12 bg-gradient-to-r from-[var(--blue-400)] to-[var(--blue-500)] hover:from-[var(--blue-300)] hover:to-[var(--blue-400)] text-[var(--brand-900)] font-semibold shadow-lg shadow-[var(--blue-400)]/25"
                     >
                       Continue to Brief
                       <TreePine className="w-5 h-5 ml-2" />
@@ -329,14 +329,14 @@ export const NewProjectPage: React.FC = () => {
 
               {/* Step 3: Project Brief */}
               <div className={`transition-all duration-300 ${currentStep === 3 ? 'block' : 'hidden'}`}>
-                <div className="p-6 sm:p-8 border-b border-[#1e4a28]/30">
+                <div className="p-6 sm:p-8 border-b border-[var(--brand-700)]/30">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="p-2 bg-emerald-500/20 rounded-lg border border-emerald-500/30">
                       <FileText className="w-5 h-5 text-emerald-400" />
                     </div>
-                    <h2 className="text-xl font-bold text-[#e8f5e0]">Project Brief</h2>
+                    <h2 className="text-xl font-bold text-[var(--text-primary)]">Project Brief</h2>
                   </div>
-                  <p className="text-[#6b9e7a] ml-11">Describe your project vision for AI-powered planning</p>
+                  <p className="text-[var(--text-muted)] ml-11">Describe your project vision for AI-powered planning</p>
                 </div>
 
                 <div className="p-6 sm:p-8 space-y-6">
@@ -349,41 +349,41 @@ export const NewProjectPage: React.FC = () => {
                       onChange={(e) => setFormData({ ...formData, brief_text: e.target.value })}
                       placeholder="Describe features, user needs, technical requirements, goals, and any specific details that will help our AI generate comprehensive requirements..."
                       rows={8}
-                      className="w-full px-4 py-3 bg-[#1a3520] border border-[#1e4a28] rounded-xl text-[#e8f5e0] placeholder-[#6b9e7a] focus:border-[#4ade80] focus:ring-2 focus:ring-[#4ade80]/20 transition-all resize-none"
+                      className="w-full px-4 py-3 bg-[var(--brand-750)] border border-[var(--brand-700)] rounded-xl text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--blue-400)] focus:ring-2 focus:ring-[var(--blue-400)]/20 transition-all resize-none"
                     />
                     <div className="flex justify-between items-center mt-2">
-                      <span className="text-xs text-[#6b9e7a]">Optional but recommended</span>
-                      <span className="text-xs text-[#6b9e7a]">{formData.brief_text.length} characters</span>
+                      <span className="text-xs text-[var(--text-muted)]">Optional but recommended</span>
+                      <span className="text-xs text-[var(--text-muted)]">{formData.brief_text.length} characters</span>
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-3 p-4 bg-[#4ade80]/10 rounded-xl border border-[#4ade80]/30">
-                    <div className="p-1.5 bg-[#4ade80]/20 rounded-lg">
-                      <Zap className="w-4 h-4 text-[#4ade80]" />
+                  <div className="flex items-start gap-3 p-4 bg-[var(--blue-400)]/10 rounded-xl border border-[var(--blue-400)]/30">
+                    <div className="p-1.5 bg-[var(--blue-400)]/20 rounded-lg">
+                      <Zap className="w-4 h-4 text-[var(--blue-400)]" />
                     </div>
                     <div className="text-sm">
-                      <p className="font-semibold text-[#4ade80] mb-1">Pro Tip</p>
-                      <p className="text-[#6b9e7a]">The more detailed your brief, the better our AI can generate requirements, architecture, and planning documents!</p>
+                      <p className="font-semibold text-[var(--blue-400)] mb-1">Pro Tip</p>
+                      <p className="text-[var(--text-muted)]">The more detailed your brief, the better our AI can generate requirements, architecture, and planning documents!</p>
                     </div>
                   </div>
 
                   {/* Summary Preview */}
-                  <div className="p-4 bg-[#1a3520] rounded-xl border border-[#1e4a28]">
+                  <div className="p-4 bg-[var(--brand-750)] rounded-xl border border-[var(--brand-700)]">
                     <h4 className="text-sm font-semibold text-[#a8d5a8] mb-3">Project Summary</h4>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-[#6b9e7a]">Name</span>
-                        <span className="font-medium text-[#e8f5e0]">{formData.name || '—'}</span>
+                        <span className="text-[var(--text-muted)]">Name</span>
+                        <span className="font-medium text-[var(--text-primary)]">{formData.name || '—'}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-[#6b9e7a]">Type</span>
-                        <span className="font-medium text-[#e8f5e0]">
+                        <span className="text-[var(--text-muted)]">Type</span>
+                        <span className="font-medium text-[var(--text-primary)]">
                           {templateTypes.find(t => t.value === formData.template_type)?.label || '—'}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-[#6b9e7a]">Brief</span>
-                        <span className="font-medium text-[#e8f5e0]">
+                        <span className="text-[var(--text-muted)]">Brief</span>
+                        <span className="font-medium text-[var(--text-primary)]">
                           {formData.brief_text ? `${formData.brief_text.length} chars` : 'Not provided'}
                         </span>
                       </div>
@@ -395,7 +395,7 @@ export const NewProjectPage: React.FC = () => {
                       type="button"
                       onClick={prevStep}
                       variant="outline"
-                      className="flex-1 h-12 border-[#1e4a28] text-[#6b9e7a] hover:border-[#4ade80]/50 hover:text-[#4ade80] bg-transparent"
+                      className="flex-1 h-12 border-[var(--brand-700)] text-[var(--text-muted)] hover:border-[var(--blue-400)]/50 hover:text-[var(--blue-400)] bg-transparent"
                     >
                       <ArrowLeft className="w-4 h-4 mr-2" />
                       Back
@@ -403,11 +403,11 @@ export const NewProjectPage: React.FC = () => {
                     <Button
                       type="submit"
                       disabled={loading}
-                      className="flex-1 h-12 bg-gradient-to-r from-[#4ade80] to-[#3d8a55] hover:from-[#86efac] hover:to-[#4ade80] text-[#0a150e] font-semibold shadow-lg shadow-[#4ade80]/25 disabled:opacity-70"
+                      className="flex-1 h-12 bg-gradient-to-r from-[var(--blue-400)] to-[var(--blue-500)] hover:from-[var(--blue-300)] hover:to-[var(--blue-400)] text-[var(--brand-900)] font-semibold shadow-lg shadow-[var(--blue-400)]/25 disabled:opacity-70"
                     >
                       {loading ? (
                         <>
-                          <div className="w-5 h-5 mr-2 border-2 border-[#0a150e] border-t-transparent rounded-full animate-spin" />
+                          <div className="w-5 h-5 mr-2 border-2 border-[var(--brand-900)] border-t-transparent rounded-full animate-spin" />
                           Planting Project...
                         </>
                       ) : (

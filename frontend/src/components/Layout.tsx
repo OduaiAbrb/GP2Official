@@ -2,290 +2,338 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import {
-  LogOut,
-  MessageCircle,
-  FolderKanban,
-  Settings,
-  Bell,
-  Search,
-  Menu,
-  X,
-  ChevronRight,
-  ChevronLeft,
-  Plus,
-  Sparkles,
-  User,
-  HelpCircle,
-  BarChart3,
-  Kanban,
-  FileText,
-  Users,
-  CreditCard,
-  TreePine
+  LogOut, MessageCircle, FolderKanban, Settings, Bell, Search,
+  Menu, X, ChevronRight, ChevronLeft, Plus, Sparkles, User,
+  HelpCircle, BarChart3, Kanban, FileText, Users, CreditCard,
+  Zap, BookOpen,
 } from 'lucide-react';
 import { ConversationalDock } from '@/components/ConversationalDock';
 
-interface LayoutProps {
-  children: React.ReactNode;
-}
+interface LayoutProps { children: React.ReactNode; }
 
 const navItems = [
   { id: 'projects',  icon: FolderKanban, label: 'Projects',  path: '/projects' },
   { id: 'analytics', icon: BarChart3,    label: 'Analytics', path: '/analytics' },
+  { id: 'docs',      icon: BookOpen,     label: 'Docs',      path: '/docs' },
   { id: 'profile',   icon: User,         label: 'Profile',   path: '/profile' },
 ];
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const { user, logout }         = useAuthStore();
-  const navigate                 = useNavigate();
-  const location                 = useLocation();
-  const [assistantOpen, setAssistantOpen]     = useState(false);
+  const { user, logout }          = useAuthStore();
+  const navigate                  = useNavigate();
+  const location                  = useLocation();
+  const [assistantOpen, setAssistantOpen]       = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen]   = useState(false);
-  const [isVisible, setIsVisible]             = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen]     = useState(false);
 
   useEffect(() => {
-    setIsVisible(true);
-    const savedState = localStorage.getItem('sidebar_collapsed');
-    if (savedState !== null) setSidebarCollapsed(savedState === 'true');
+    const saved = localStorage.getItem('sidebar_collapsed');
+    if (saved !== null) setSidebarCollapsed(saved === 'true');
   }, []);
 
   useEffect(() => {
     localStorage.setItem('sidebar_collapsed', String(sidebarCollapsed));
   }, [sidebarCollapsed]);
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
-  };
+  const handleLogout = async () => { await logout(); navigate('/login'); };
 
-  const projectMatch  = useMemo(() => location.pathname.match(/\/projects\/([^/]+)/), [location.pathname]);
+  const projectMatch    = useMemo(() => location.pathname.match(/\/projects\/([^/]+)/), [location.pathname]);
   const activeProjectId = projectMatch && projectMatch[1]?.length > 6 ? projectMatch[1] : null;
 
-  useEffect(() => {
-    if (!activeProjectId) setAssistantOpen(false);
-  }, [activeProjectId]);
+  useEffect(() => { if (!activeProjectId) setAssistantOpen(false); }, [activeProjectId]);
 
   const isActive = (path: string) => {
-    if (path === '/projects') {
-      return location.pathname === path || location.pathname.startsWith('/projects/');
-    }
+    if (path === '/projects') return location.pathname === path || location.pathname.startsWith('/projects/');
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
 
-  return (
-    <div className="min-h-screen bg-[#0a150e] flex">
-      {/* Background */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-grid opacity-10" />
-        {/* Subtle ambient forest glow */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(74,222,128,0.04) 0%, transparent 70%)', filter: 'blur(60px)' }}
-        />
-      </div>
+  const sidebarW = sidebarCollapsed ? '72px' : '240px';
 
-      {/* Sidebar - Desktop */}
-      <aside
-        className={`hidden lg:flex flex-col fixed left-0 top-0 h-screen bg-[#0f1f15] border-r border-[#1e4a28]/50 transition-all duration-300 z-40 ${
-          sidebarCollapsed ? 'w-20' : 'w-64'
-        }`}
+  return (
+    <div style={{ minHeight: '100vh', background: 'var(--brand-900)', display: 'flex', fontFamily: "'DM Sans', sans-serif" }}>
+
+      {/* Background grid */}
+      <div className="bg-grid" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', opacity: 0.6 }} />
+      <div className="glow-orb glow-orb-forest" style={{ width: '500px', height: '500px', top: '10%', left: '5%', opacity: 0.4 }} />
+
+      {/* ── Sidebar Desktop ── */}
+      <aside style={{
+        display: 'none',
+        position: 'fixed', left: 0, top: 0, height: '100vh', width: sidebarW,
+        background: 'var(--brand-850)',
+        borderRight: '1px solid rgba(26,111,212,0.18)',
+        flexDirection: 'column',
+        zIndex: 40,
+        transition: 'width 0.3s var(--ease-out-expo)',
+      }}
+        className="lg:flex flex-col"
       >
         {/* Logo */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-[#1e4a28]/50">
-          <Link to="/projects" className="flex items-center gap-3 group">
-            <div className="relative flex-shrink-0">
-              <div className="absolute inset-0 bg-gradient-to-br from-[#4ade80] to-[#2d6a3f] rounded-xl blur-md opacity-40 group-hover:opacity-60 transition-opacity" />
-              <div className="relative w-10 h-10 bg-gradient-to-br from-[#4ade80] to-[#3d8a55] rounded-xl flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
-                <TreePine className="w-5 h-5 text-[#0a150e]" />
+        <div style={{
+          height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '0 16px', borderBottom: '1px solid rgba(26,111,212,0.18)',
+          flexShrink: 0,
+        }}>
+          <Link to="/projects" style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none' }}>
+            <div style={{ position: 'relative', flexShrink: 0 }}>
+              <div style={{
+                position: 'absolute', inset: 0,
+                background: 'linear-gradient(135deg, #1A6FD4, #0d2b52)',
+                borderRadius: '10px', filter: 'blur(6px)', opacity: 0.5,
+              }} />
+              <div style={{
+                position: 'relative', width: '38px', height: '38px',
+                background: 'linear-gradient(135deg, #1A6FD4, #0d2b52)',
+                borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Zap size={18} color="#fff" />
               </div>
             </div>
             {!sidebarCollapsed && (
-              <span className="text-xl font-bold text-gradient-forest">Acorn</span>
+              <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '18px', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+                Acorn
+              </span>
             )}
           </Link>
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="p-2 rounded-lg text-[#6b9e7a] hover:text-[#e8f5e0] hover:bg-[#1e4a28]/50 transition-all"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '6px', borderRadius: '8px' }}
           >
-            {sidebarCollapsed ? (
-              <ChevronRight className="w-4 h-4" />
-            ) : (
-              <ChevronLeft className="w-4 h-4" />
-            )}
+            {sidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
           </button>
         </div>
 
-        {/* Quick Action */}
-        <div className="p-3">
+        {/* New Project button */}
+        <div style={{ padding: '12px' }}>
           <button
             onClick={() => navigate('/projects/new')}
-            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl bg-gradient-to-r from-[#4ade80] to-[#3d8a55] hover:from-[#86efac] hover:to-[#4ade80] text-[#0a150e] font-semibold shadow-lg shadow-[#4ade80]/20 transition-all ${
-              sidebarCollapsed ? 'justify-center' : ''
-            }`}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+              padding: sidebarCollapsed ? '10px' : '10px 16px',
+              justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
+              background: 'linear-gradient(135deg, #F97316, #cc4900)',
+              border: 'none', borderRadius: '10px', cursor: 'pointer',
+              color: '#fff', fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: '14px',
+              boxShadow: '0 4px 16px rgba(249,115,22,0.35)',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-1px)')}
+            onMouseLeave={e => (e.currentTarget.style.transform = 'translateY(0)')}
           >
-            <Plus className="w-5 h-5 flex-shrink-0" />
+            <Plus size={16} />
             {!sidebarCollapsed && <span>New Project</span>}
           </button>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
+        {/* Nav items */}
+        <nav style={{ flex: 1, padding: '4px 8px', overflowY: 'auto' }}>
           {!sidebarCollapsed && (
-            <div className="px-3 py-2">
-              <span className="text-xs font-semibold text-[#6b9e7a] uppercase tracking-wider">
-                Navigation
-              </span>
-            </div>
+            <p style={{ fontSize: '10px', color: 'var(--text-faint)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', padding: '8px 8px 4px' }}>
+              Navigation
+            </p>
           )}
-
-          {navItems.map((item) => {
+          {navItems.map(item => {
             const Icon   = item.icon;
             const active = isActive(item.path);
-
             return (
               <button
                 key={item.id}
                 onClick={() => navigate(item.path)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
-                  active
-                    ? 'bg-[#4ade80]/10 text-[#4ade80] border border-[#4ade80]/30'
-                    : 'text-[#6b9e7a] hover:text-[#e8f5e0] hover:bg-[#1e4a28]/30 border border-transparent'
-                } ${sidebarCollapsed ? 'justify-center' : ''}`}
                 title={sidebarCollapsed ? item.label : undefined}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center',
+                  gap: '12px', padding: '10px 12px',
+                  justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
+                  borderRadius: '10px', border: 'none', cursor: 'pointer',
+                  background: active ? 'rgba(26,111,212,0.15)' : 'transparent',
+                  borderLeft: active ? '3px solid #1A6FD4' : '3px solid transparent',
+                  color: active ? 'var(--blue-300)' : 'var(--text-muted)',
+                  fontFamily: active ? "'Syne', sans-serif" : "'DM Sans', sans-serif",
+                  fontWeight: active ? 600 : 400, fontSize: '14px',
+                  marginBottom: '2px',
+                  transition: 'all 0.15s',
+                }}
+                onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'rgba(26,111,212,0.08)'; e.currentTarget.style.color = 'var(--text-primary)'; } }}
+                onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)'; } }}
               >
-                <Icon className={`w-5 h-5 flex-shrink-0 ${active ? 'text-[#4ade80]' : ''}`} />
-                {!sidebarCollapsed && (
-                  <span className={`font-medium ${active ? 'text-[#4ade80]' : ''}`}>
-                    {item.label}
-                  </span>
-                )}
+                <Icon size={17} />
+                {!sidebarCollapsed && <span>{item.label}</span>}
                 {active && !sidebarCollapsed && (
-                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#4ade80]" />
+                  <div style={{ marginLeft: 'auto', width: '6px', height: '6px', borderRadius: '50%', background: '#1A6FD4' }} />
                 )}
               </button>
             );
           })}
         </nav>
 
-        {/* User Section */}
-        <div className="border-t border-[#1e4a28]/50 p-3">
-          {user && (
-            <div className={`flex items-center gap-3 p-3 rounded-xl bg-[#142b1a]/50 mb-3 ${sidebarCollapsed ? 'justify-center' : ''}`}>
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#4ade80]/20 to-[#2d6a3f]/20 flex items-center justify-center text-sm font-semibold text-[#4ade80] flex-shrink-0 border border-[#4ade80]/30">
+        {/* User section */}
+        <div style={{ borderTop: '1px solid rgba(26,111,212,0.15)', padding: '12px', flexShrink: 0 }}>
+          {user && !sidebarCollapsed && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '10px',
+              padding: '10px 12px', borderRadius: '10px',
+              background: 'rgba(26,111,212,0.08)',
+              marginBottom: '8px',
+            }}>
+              <div style={{
+                width: '34px', height: '34px', borderRadius: '50%', flexShrink: 0,
+                background: 'linear-gradient(135deg, rgba(26,111,212,0.3), rgba(13,43,82,0.5))',
+                border: '1px solid rgba(26,111,212,0.4)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'var(--blue-300)', fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: '13px',
+              }}>
                 {user.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
               </div>
-              {!sidebarCollapsed && (
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-[#e8f5e0] truncate">
-                    {user.full_name || user.email?.split('@')[0]}
-                  </p>
-                  <p className="text-xs text-[#6b9e7a] truncate">
-                    {user.organization || 'Enterprise'}
-                  </p>
-                </div>
-              )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: "'Syne', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>
+                  {user.full_name || user.email?.split('@')[0]}
+                </p>
+                <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {user.organization || user.role_label || 'Member'}
+                </p>
+              </div>
             </div>
           )}
-
           <button
             onClick={handleLogout}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[#6b9e7a] hover:text-red-400 hover:bg-red-500/10 transition-all ${
-              sidebarCollapsed ? 'justify-center' : ''
-            }`}
             title={sidebarCollapsed ? 'Logout' : undefined}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center',
+              gap: '10px', padding: '10px 12px',
+              justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
+              borderRadius: '10px', border: 'none', cursor: 'pointer',
+              background: 'transparent', color: 'var(--text-muted)',
+              fontSize: '14px', fontFamily: "'DM Sans', sans-serif",
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.color = '#f87171'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)'; }}
           >
-            <LogOut className="w-5 h-5 flex-shrink-0" />
-            {!sidebarCollapsed && <span className="font-medium">Logout</span>}
+            <LogOut size={16} />
+            {!sidebarCollapsed && <span>Logout</span>}
           </button>
         </div>
       </aside>
 
-      {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-[#0f1f15]/95 backdrop-blur-lg border-b border-[#1e4a28]/50 z-50 flex items-center justify-between px-4">
-        <Link to="/projects" className="flex items-center gap-2">
-          <div className="w-9 h-9 bg-gradient-to-br from-[#4ade80] to-[#3d8a55] rounded-lg flex items-center justify-center">
-            <TreePine className="w-5 h-5 text-[#0a150e]" />
+      {/* ── Mobile Header ── */}
+      <header style={{
+        position: 'fixed', top: 0, left: 0, right: 0, height: '60px',
+        background: 'rgba(17,31,48,0.95)', backdropFilter: 'blur(16px)',
+        borderBottom: '1px solid rgba(26,111,212,0.2)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 16px', zIndex: 50,
+      }} className="lg:hidden">
+        <Link to="/projects" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
+          <div style={{
+            width: '34px', height: '34px', borderRadius: '8px',
+            background: 'linear-gradient(135deg, #1A6FD4, #0d2b52)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Zap size={16} color="#fff" />
           </div>
-          <span className="text-lg font-bold text-gradient-forest">Acorn</span>
+          <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '16px', color: 'var(--text-primary)' }}>Acorn</span>
         </Link>
-
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="p-2 rounded-lg text-[#6b9e7a] hover:text-[#e8f5e0] hover:bg-[#1e4a28]/50 transition-all"
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '6px' }}
         >
-          {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
       </header>
 
-      {/* Mobile Menu Overlay */}
+      {/* Mobile menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 z-40 bg-[#0a150e]/95 backdrop-blur-lg pt-16 animate-reveal-down">
-          <nav className="p-4 space-y-2">
-            {navItems.map((item) => {
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 40, paddingTop: '60px',
+          background: 'rgba(13,27,42,0.97)', backdropFilter: 'blur(16px)',
+        }} className="lg:hidden animate-reveal-down">
+          <nav style={{ padding: '16px' }}>
+            {navItems.map(item => {
               const Icon   = item.icon;
               const active = isActive(item.path);
-
               return (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    navigate(item.path);
-                    setMobileMenuOpen(false);
+                <button key={item.id}
+                  onClick={() => { navigate(item.path); setMobileMenuOpen(false); }}
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center', gap: '16px',
+                    padding: '16px', borderRadius: '12px', border: 'none', cursor: 'pointer',
+                    background: active ? 'rgba(26,111,212,0.15)' : 'transparent',
+                    color: active ? 'var(--blue-300)' : 'var(--text-muted)',
+                    fontSize: '16px', fontFamily: "'DM Sans', sans-serif", marginBottom: '4px',
                   }}
-                  className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl transition-all ${
-                    active
-                      ? 'bg-[#4ade80]/10 text-[#4ade80] border border-[#4ade80]/30'
-                      : 'text-[#a8d5a8] hover:bg-[#1e4a28]/30'
-                  }`}
                 >
-                  <Icon className="w-6 h-6" />
-                  <span className="text-lg font-medium">{item.label}</span>
+                  <Icon size={20} />
+                  <span>{item.label}</span>
                 </button>
               );
             })}
-
-            <div className="pt-4 border-t border-[#1e4a28]/50 mt-4">
+            <div style={{ paddingTop: '16px', borderTop: '1px solid rgba(26,111,212,0.15)', marginTop: '8px' }}>
               <button
-                onClick={() => {
-                  handleLogout();
-                  setMobileMenuOpen(false);
+                onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', gap: '16px',
+                  padding: '16px', borderRadius: '12px', border: 'none', cursor: 'pointer',
+                  background: 'transparent', color: '#f87171', fontSize: '16px',
                 }}
-                className="w-full flex items-center gap-4 px-5 py-4 rounded-xl text-red-400 hover:bg-red-500/10 transition-all"
               >
-                <LogOut className="w-6 h-6" />
-                <span className="text-lg font-medium">Logout</span>
+                <LogOut size={20} />
+                <span>Logout</span>
               </button>
             </div>
           </nav>
         </div>
       )}
 
-      {/* Main Content */}
-      <main
-        className={`flex-1 transition-all duration-300 ${
-          sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-        } pt-16 lg:pt-0`}
+      {/* ── Main content ── */}
+      <main style={{
+        flex: 1,
+        marginLeft: 0,
+        paddingTop: '60px',
+        position: 'relative', zIndex: 10,
+      }}
+        className="lg:pt-0"
+        // inline style override for desktop via CSS var
       >
-        <div className="p-6 lg:p-8 relative z-10">
+        <style>{`@media (min-width:1024px) { main { margin-left: ${sidebarW}; padding-top: 0; } }`}</style>
+        <div style={{ padding: '24px 32px' }}>
           {children}
         </div>
       </main>
 
-      {/* AI Assistant */}
+      {/* ── AI Chat FAB ── */}
       {activeProjectId && (
         <>
           {!assistantOpen && (
             <button
               onClick={() => setAssistantOpen(true)}
-              className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-2xl bg-gradient-to-br from-[#4ade80] to-[#3d8a55] flex items-center justify-center shadow-lg shadow-[#4ade80]/30 hover:scale-110 hover:shadow-[#4ade80]/50 transition-all group"
+              style={{
+                position: 'fixed', bottom: '24px', right: '24px', zIndex: 50,
+                width: '52px', height: '52px', borderRadius: '50%',
+                background: 'linear-gradient(135deg, #1A6FD4, #0d2b52)',
+                border: 'none', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 8px 24px rgba(26,111,212,0.45)',
+                transition: 'transform 0.2s, box-shadow 0.2s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(26,111,212,0.6)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)';   e.currentTarget.style.boxShadow = '0 8px 24px rgba(26,111,212,0.45)'; }}
             >
-              <MessageCircle className="w-6 h-6 text-[#0a150e]" />
-              <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-[#0a150e] animate-pulse" />
+              <MessageCircle size={22} color="#fff" />
+              <div style={{
+                position: 'absolute', top: '-2px', right: '-2px',
+                width: '12px', height: '12px', borderRadius: '50%',
+                background: '#22c55e', border: '2px solid var(--brand-900)',
+                animation: 'pulse-ring 2s infinite',
+              }} />
             </button>
           )}
-
           {assistantOpen && (
-            <div className="fixed bottom-6 right-6 z-50 w-96 max-h-[600px] card-glass rounded-2xl overflow-hidden shadow-2xl animate-reveal-up">
+            <div style={{
+              position: 'fixed', bottom: '24px', right: '24px', zIndex: 50,
+              width: '380px', maxHeight: '580px',
+              borderRadius: '20px', overflow: 'hidden',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.6)',
+            }} className="animate-reveal-up">
               <ConversationalDock
                 projectId={activeProjectId}
                 open={assistantOpen}

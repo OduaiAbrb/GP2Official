@@ -79,11 +79,11 @@ export const ProjectsPage: React.FC = () => {
 
   const getStatusConfig = (status: string) => {
     const configs: Record<string, { color: string; bgColor: string; borderColor: string; icon: React.ElementType; label: string }> = {
-      draft:     { color: 'text-[#6b9e7a]',   bgColor: 'bg-[#1e4a28]/20',   borderColor: 'border-[#1e4a28]/50',  icon: Clock,        label: 'Draft' },
-      planning:  { color: 'text-[#86efac]',   bgColor: 'bg-[#4ade80]/10',   borderColor: 'border-[#4ade80]/30',  icon: Loader2,      label: 'Planning' },
-      active:    { color: 'text-[#4ade80]',   bgColor: 'bg-[#4ade80]/15',   borderColor: 'border-[#4ade80]/40',  icon: CheckCircle,  label: 'Active' },
-      completed: { color: 'text-[#fbbf24]',   bgColor: 'bg-[#fbbf24]/10',   borderColor: 'border-[#fbbf24]/30',  icon: CheckCircle,  label: 'Completed' },
-      archived:  { color: 'text-[#a8d5a8]',   bgColor: 'bg-[#1e4a28]/10',   borderColor: 'border-[#1e4a28]/30',  icon: AlertCircle,  label: 'Archived' },
+      draft:     { color: 'text-[var(--text-muted)]',   bgColor: 'bg-[var(--brand-700)]/20',   borderColor: 'border-[var(--brand-700)]/50',  icon: Clock,        label: 'Draft' },
+      planning:  { color: 'text-[var(--blue-300)]',   bgColor: 'bg-[var(--blue-400)]/10',   borderColor: 'border-[var(--blue-400)]/30',  icon: Loader2,      label: 'Planning' },
+      active:    { color: 'text-[var(--blue-400)]',   bgColor: 'bg-[var(--blue-400)]/15',   borderColor: 'border-[var(--blue-400)]/40',  icon: CheckCircle,  label: 'Active' },
+      completed: { color: 'text-[var(--orange-400)]',   bgColor: 'bg-[var(--orange-400)]/10',   borderColor: 'border-[var(--orange-400)]/30',  icon: CheckCircle,  label: 'Completed' },
+      archived:  { color: 'text-[#a8d5a8]',   bgColor: 'bg-[var(--brand-700)]/10',   borderColor: 'border-[var(--brand-700)]/30',  icon: AlertCircle,  label: 'Archived' },
     };
     return configs[status] || configs.draft;
   };
@@ -109,12 +109,12 @@ export const ProjectsPage: React.FC = () => {
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <div className="relative">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#4ade80] to-[#3d8a55] flex items-center justify-center mx-auto mb-6 animate-pulse">
-                <TreePine className="w-8 h-8 text-[#0a150e]" />
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--blue-400)] to-[var(--blue-500)] flex items-center justify-center mx-auto mb-6 animate-pulse">
+                <TreePine className="w-8 h-8 text-[var(--brand-900)]" />
               </div>
-              <div className="absolute inset-0 w-16 h-16 mx-auto rounded-2xl bg-[#4ade80]/20 blur-xl animate-pulse" />
+              <div className="absolute inset-0 w-16 h-16 mx-auto rounded-2xl bg-[var(--blue-400)]/20 blur-xl animate-pulse" />
             </div>
-            <p className="text-[#6b9e7a] text-lg">Loading your projects...</p>
+            <p className="text-[var(--text-muted)] text-lg">Loading your projects...</p>
           </div>
         </div>
       </Layout>
@@ -129,10 +129,10 @@ export const ProjectsPage: React.FC = () => {
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-2 h-8 bg-gradient-to-b from-[#4ade80] to-[#2d6a3f] rounded-full" />
-                <h1 className="text-4xl font-bold text-[#e8f5e0]">Projects</h1>
+                <div className="w-2 h-8 bg-gradient-to-b from-[var(--blue-400)] to-[var(--blue-600)] rounded-full" />
+                <h1 className="text-4xl font-bold text-[var(--text-primary)]">Projects</h1>
               </div>
-              <p className="text-[#6b9e7a] text-lg ml-5">
+              <p className="text-[var(--text-muted)] text-lg ml-5">
                 Manage and track all your enterprise project plans
               </p>
             </div>
@@ -154,24 +154,24 @@ export const ProjectsPage: React.FC = () => {
           {quickActions.map((action, index) => {
             const Icon = action.icon;
             const colorClasses = {
-              forest: 'from-[#4ade80] to-[#2d6a3f] hover:shadow-[#4ade80]/20',
-              sage:   'from-[#86efac] to-[#4a7a56] hover:shadow-[#86efac]/20',
-              amber:  'from-[#fbbf24] to-[#d97706] hover:shadow-[#fbbf24]/20',
+              forest: 'from-[var(--blue-400)] to-[var(--blue-600)] hover:shadow-[var(--blue-400)]/20',
+              sage:   'from-[var(--blue-300)] to-[#4a7a56] hover:shadow-[var(--blue-300)]/20',
+              amber:  'from-[var(--orange-400)] to-[#d97706] hover:shadow-[var(--orange-400)]/20',
               green:  'from-emerald-500 to-emerald-600 hover:shadow-emerald-500/20',
-            }[action.color] || 'from-[#4ade80] to-[#2d6a3f]';
+            }[action.color] || 'from-[var(--blue-400)] to-[var(--blue-600)]';
 
             return (
               <button
                 key={index}
                 onClick={() => handleQuickAction(action.action)}
-                className="group relative p-6 rounded-2xl bg-[#0f1f15] border border-[#1e4a28]/50 hover:border-[#4ade80]/30 transition-all duration-500 text-left overflow-hidden hover-lift"
+                className="group relative p-6 rounded-2xl bg-[var(--brand-850)] border border-[var(--brand-700)]/50 hover:border-[var(--blue-400)]/30 transition-all duration-500 text-left overflow-hidden hover-lift"
                 style={{ animationDelay: `${index * 75}ms` }}
               >
                 <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${colorClasses} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-500`}>
                   <Icon className="w-5 h-5 text-white" />
                 </div>
-                <h3 className="font-semibold text-[#e8f5e0] mb-1">{action.label}</h3>
-                <p className="text-sm text-[#6b9e7a]">{action.description}</p>
+                <h3 className="font-semibold text-[var(--text-primary)] mb-1">{action.label}</h3>
+                <p className="text-sm text-[var(--text-muted)]">{action.description}</p>
               </button>
             );
           })}
@@ -180,7 +180,7 @@ export const ProjectsPage: React.FC = () => {
         {/* Search & Filters */}
         <div className={`flex flex-col md:flex-row gap-4 mb-8 transition-all duration-700 delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#6b9e7a]" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
             <input
               type="text"
               placeholder="Search projects..."
@@ -197,16 +197,16 @@ export const ProjectsPage: React.FC = () => {
               <span className="hidden md:inline">Filters</span>
             </button>
 
-            <div className="flex items-center bg-[#0f1f15] rounded-xl p-1 border border-[#1e4a28]/50">
+            <div className="flex items-center bg-[var(--brand-850)] rounded-xl p-1 border border-[var(--brand-700)]/50">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2.5 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-[#4ade80] text-[#0a150e]' : 'text-[#6b9e7a] hover:text-[#e8f5e0]'}`}
+                className={`p-2.5 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-[var(--blue-400)] text-[var(--brand-900)]' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
               >
                 <Grid3X3 className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-2.5 rounded-lg transition-all ${viewMode === 'list' ? 'bg-[#4ade80] text-[#0a150e]' : 'text-[#6b9e7a] hover:text-[#e8f5e0]'}`}
+                className={`p-2.5 rounded-lg transition-all ${viewMode === 'list' ? 'bg-[var(--blue-400)] text-[var(--brand-900)]' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
               >
                 <List className="w-4 h-4" />
               </button>
@@ -219,20 +219,20 @@ export const ProjectsPage: React.FC = () => {
           <div className={`text-center py-20 transition-all duration-700 delay-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             {searchQuery ? (
               <>
-                <div className="w-24 h-24 rounded-2xl bg-[#142b1a] flex items-center justify-center mx-auto mb-6 border border-[#1e4a28]/50">
-                  <FolderOpen className="w-12 h-12 text-[#2d6a3f]" />
+                <div className="w-24 h-24 rounded-2xl bg-[var(--brand-800)] flex items-center justify-center mx-auto mb-6 border border-[var(--brand-700)]/50">
+                  <FolderOpen className="w-12 h-12 text-[var(--blue-600)]" />
                 </div>
-                <h3 className="text-2xl font-bold text-[#e8f5e0] mb-3">No projects match your search</h3>
-                <p className="text-[#6b9e7a] mb-8 max-w-md mx-auto">Try a different search term or clear the filter.</p>
+                <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-3">No projects match your search</h3>
+                <p className="text-[var(--text-muted)] mb-8 max-w-md mx-auto">Try a different search term or clear the filter.</p>
                 <button onClick={() => setSearchQuery('')} className="btn-secondary">Clear Search</button>
               </>
             ) : (
               <>
-                <div className="w-28 h-28 rounded-3xl bg-gradient-to-br from-[#1e4a28]/60 to-[#0f1f15] flex items-center justify-center mx-auto mb-8 border border-[rgba(30,74,40,0.5)] shadow-lg shadow-[#4ade80]/10">
-                  <Sparkles className="w-14 h-14 text-[#4ade80]" />
+                <div className="w-28 h-28 rounded-3xl bg-gradient-to-br from-[var(--brand-700)]/60 to-[var(--brand-850)] flex items-center justify-center mx-auto mb-8 border border-[rgba(30,74,40,0.5)] shadow-lg shadow-[var(--blue-400)]/10">
+                  <Sparkles className="w-14 h-14 text-[var(--blue-400)]" />
                 </div>
-                <h3 className="text-3xl font-bold text-[#e8f5e0] mb-4">Plant Your First Seed</h3>
-                <p className="text-[#6b9e7a] mb-10 max-w-lg mx-auto text-lg leading-relaxed">
+                <h3 className="text-3xl font-bold text-[var(--text-primary)] mb-4">Plant Your First Seed</h3>
+                <p className="text-[var(--text-muted)] mb-10 max-w-lg mx-auto text-lg leading-relaxed">
                   Create an AI-powered project plan in minutes. Start with a template or build from scratch.
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -281,15 +281,15 @@ export const ProjectsPage: React.FC = () => {
                       </div>
 
                       {/* Project Info */}
-                      <h3 className="text-xl font-semibold text-[#e8f5e0] mb-2 group-hover:text-[#4ade80] transition-colors line-clamp-1">
+                      <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-2 group-hover:text-[var(--blue-400)] transition-colors line-clamp-1">
                         {project.name}
                       </h3>
-                      <p className="text-[#6b9e7a] text-sm mb-6 line-clamp-2">
+                      <p className="text-[var(--text-muted)] text-sm mb-6 line-clamp-2">
                         {project.description || 'No description provided'}
                       </p>
 
                       {/* Meta Info */}
-                      <div className="flex items-center justify-between text-xs text-[#6b9e7a]">
+                      <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
                         <div className="flex items-center gap-1.5">
                           <Calendar className="w-3.5 h-3.5" />
                           {formatDate(project.created_at)}
@@ -307,7 +307,7 @@ export const ProjectsPage: React.FC = () => {
                             e.stopPropagation();
                             navigate(`/projects/${projectId}`);
                           }}
-                          className="p-2 rounded-lg bg-[#1e4a28]/50 hover:bg-[#4ade80] text-[#6b9e7a] hover:text-[#0a150e] transition-all"
+                          className="p-2 rounded-lg bg-[var(--brand-700)]/50 hover:bg-[var(--blue-400)] text-[var(--text-muted)] hover:text-[var(--brand-900)] transition-all"
                         >
                           <ExternalLink className="w-4 h-4" />
                         </button>
@@ -316,7 +316,7 @@ export const ProjectsPage: React.FC = () => {
                             e.stopPropagation();
                             setActiveMenu(activeMenu === projectId ? null : projectId);
                           }}
-                          className="p-2 rounded-lg bg-[#1e4a28]/50 hover:bg-[#1e4a28] text-[#6b9e7a] hover:text-[#e8f5e0] transition-all"
+                          className="p-2 rounded-lg bg-[var(--brand-700)]/50 hover:bg-[var(--brand-700)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"
                         >
                           <MoreVertical className="w-4 h-4" />
                         </button>
@@ -324,12 +324,12 @@ export const ProjectsPage: React.FC = () => {
                         {/* Dropdown Menu */}
                         {activeMenu === projectId && (
                           <div
-                            className="absolute top-full right-0 mt-2 w-40 bg-[#142b1a] border border-[#1e4a28]/50 rounded-xl shadow-xl overflow-hidden z-10 animate-reveal-down"
+                            className="absolute top-full right-0 mt-2 w-40 bg-[var(--brand-800)] border border-[var(--brand-700)]/50 rounded-xl shadow-xl overflow-hidden z-10 animate-reveal-down"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <button
                               onClick={() => navigate(`/projects/${projectId}`)}
-                              className="w-full flex items-center gap-2 px-4 py-3 text-sm text-[#a8d5a8] hover:bg-[#1e4a28]/30 transition-colors"
+                              className="w-full flex items-center gap-2 px-4 py-3 text-sm text-[#a8d5a8] hover:bg-[var(--brand-700)]/30 transition-colors"
                             >
                               <Edit3 className="w-4 h-4" />
                               Edit
@@ -358,19 +358,19 @@ export const ProjectsPage: React.FC = () => {
                   return (
                     <div
                       key={projectId}
-                      className="group flex items-center gap-6 p-5 rounded-xl bg-[#0f1f15] border border-[#1e4a28]/50 hover:border-[#4ade80]/30 cursor-pointer transition-all duration-300 animate-reveal-up"
+                      className="group flex items-center gap-6 p-5 rounded-xl bg-[var(--brand-850)] border border-[var(--brand-700)]/50 hover:border-[var(--blue-400)]/30 cursor-pointer transition-all duration-300 animate-reveal-up"
                       onClick={() => navigate(`/projects/${projectId}`)}
                       style={{ animationDelay: `${index * 50}ms` }}
                     >
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#4ade80]/20 to-[#2d6a3f]/20 flex items-center justify-center flex-shrink-0 border border-[#4ade80]/30">
-                        <FolderOpen className="w-6 h-6 text-[#4ade80]" />
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--blue-400)]/20 to-[var(--blue-600)]/20 flex items-center justify-center flex-shrink-0 border border-[var(--blue-400)]/30">
+                        <FolderOpen className="w-6 h-6 text-[var(--blue-400)]" />
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-semibold text-[#e8f5e0] group-hover:text-[#4ade80] transition-colors truncate">
+                        <h3 className="text-lg font-semibold text-[var(--text-primary)] group-hover:text-[var(--blue-400)] transition-colors truncate">
                           {project.name}
                         </h3>
-                        <p className="text-sm text-[#6b9e7a] truncate">
+                        <p className="text-sm text-[var(--text-muted)] truncate">
                           {project.description || 'No description'}
                         </p>
                       </div>
@@ -380,11 +380,11 @@ export const ProjectsPage: React.FC = () => {
                         {statusConfig.label}
                       </div>
 
-                      <div className="text-sm text-[#6b9e7a] hidden md:block">
+                      <div className="text-sm text-[var(--text-muted)] hidden md:block">
                         {formatDate(project.created_at)}
                       </div>
 
-                      <ArrowRight className="w-5 h-5 text-[#2d6a3f] group-hover:text-[#4ade80] group-hover:translate-x-1 transition-all" />
+                      <ArrowRight className="w-5 h-5 text-[var(--blue-600)] group-hover:text-[var(--blue-400)] group-hover:translate-x-1 transition-all" />
                     </div>
                   );
                 })}
@@ -395,34 +395,34 @@ export const ProjectsPage: React.FC = () => {
 
         {/* Stats Banner */}
         {projects.length > 0 && (
-          <div className={`mt-12 p-8 rounded-2xl bg-gradient-to-r from-[#4ade80]/10 to-[#1e4a28]/20 border border-[#4ade80]/20 transition-all duration-700 delay-400 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+          <div className={`mt-12 p-8 rounded-2xl bg-gradient-to-r from-[var(--blue-400)]/10 to-[var(--brand-700)]/20 border border-[var(--blue-400)]/20 transition-all duration-700 delay-400 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             <div className="flex flex-wrap items-center justify-between gap-8">
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-xl bg-[#4ade80]/20 flex items-center justify-center border border-[#4ade80]/30">
-                  <TrendingUp className="w-7 h-7 text-[#4ade80]" />
+                <div className="w-14 h-14 rounded-xl bg-[var(--blue-400)]/20 flex items-center justify-center border border-[var(--blue-400)]/30">
+                  <TrendingUp className="w-7 h-7 text-[var(--blue-400)]" />
                 </div>
                 <div>
-                  <h4 className="text-xl font-bold text-[#e8f5e0]">Project Overview</h4>
-                  <p className="text-sm text-[#6b9e7a]">Your enterprise portfolio at a glance</p>
+                  <h4 className="text-xl font-bold text-[var(--text-primary)]">Project Overview</h4>
+                  <p className="text-sm text-[var(--text-muted)]">Your enterprise portfolio at a glance</p>
                 </div>
               </div>
 
               <div className="flex items-center gap-12">
                 <div className="text-center">
-                  <div className="text-4xl font-bold text-[#4ade80]">{projects.length}</div>
-                  <div className="text-xs text-[#6b9e7a] mt-1">Total Projects</div>
+                  <div className="text-4xl font-bold text-[var(--blue-400)]">{projects.length}</div>
+                  <div className="text-xs text-[var(--text-muted)] mt-1">Total Projects</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-4xl font-bold text-[#86efac]">
+                  <div className="text-4xl font-bold text-[var(--blue-300)]">
                     {projects.filter(p => p.status === 'active' || p.status === 'completed').length}
                   </div>
-                  <div className="text-xs text-[#6b9e7a] mt-1">Active</div>
+                  <div className="text-xs text-[var(--text-muted)] mt-1">Active</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-4xl font-bold text-[#fbbf24]">
+                  <div className="text-4xl font-bold text-[var(--orange-400)]">
                     {projects.filter(p => p.status === 'draft' || p.status === 'planning').length}
                   </div>
-                  <div className="text-xs text-[#6b9e7a] mt-1">In Progress</div>
+                  <div className="text-xs text-[var(--text-muted)] mt-1">In Progress</div>
                 </div>
               </div>
             </div>
