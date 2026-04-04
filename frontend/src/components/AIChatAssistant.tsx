@@ -35,14 +35,14 @@ interface Props {
 const PHASE_COLORS: Record<string, string> = {
   planning:               '#D4A017',
   feasibility_study:      '#7BA05B',
-  requirements_gathering: '#3d8a55',
+  requirements_gathering: 'var(--blue-500)',
   validation:             '#5F7A8A',
   design:                 '#6B4C8A',
   development:            '#8B5E3C',
   tasks:                  '#D4A017',
   cost_benefit:           '#2A9D8F',
   risks:                  '#C1440E',
-  summary:                '#4ade80',
+  summary:                'var(--blue-400)',
 };
 
 const QUICK_PROMPTS = [
@@ -72,7 +72,7 @@ export const AIChatAssistant: React.FC<Props> = ({
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const accentColor = PHASE_COLORS[phase] || '#4ade80';
+  const accentColor = PHASE_COLORS[phase] || 'var(--blue-400)';
 
   useEffect(() => {
     if (isOpen) {
@@ -126,7 +126,7 @@ export const AIChatAssistant: React.FC<Props> = ({
           className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-2xl font-semibold text-sm shadow-2xl transition-all duration-300 hover:scale-105"
           style={{
             background: `linear-gradient(135deg, ${accentColor}cc, ${accentColor})`,
-            color: '#0a150e',
+            color: 'var(--brand-900)',
             boxShadow: `0 8px 32px ${accentColor}44`,
           }}
           title="Ask Athena about this phase"
@@ -143,7 +143,7 @@ export const AIChatAssistant: React.FC<Props> = ({
           style={{
             width: '380px',
             height: '520px',
-            background: '#0f1f15',
+            background: 'var(--brand-850)',
             border: `1px solid ${accentColor}44`,
             boxShadow: `0 20px 60px rgba(0,0,0,0.6), 0 0 40px ${accentColor}18`,
           }}
@@ -154,15 +154,15 @@ export const AIChatAssistant: React.FC<Props> = ({
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center"
                 style={{ background: accentColor }}>
-                <Sparkles className="w-4 h-4 text-[#0a150e]" />
+                <Sparkles className="w-4 h-4 text-[var(--brand-900)]" />
               </div>
               <div>
-                <p className="font-bold text-[#e8f5e0] text-sm">Athena</p>
+                <p className="font-bold text-[var(--text-primary)] text-sm">Athena</p>
                 <p className="text-xs" style={{ color: accentColor }}>{phaseName} Phase</p>
               </div>
             </div>
             <button onClick={() => setIsOpen(false)}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-[#6b9e7a] hover:text-[#e8f5e0] hover:bg-[#1e4a28] transition-all">
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--brand-700)] transition-all">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -179,8 +179,8 @@ export const AIChatAssistant: React.FC<Props> = ({
                       : 'rgba(20,43,26,0.8)',
                     border: msg.role === 'user'
                       ? `1px solid ${accentColor}44`
-                      : '1px solid rgba(30,74,40,0.5)',
-                    color: msg.role === 'user' ? '#e8f5e0' : '#a8d5a8',
+                      : '1px solid rgba(26,46,69,0.5)',
+                    color: msg.role === 'user' ? 'var(--text-primary)' : 'var(--text-muted)',
                   }}
                 >
                   {/* Render markdown-ish bold */}
@@ -195,8 +195,8 @@ export const AIChatAssistant: React.FC<Props> = ({
 
             {isSending && (
               <div className="flex justify-start">
-                <div className="px-3 py-2.5 rounded-xl" style={{ background: 'rgba(20,43,26,0.8)', border: '1px solid rgba(30,74,40,0.5)' }}>
-                  <Loader2 className="w-4 h-4 animate-spin text-[#4ade80]" />
+                <div className="px-3 py-2.5 rounded-xl" style={{ background: 'rgba(20,43,26,0.8)', border: '1px solid rgba(26,46,69,0.5)' }}>
+                  <Loader2 className="w-4 h-4 animate-spin text-[var(--blue-400)]" />
                 </div>
               </div>
             )}
@@ -226,7 +226,7 @@ export const AIChatAssistant: React.FC<Props> = ({
           {/* Input */}
           <div className="px-3 pb-3 flex-shrink-0">
             <div className="flex items-center gap-2 rounded-xl px-3 py-2"
-              style={{ background: '#142b1a', border: `1px solid ${accentColor}33` }}>
+              style={{ background: 'var(--brand-800)', border: `1px solid ${accentColor}33` }}>
               <input
                 ref={inputRef}
                 type="text"
@@ -235,7 +235,7 @@ export const AIChatAssistant: React.FC<Props> = ({
                 onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
                 placeholder="Ask about this phase..."
                 disabled={isSending}
-                className="flex-1 bg-transparent outline-none text-sm text-[#e8f5e0] placeholder-[#4a7a56] disabled:opacity-50"
+                className="flex-1 bg-transparent outline-none text-sm text-[var(--text-primary)] placeholder-[#4a7a56] disabled:opacity-50"
               />
               <button
                 onClick={() => sendMessage()}
@@ -244,12 +244,12 @@ export const AIChatAssistant: React.FC<Props> = ({
                 style={{ background: accentColor }}
               >
                 {isSending
-                  ? <Loader2 className="w-3.5 h-3.5 animate-spin text-[#0a150e]" />
-                  : <Send className="w-3.5 h-3.5 text-[#0a150e]" />
+                  ? <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--brand-900)]" />
+                  : <Send className="w-3.5 h-3.5 text-[var(--brand-900)]" />
                 }
               </button>
             </div>
-            <p className="text-xs text-center mt-1.5 text-[#2d6a3f]">Powered by Gemini 2.0 Flash</p>
+            <p className="text-xs text-center mt-1.5 text-[var(--brand-600)]">Powered by Gemini 2.0 Flash</p>
           </div>
         </div>
       )}

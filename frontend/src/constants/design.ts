@@ -103,7 +103,7 @@ export const phaseTheme = {
     primary: '#14B8A6',
     light: '#F0FDFA',
     border: '#99F6E4',
-    gradient: 'from-teal-500 to-emerald-500',
+    gradient: 'from-blue-600 to-blue-500',
   },
   design: {
     primary: '#F43F5E',
@@ -115,7 +115,7 @@ export const phaseTheme = {
     primary: '#22C55E',
     light: '#F0FDF4',
     border: '#BBF7D0',
-    gradient: 'from-green-500 to-emerald-500',
+    gradient: 'from-blue-600 to-blue-500',
   },
   tasks: {
     primary: '#06B6D4',

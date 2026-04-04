@@ -71,17 +71,17 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
 
   return (
     <aside
-      className={`fixed left-0 top-0 h-screen bg-[#0f1f15] text-[#e8f5e0] flex flex-col transition-all duration-300 z-50 border-r border-[#1e4a28]/50 ${
+      className={`fixed left-0 top-0 h-screen bg-[var(--brand-850)] text-[var(--text-primary)] flex flex-col transition-all duration-300 z-50 border-r border-[var(--brand-700)]/50 ${
         collapsed ? 'w-16' : 'w-64'
       }`}
     >
       {/* Logo Section */}
-      <div className="h-16 flex items-center justify-between px-4 border-b border-[#1e4a28]/50">
+      <div className="h-16 flex items-center justify-between px-4 border-b border-[var(--brand-700)]/50">
         <Link to="/projects" className="flex items-center gap-3 group">
           <div className="relative flex-shrink-0">
-            <div className="absolute inset-0 bg-gradient-to-br from-[#4ade80] to-[#2d6a3f] rounded-lg blur-sm opacity-50 group-hover:opacity-75 transition-opacity" />
-            <div className="relative w-9 h-9 bg-gradient-to-br from-[#4ade80] to-[#3d8a55] rounded-lg flex items-center justify-center">
-              <TreePine className="w-5 h-5 text-[#0a150e]" />
+            <div className="absolute inset-0 bg-gradient-to-br from-[var(--blue-400)] to-[var(--brand-600)] rounded-lg blur-sm opacity-50 group-hover:opacity-75 transition-opacity" />
+            <div className="relative w-9 h-9 bg-gradient-to-br from-[var(--blue-400)] to-[var(--blue-500)] rounded-lg flex items-center justify-center">
+              <TreePine className="w-5 h-5 text-[var(--brand-900)]" />
             </div>
           </div>
           {!collapsed && (
@@ -92,7 +92,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
         </Link>
         <button
           onClick={toggleCollapse}
-          className="p-1.5 rounded-lg hover:bg-[#1e4a28] transition-colors text-[#6b9e7a] hover:text-[#e8f5e0]"
+          className="p-1.5 rounded-lg hover:bg-[var(--brand-700)] transition-colors text-[var(--text-muted)] hover:text-[var(--text-primary)]"
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {collapsed ? (
@@ -107,7 +107,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
       <div className="p-3">
         <button
           onClick={() => navigate('/projects/new')}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gradient-to-r from-[#4ade80] to-[#3d8a55] hover:from-[#86efac] hover:to-[#4ade80] transition-all text-[#0a150e] font-semibold shadow-lg shadow-[#4ade80]/20 ${
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gradient-to-r from-[var(--blue-400)] to-[var(--blue-500)] hover:from-[var(--blue-300)] hover:to-[var(--blue-400)] transition-all text-[var(--brand-900)] font-semibold shadow-lg shadow-[var(--blue-400)]/20 ${
             collapsed ? 'justify-center' : ''
           }`}
         >
@@ -120,7 +120,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
       <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
         {!collapsed && (
           <div className="px-3 py-2">
-            <span className="text-xs font-semibold text-[#6b9e7a] uppercase tracking-wider">
+            <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
               Navigation
             </span>
           </div>
@@ -136,19 +136,19 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               onClick={() => navigate(item.path)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
                 active
-                  ? 'bg-[#4ade80]/15 text-[#4ade80] border border-[#4ade80]/30'
-                  : 'text-[#6b9e7a] hover:text-[#e8f5e0] hover:bg-[#1e4a28]'
+                  ? 'bg-[var(--blue-400)]/15 text-[var(--blue-400)] border border-[var(--blue-400)]/30'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--brand-700)]'
               } ${collapsed ? 'justify-center' : ''}`}
               title={collapsed ? item.label : undefined}
             >
-              <Icon className={`w-5 h-5 flex-shrink-0 ${active ? 'text-[#4ade80]' : ''}`} />
+              <Icon className={`w-5 h-5 flex-shrink-0 ${active ? 'text-[var(--blue-400)]' : ''}`} />
               {!collapsed && (
-                <span className={`font-medium ${active ? 'text-[#4ade80]' : ''}`}>
+                <span className={`font-medium ${active ? 'text-[var(--blue-400)]' : ''}`}>
                   {item.label}
                 </span>
               )}
               {active && !collapsed && (
-                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#4ade80]" />
+                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[var(--blue-400)]" />
               )}
             </button>
           );
@@ -156,18 +156,18 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
       </nav>
 
       {/* User Section */}
-      <div className="border-t border-[#1e4a28]/50 p-3">
+      <div className="border-t border-[var(--brand-700)]/50 p-3">
         {user && (
           <div className={`flex items-center gap-3 ${collapsed ? 'justify-center' : ''}`}>
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#1e4a28] to-[#2d6a3f] flex items-center justify-center text-sm font-semibold text-[#4ade80] flex-shrink-0 border border-[#4ade80]/20">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[var(--brand-700)] to-[var(--brand-600)] flex items-center justify-center text-sm font-semibold text-[var(--blue-400)] flex-shrink-0 border border-[var(--blue-400)]/20">
               {user.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
             </div>
             {!collapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-[#e8f5e0] truncate">
+                <p className="text-sm font-semibold text-[var(--text-primary)] truncate">
                   {user.full_name || user.email}
                 </p>
-                <p className="text-xs text-[#6b9e7a] truncate">
+                <p className="text-xs text-[var(--text-muted)] truncate">
                   {user.organization || 'Personal'}
                 </p>
               </div>
@@ -177,7 +177,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
 
         <button
           onClick={handleLogout}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 mt-3 rounded-xl text-[#6b9e7a] hover:text-red-400 hover:bg-red-500/10 transition-all ${
+          className={`w-full flex items-center gap-3 px-3 py-2.5 mt-3 rounded-xl text-[var(--text-muted)] hover:text-red-400 hover:bg-red-500/10 transition-all ${
             collapsed ? 'justify-center' : ''
           }`}
           title={collapsed ? 'Logout' : undefined}

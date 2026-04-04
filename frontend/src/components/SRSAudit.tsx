@@ -102,9 +102,9 @@ export const SRSAudit: React.FC<SRSAuditProps> = ({ projectId, onAuditComplete }
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'pass': return <CheckCircle2 className="w-5 h-5 text-emerald-400" />;
+      case 'pass': return <CheckCircle2 className="w-5 h-5 text-blue-400" />;
       case 'fail': return <XCircle className="w-5 h-5 text-red-400" />;
-      case 'warning': return <AlertTriangle className="w-5 h-5" style={{ color: '#4ade80' }} />;
+      case 'warning': return <AlertTriangle className="w-5 h-5" style={{ color: 'var(--blue-400)' }} />;
       default: return null;
     }
   };
@@ -112,15 +112,15 @@ export const SRSAudit: React.FC<SRSAuditProps> = ({ projectId, onAuditComplete }
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'critical': return { bg: 'rgba(239,68,68,0.2)', text: '#f87171', border: 'rgba(239,68,68,0.3)' };
-      case 'major': return { bg: 'rgba(212,175,55,0.2)', text: '#4ade80', border: 'rgba(212,175,55,0.3)' };
+      case 'major': return { bg: 'rgba(212,175,55,0.2)', text: 'var(--blue-400)', border: 'rgba(212,175,55,0.3)' };
       case 'minor': return { bg: 'rgba(59,130,246,0.2)', text: '#60a5fa', border: 'rgba(59,130,246,0.3)' };
-      default: return { bg: '#152238', text: '#9ca3af', border: '#1e4a28' };
+      default: return { bg: '#152238', text: '#9ca3af', border: 'var(--brand-700)' };
     }
   };
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return '#10b981';
-    if (score >= 60) return '#4ade80';
+    if (score >= 60) return 'var(--blue-400)';
     return '#f87171';
   };
 
@@ -129,8 +129,8 @@ export const SRSAudit: React.FC<SRSAuditProps> = ({ projectId, onAuditComplete }
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg" style={{ background: 'linear-gradient(to bottom right, #4ade80, #b8962e)', boxShadow: '0 10px 25px -5px rgba(212,175,55,0.3)' }}>
-            <Shield className="w-7 h-7" style={{ color: '#0a150e' }} />
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg" style={{ background: 'linear-gradient(to bottom right, var(--blue-400), #b8962e)', boxShadow: '0 10px 25px -5px rgba(212,175,55,0.3)' }}>
+            <Shield className="w-7 h-7" style={{ color: 'var(--brand-900)' }} />
           </div>
           <div>
             <h2 className="text-2xl font-bold text-white">SRS Audit</h2>
@@ -142,7 +142,7 @@ export const SRSAudit: React.FC<SRSAuditProps> = ({ projectId, onAuditComplete }
           onClick={handleRunAudit}
           disabled={isAuditing}
           className="font-semibold shadow-lg"
-          style={{ background: 'linear-gradient(to right, #4ade80, #b8962e)', color: '#0a150e' }}
+          style={{ background: 'linear-gradient(to right, var(--blue-400), #b8962e)', color: 'var(--brand-900)' }}
           data-testid="run-audit-btn"
         >
           {isAuditing ? (
@@ -164,7 +164,7 @@ export const SRSAudit: React.FC<SRSAuditProps> = ({ projectId, onAuditComplete }
         <>
           {/* Score Overview */}
           <div className="grid md:grid-cols-4 gap-4">
-            <div className="rounded-2xl p-6 text-center" style={{ backgroundColor: '#0f1f15', border: '1px solid #1e4a28' }}>
+            <div className="rounded-2xl p-6 text-center" style={{ backgroundColor: 'var(--brand-850)', border: '1px solid var(--brand-700)' }}>
               <div className="relative w-24 h-24 mx-auto mb-4">
                 <svg className="w-24 h-24 transform -rotate-90">
                   <circle cx="48" cy="48" r="40" stroke="#152238" strokeWidth="8" fill="none" />
@@ -184,27 +184,27 @@ export const SRSAudit: React.FC<SRSAuditProps> = ({ projectId, onAuditComplete }
               <p className="text-gray-400 text-sm">Overall Score</p>
             </div>
 
-            <div className="rounded-2xl p-6" style={{ backgroundColor: '#0f1f15', border: '1px solid #1e4a28' }}>
+            <div className="rounded-2xl p-6" style={{ backgroundColor: 'var(--brand-850)', border: '1px solid var(--brand-700)' }}>
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(16,185,129,0.2)' }}>
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                  <CheckCircle2 className="w-5 h-5 text-blue-400" />
                 </div>
                 <span className="text-2xl font-bold text-white">{auditResult.passed}</span>
               </div>
               <p className="text-gray-400 text-sm">Passed</p>
             </div>
 
-            <div className="rounded-2xl p-6" style={{ backgroundColor: '#0f1f15', border: '1px solid #1e4a28' }}>
+            <div className="rounded-2xl p-6" style={{ backgroundColor: 'var(--brand-850)', border: '1px solid var(--brand-700)' }}>
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(212,175,55,0.2)' }}>
-                  <AlertTriangle className="w-5 h-5" style={{ color: '#4ade80' }} />
+                  <AlertTriangle className="w-5 h-5" style={{ color: 'var(--blue-400)' }} />
                 </div>
                 <span className="text-2xl font-bold text-white">{auditResult.warnings}</span>
               </div>
               <p className="text-gray-400 text-sm">Warnings</p>
             </div>
 
-            <div className="rounded-2xl p-6" style={{ backgroundColor: '#0f1f15', border: '1px solid #1e4a28' }}>
+            <div className="rounded-2xl p-6" style={{ backgroundColor: 'var(--brand-850)', border: '1px solid var(--brand-700)' }}>
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(239,68,68,0.2)' }}>
                   <XCircle className="w-5 h-5 text-red-400" />
@@ -222,11 +222,11 @@ export const SRSAudit: React.FC<SRSAuditProps> = ({ projectId, onAuditComplete }
                 key={category}
                 onClick={() => setSelectedCategory(category)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  selectedCategory === category ? 'text-[#0a150e]' : 'text-gray-400 hover:text-white'
+                  selectedCategory === category ? 'text-[var(--brand-900)]' : 'text-gray-400 hover:text-white'
                 }`}
                 style={{
-                  backgroundColor: selectedCategory === category ? '#4ade80' : '#152238',
-                  border: '1px solid #1e4a28'
+                  backgroundColor: selectedCategory === category ? 'var(--blue-400)' : '#152238',
+                  border: '1px solid var(--brand-700)'
                 }}
               >
                 {category === 'all' ? 'All Categories' : category}
@@ -240,7 +240,7 @@ export const SRSAudit: React.FC<SRSAuditProps> = ({ projectId, onAuditComplete }
               <div
                 key={item.id}
                 className="rounded-xl p-4 flex items-start gap-4"
-                style={{ backgroundColor: '#0f1f15', border: '1px solid #1e4a28' }}
+                style={{ backgroundColor: 'var(--brand-850)', border: '1px solid var(--brand-700)' }}
                 data-testid={`audit-item-${item.id}`}
               >
                 {getStatusIcon(item.status)}
@@ -266,17 +266,17 @@ export const SRSAudit: React.FC<SRSAuditProps> = ({ projectId, onAuditComplete }
           </div>
 
           {/* Recommendations */}
-          <div className="rounded-2xl p-6" style={{ backgroundColor: '#0f1f15', border: '1px solid #1e4a28' }}>
+          <div className="rounded-2xl p-6" style={{ backgroundColor: 'var(--brand-850)', border: '1px solid var(--brand-700)' }}>
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(212,175,55,0.2)' }}>
-                <ListChecks className="w-5 h-5" style={{ color: '#4ade80' }} />
+                <ListChecks className="w-5 h-5" style={{ color: 'var(--blue-400)' }} />
               </div>
               <h3 className="text-lg font-bold text-white">Recommendations</h3>
             </div>
             <ul className="space-y-3">
               {auditResult.recommendations.map((rec, idx) => (
                 <li key={idx} className="flex items-start gap-3 text-gray-300">
-                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: '#152238', color: '#4ade80' }}>
+                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: '#152238', color: 'var(--blue-400)' }}>
                     {idx + 1}
                   </span>
                   {rec}
@@ -289,14 +289,14 @@ export const SRSAudit: React.FC<SRSAuditProps> = ({ projectId, onAuditComplete }
 
       {/* Empty State */}
       {!auditResult && !isAuditing && (
-        <div className="text-center py-12 rounded-2xl" style={{ backgroundColor: '#0f1f15', border: '2px dashed #1e4a28' }}>
-          <FileCheck className="w-16 h-16 mx-auto mb-4" style={{ color: '#4ade80' }} />
+        <div className="text-center py-12 rounded-2xl" style={{ backgroundColor: 'var(--brand-850)', border: '2px dashed var(--brand-700)' }}>
+          <FileCheck className="w-16 h-16 mx-auto mb-4" style={{ color: 'var(--blue-400)' }} />
           <h3 className="text-lg font-semibold text-white mb-2">No Audit Results</h3>
           <p className="text-gray-400 mb-4">Run an AI-powered audit to check your SRS quality</p>
           <Button
             onClick={handleRunAudit}
             className="font-semibold"
-            style={{ background: 'linear-gradient(to right, #4ade80, #b8962e)', color: '#0a150e' }}
+            style={{ background: 'linear-gradient(to right, var(--blue-400), #b8962e)', color: 'var(--brand-900)' }}
           >
             <Sparkles className="w-4 h-4 mr-2" />
             Run Your First Audit

@@ -8,7 +8,7 @@ export const SRSAuditPage: React.FC = () => {
 
   return (
     <Layout>
-      <div className="min-h-[calc(100vh-4rem)]" style={{ backgroundColor: '#0a150e' }}>
+      <div className="min-h-[calc(100vh-4rem)]" style={{ backgroundColor: 'var(--brand-900)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <SRSAudit projectId={id!} />
         </div>

@@ -9,7 +9,7 @@ import { ArrowLeft, TreePine, Rocket, Zap, Target, Code, Smartphone, Cloud, Box,
 const templateTypes = [
   { value: 'web_app',     label: 'Web Application', icon: Code,        color: 'from-[var(--blue-400)] to-[var(--blue-600)]',    bgColor: 'bg-[var(--blue-400)]/10',   borderColor: 'border-[var(--blue-400)]/30',   description: 'Full-featured web platform with modern frontend' },
   { value: 'mobile_app',  label: 'Mobile App',       icon: Smartphone,  color: 'from-[var(--blue-300)] to-[#4a7a56]',    bgColor: 'bg-[var(--blue-300)]/10',   borderColor: 'border-[var(--blue-300)]/30',   description: 'Native iOS & Android applications' },
-  { value: 'api',         label: 'API Service',       icon: Zap,         color: 'from-emerald-500 to-teal-600',   bgColor: 'bg-emerald-500/10', borderColor: 'border-emerald-500/30', description: 'RESTful or GraphQL backend APIs' },
+  { value: 'api',         label: 'API Service',       icon: Zap,         color: 'from-blue-600 to-blue-500',   bgColor: 'bg-blue-900/20', borderColor: 'border-blue-500/30', description: 'RESTful or GraphQL backend APIs' },
   { value: 'desktop',     label: 'Desktop App',       icon: Box,         color: 'from-[var(--orange-400)] to-[var(--orange-600)]',    bgColor: 'bg-[var(--orange-400)]/10',   borderColor: 'border-[var(--orange-400)]/30',   description: 'Cross-platform desktop software' },
   { value: 'other',       label: 'Other',             icon: Cloud,       color: 'from-[var(--text-muted)] to-[#4a7a56]',    bgColor: 'bg-[var(--text-muted)]/10',   borderColor: 'border-[var(--text-muted)]/30',   description: 'Custom project type' },
 ];
@@ -187,7 +187,7 @@ export const NewProjectPage: React.FC = () => {
                       ? 'bg-gradient-to-r from-[var(--blue-400)] to-[var(--blue-500)] text-[var(--brand-900)] shadow-lg shadow-[var(--blue-400)]/25'
                       : currentStep > step.number
                       ? 'bg-[var(--blue-400)]/15 text-[var(--blue-400)]'
-                      : 'text-[var(--text-muted)] hover:text-[#a8d5a8]'
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-muted)]'
                   }`}
                 >
                   {currentStep > step.number ? (
@@ -224,7 +224,7 @@ export const NewProjectPage: React.FC = () => {
 
                 <div className="p-6 sm:p-8 space-y-6">
                   <div>
-                    <label className="block text-sm font-semibold text-[#a8d5a8] mb-2">
+                    <label className="block text-sm font-semibold text-[var(--text-muted)] mb-2">
                       Project Name <span className="text-red-400">*</span>
                     </label>
                     <Input
@@ -238,7 +238,7 @@ export const NewProjectPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-[#a8d5a8] mb-2">Short Description</label>
+                    <label className="block text-sm font-semibold text-[var(--text-muted)] mb-2">Short Description</label>
                     <Input
                       type="text"
                       value={formData.description}
@@ -331,8 +331,8 @@ export const NewProjectPage: React.FC = () => {
               <div className={`transition-all duration-300 ${currentStep === 3 ? 'block' : 'hidden'}`}>
                 <div className="p-6 sm:p-8 border-b border-[var(--brand-700)]/30">
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="p-2 bg-emerald-500/20 rounded-lg border border-emerald-500/30">
-                      <FileText className="w-5 h-5 text-emerald-400" />
+                    <div className="p-2 bg-blue-900/200/20 rounded-lg border border-blue-500/30">
+                      <FileText className="w-5 h-5 text-blue-400" />
                     </div>
                     <h2 className="text-xl font-bold text-[var(--text-primary)]">Project Brief</h2>
                   </div>
@@ -341,7 +341,7 @@ export const NewProjectPage: React.FC = () => {
 
                 <div className="p-6 sm:p-8 space-y-6">
                   <div>
-                    <label className="block text-sm font-semibold text-[#a8d5a8] mb-2">
+                    <label className="block text-sm font-semibold text-[var(--text-muted)] mb-2">
                       Tell us about your project
                     </label>
                     <textarea
@@ -369,7 +369,7 @@ export const NewProjectPage: React.FC = () => {
 
                   {/* Summary Preview */}
                   <div className="p-4 bg-[var(--brand-750)] rounded-xl border border-[var(--brand-700)]">
-                    <h4 className="text-sm font-semibold text-[#a8d5a8] mb-3">Project Summary</h4>
+                    <h4 className="text-sm font-semibold text-[var(--text-muted)] mb-3">Project Summary</h4>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-[var(--text-muted)]">Name</span>

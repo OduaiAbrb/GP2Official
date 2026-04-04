@@ -174,7 +174,7 @@ export const ExportCenterPage: React.FC = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="font-bold text-white">{option.name}</h3>
-                        {isExported && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
+                        {isExported && <CheckCircle2 className="w-4 h-4 text-blue-400" />}
                       </div>
                       <p className="text-sm text-gray-400 mb-4">{option.description}</p>
                       
@@ -235,7 +235,7 @@ export const ExportCenterPage: React.FC = () => {
                   return (
                     <div key={optionId} className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: 'var(--brand-900)' }}>
                       <div className="flex items-center gap-3">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                        <CheckCircle2 className="w-4 h-4 text-blue-400" />
                         <span className="text-gray-300">{option?.name}</span>
                         <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: '#152238', color: 'var(--blue-400)' }}>
                           {selectedFormats[optionId]}

@@ -4,15 +4,15 @@
 export const colors = {
   // Primary backgrounds
   bg: {
-    primary: '#0a150e',      // Darkest background
-    secondary: '#0a150e',    // Sidebar/card background
-    tertiary: '#0f1f15',     // Elevated surfaces
+    primary: 'var(--brand-900)',      // Darkest background
+    secondary: 'var(--brand-900)',    // Sidebar/card background
+    tertiary: 'var(--brand-850)',     // Elevated surfaces
     elevated: '#152238',     // Hover states, inputs
   },
   
   // Gold accent palette
   gold: {
-    primary: '#4ade80',      // Primary gold
+    primary: 'var(--blue-400)',      // Primary gold
     light: '#e6c358',        // Hover/highlight
     dark: '#b8962e',         // Darker gold
     muted: '#9a7b24',        // Subtle gold
@@ -21,7 +21,7 @@ export const colors = {
   
   // Border colors
   border: {
-    primary: '#1e4a28',      // Primary border
+    primary: 'var(--brand-700)',      // Primary border
     muted: 'rgba(30, 58, 95, 0.5)',   // Subtle border
     gold: 'rgba(212, 175, 55, 0.3)',  // Gold border
   },
@@ -37,7 +37,7 @@ export const colors = {
   
   // Status colors
   status: {
-    success: '#10b981',      // emerald-500
+    success: 'var(--blue-400)',      // blue-400
     warning: '#f59e0b',      // amber-500
     error: '#ef4444',        // red-500
     info: '#3b82f6',         // blue-500
@@ -49,9 +49,9 @@ export const colors = {
     feasibility: '#8b5cf6',  // purple
     requirements: '#06b6d4', // cyan
     design: '#ec4899',       // pink
-    development: '#10b981',  // emerald
+    development: 'var(--blue-400)',  // blue
     validation: '#f59e0b',   // amber
-    summary: '#4ade80',      // gold
+    summary: 'var(--blue-400)',      // gold
   },
 };
 
@@ -59,30 +59,30 @@ export const colors = {
 export const tw = {
   // Card styles
   card: {
-    base: 'bg-[#0a150e] border border-[#1e4a28]/50 rounded-2xl',
-    hover: 'hover:border-[#4ade80]/30 hover:shadow-lg hover:shadow-[#4ade80]/5',
-    elevated: 'bg-[#0f1f15] border border-[#1e4a28] rounded-xl',
-    glass: 'bg-[#0a150e]/80 backdrop-blur-lg border border-[#1e4a28]/50 rounded-2xl',
+    base: 'bg-[var(--brand-900)] border border-[var(--brand-700)]/50 rounded-2xl',
+    hover: 'hover:border-[var(--blue-400)]/30 hover:shadow-lg hover:shadow-[var(--blue-400)]/5',
+    elevated: 'bg-[var(--brand-850)] border border-[var(--brand-700)] rounded-xl',
+    glass: 'bg-[var(--brand-900)]/80 backdrop-blur-lg border border-[var(--brand-700)]/50 rounded-2xl',
   },
   
   // Button styles
   button: {
-    primary: 'bg-gradient-to-r from-[#4ade80] to-[#b8962e] hover:from-[#e6c358] hover:to-[#4ade80] text-[#0a150e] font-semibold shadow-lg shadow-[#4ade80]/20',
-    secondary: 'bg-[#152238] hover:bg-[#1e4a28] text-[#4ade80] border border-[#4ade80]/30 hover:border-[#4ade80]',
-    ghost: 'text-gray-400 hover:text-white hover:bg-[#1e4a28]/30',
+    primary: 'bg-gradient-to-r from-[var(--blue-400)] to-[#b8962e] hover:from-[#e6c358] hover:to-[var(--blue-400)] text-[var(--brand-900)] font-semibold shadow-lg shadow-[var(--blue-400)]/20',
+    secondary: 'bg-[#152238] hover:bg-[var(--brand-700)] text-[var(--blue-400)] border border-[var(--blue-400)]/30 hover:border-[var(--blue-400)]',
+    ghost: 'text-gray-400 hover:text-white hover:bg-[var(--brand-700)]/30',
     danger: 'bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30',
   },
   
   // Input styles
   input: {
-    base: 'bg-[#152238] border border-[#1e4a28] rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:border-[#4ade80] focus:ring-2 focus:ring-[#4ade80]/20 transition-all',
-    search: 'bg-[#0f1f15] border border-[#1e4a28]/50 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-[#4ade80]/50 focus:ring-1 focus:ring-[#4ade80]/20',
+    base: 'bg-[#152238] border border-[var(--brand-700)] rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:border-[var(--blue-400)] focus:ring-2 focus:ring-[var(--blue-400)]/20 transition-all',
+    search: 'bg-[var(--brand-850)] border border-[var(--brand-700)]/50 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-[var(--blue-400)]/50 focus:ring-1 focus:ring-[var(--blue-400)]/20',
   },
   
   // Badge styles
   badge: {
-    gold: 'bg-[#4ade80]/10 text-[#4ade80] border border-[#4ade80]/30',
-    success: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30',
+    gold: 'bg-[var(--blue-400)]/10 text-[var(--blue-400)] border border-[var(--blue-400)]/30',
+    success: 'bg-blue-500/10 text-blue-400 border border-blue-500/30',
     warning: 'bg-amber-500/10 text-amber-400 border border-amber-500/30',
     error: 'bg-red-500/10 text-red-400 border border-red-500/30',
     info: 'bg-blue-500/10 text-blue-400 border border-blue-500/30',
@@ -95,8 +95,8 @@ export const tw = {
     subheading: 'text-gray-300 font-medium',
     body: 'text-gray-400',
     muted: 'text-gray-500',
-    gold: 'text-[#4ade80]',
-    gradient: 'bg-gradient-to-r from-[#4ade80] to-[#e6c358] bg-clip-text text-transparent',
+    gold: 'text-[var(--blue-400)]',
+    gradient: 'bg-gradient-to-r from-[var(--blue-400)] to-[#e6c358] bg-clip-text text-transparent',
   },
   
   // Layout helpers
@@ -157,7 +157,7 @@ export const phaseConfig = {
     label: 'Development',
     icon: 'Code',
     color: colors.phases.development,
-    gradient: 'from-emerald-500 to-emerald-600',
+    gradient: 'from-blue-600 to-blue-500',
     order: 5,
   },
   validation: {
@@ -173,7 +173,7 @@ export const phaseConfig = {
     label: 'Summary',
     icon: 'Flag',
     color: colors.phases.summary,
-    gradient: 'from-[#4ade80] to-[#b8962e]',
+    gradient: 'from-[var(--blue-400)] to-[#b8962e]',
     order: 7,
   },
 };

@@ -80,13 +80,13 @@ const PhaseTree: React.FC<{
     <div className="relative w-full" style={{ height: '560px' }}>
       <svg width="100%" height="100%" viewBox="0 0 800 560" preserveAspectRatio="xMidYMid meet">
         {/* Deep root glow */}
-        <ellipse cx="400" cy="555" rx="70" ry="8" fill="#2c1810" fillOpacity="0.6" />
+        <ellipse cx="400" cy="555" rx="70" ry="8" fill="var(--brand-850)" fillOpacity="0.6" />
 
         {/* Tree trunk - thick bark brown */}
         <line x1="400" y1="558" x2="400" y2="510"
-          stroke="#3d2b1f" strokeWidth="16" strokeLinecap="round" />
+          stroke="var(--brand-800)" strokeWidth="16" strokeLinecap="round" />
         <line x1="400" y1="558" x2="400" y2="515"
-          stroke="#5c4033" strokeWidth="9" strokeLinecap="round" />
+          stroke="var(--brand-750)" strokeWidth="9" strokeLinecap="round" />
 
         {/* Ambient ground mist */}
         <ellipse cx="400" cy="556" rx="90" ry="6" fill="var(--brand-800)" fillOpacity="0.5" />
@@ -199,7 +199,7 @@ const PhaseTree: React.FC<{
               minWidth: '220px',
               background: 'var(--brand-800)',
               border: '1px solid var(--blue-600)',
-              boxShadow: '0 8px 32px rgba(74,222,128,0.15)',
+              boxShadow: '0 8px 32px rgba(26,111,212,0.15)',
             }}
           >
             <p className="text-sm font-semibold text-[var(--blue-300)]">{phase.title}</p>
@@ -424,7 +424,7 @@ export const ProjectDetailPage: React.FC = () => {
   };
 
   const statusPillStyles: Record<string, string> = {
-    completed:   'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
+    completed:   'bg-blue-900/200/20 text-blue-400 border border-blue-500/30',
     ready:       'bg-[var(--blue-400)]/20 text-[var(--blue-400)] border border-[var(--blue-400)]/30',
     in_progress: 'bg-[var(--orange-400)]/20 text-[var(--orange-400)] border border-[var(--orange-400)]/30',
     locked:      'bg-[var(--brand-700)]/30 text-[var(--text-muted)] border border-[var(--brand-700)]',
@@ -526,7 +526,7 @@ export const ProjectDetailPage: React.FC = () => {
                 <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-[var(--blue-400)]/20 text-[var(--blue-400)] border border-[var(--blue-400)]/30 text-xs font-semibold uppercase tracking-wide">
                   {project.status}
                 </span>
-                <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-[var(--brand-700)]/50 text-[#a8d5a8] border border-[var(--brand-700)] text-xs font-medium">
+                <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-[var(--brand-700)]/50 text-[var(--text-muted)] border border-[var(--brand-700)] text-xs font-medium">
                   {project.template_type.replace('_', ' ')}
                 </span>
                 <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-[var(--blue-300)]/10 text-[var(--blue-300)] border border-[var(--blue-300)]/30 text-xs font-medium">
@@ -736,7 +736,7 @@ export const ProjectDetailPage: React.FC = () => {
                     const status = (phaseStatus[phase.id] || 'locked').toLowerCase();
                     const pillClass =
                       status === 'completed'
-                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                        ? 'bg-blue-900/200/20 text-blue-400 border border-blue-500/30'
                         : status === 'active' || status === 'planning'
                         ? 'bg-[var(--orange-400)]/20 text-[var(--orange-400)] border border-[var(--orange-400)]/30'
                         : 'bg-[var(--brand-700)]/30 text-[var(--text-muted)] border border-[var(--brand-700)]';

@@ -42,8 +42,8 @@ function getNodeColors(phaseId: string, phaseStatus: Record<string, string>, isH
 
   if (status === 'locked') {
     return {
-      fill: '#142b1a',
-      stroke: isHovered ? (phaseColor?.fill || '#4ade80') : '#1e4a28',
+      fill: 'var(--brand-800)',
+      stroke: isHovered ? (phaseColor?.fill || 'var(--blue-400)') : 'var(--brand-700)',
       text: '#3d6b4a',
     };
   }
@@ -51,14 +51,14 @@ function getNodeColors(phaseId: string, phaseStatus: Record<string, string>, isH
     return {
       fill: phaseColor?.fill || '#22c55e',
       stroke: isHovered ? '#fff' : (phaseColor?.fill || '#22c55e'),
-      text: phaseColor?.text || '#0a150e',
+      text: phaseColor?.text || 'var(--brand-900)',
     };
   }
   // active / in_progress / ready
   return {
-    fill: `${phaseColor?.fill || '#fbbf24'}cc`,
-    stroke: isHovered ? '#fff' : (phaseColor?.fill || '#fbbf24'),
-    text: phaseColor?.text || '#0a150e',
+    fill: `${phaseColor?.fill || 'var(--orange-400)'}cc`,
+    stroke: isHovered ? '#fff' : (phaseColor?.fill || 'var(--orange-400)'),
+    text: phaseColor?.text || 'var(--brand-900)',
   };
 }
 
@@ -73,10 +73,10 @@ export const PhaseTree: React.FC<PhaseTreeProps> = ({ phaseStatus, phaseOutputs,
     <div className="relative w-full select-none" style={{ height: '580px' }}>
       <svg width="100%" height="100%" viewBox="0 0 760 580" preserveAspectRatio="xMidYMid meet">
         {/* Roots */}
-        <line x1="380" y1="580" x2="380" y2="500" stroke="#3d2b1f" strokeWidth="16" strokeLinecap="round" />
-        <line x1="380" y1="560" x2="330" y2="578" stroke="#2c1810" strokeWidth="9" strokeLinecap="round" opacity="0.6" />
-        <line x1="380" y1="560" x2="430" y2="578" stroke="#2c1810" strokeWidth="9" strokeLinecap="round" opacity="0.6" />
-        <line x1="380" y1="565" x2="355" y2="576" stroke="#2c1810" strokeWidth="5" strokeLinecap="round" opacity="0.4" />
+        <line x1="380" y1="580" x2="380" y2="500" stroke="var(--brand-800)" strokeWidth="16" strokeLinecap="round" />
+        <line x1="380" y1="560" x2="330" y2="578" stroke="var(--brand-850)" strokeWidth="9" strokeLinecap="round" opacity="0.6" />
+        <line x1="380" y1="560" x2="430" y2="578" stroke="var(--brand-850)" strokeWidth="9" strokeLinecap="round" opacity="0.6" />
+        <line x1="380" y1="565" x2="355" y2="576" stroke="var(--brand-850)" strokeWidth="5" strokeLinecap="round" opacity="0.4" />
 
         {/* Branches */}
         {BRANCHES.map(([from, to], i) => {
@@ -84,14 +84,14 @@ export const PhaseTree: React.FC<PhaseTreeProps> = ({ phaseStatus, phaseOutputs,
           const t = nodeMap[to];
           if (!f || !t) return null;
           const isActive = hoveredPhase === from || hoveredPhase === to;
-          const fromColor = phaseHexColors[from]?.fill || '#2d6a3f';
-          const toColor = phaseHexColors[to]?.fill || '#2d6a3f';
+          const fromColor = phaseHexColors[from]?.fill || 'var(--brand-600)';
+          const toColor = phaseHexColors[to]?.fill || 'var(--brand-600)';
           const cx1 = f.x, cy1 = (f.y + t.y) / 2;
           const cx2 = t.x, cy2 = (f.y + t.y) / 2;
           return (
             <path key={i}
               d={`M ${f.x} ${f.y} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${t.x} ${t.y}`}
-              stroke={isActive ? fromColor : '#2d6a3f'}
+              stroke={isActive ? fromColor : 'var(--brand-600)'}
               strokeWidth={isActive ? 4 : 2.5}
               fill="none"
               strokeLinecap="round"
@@ -152,12 +152,12 @@ export const PhaseTree: React.FC<PhaseTreeProps> = ({ phaseStatus, phaseOutputs,
               {/* Output dot (has AI content) */}
               {hasOutput && (
                 <circle cx={node.x + r - 10} cy={node.y - r + 10} r={7}
-                  fill="#fbbf24" stroke="#0a150e" strokeWidth="1.5" />
+                  fill="var(--orange-400)" stroke="var(--brand-900)" strokeWidth="1.5" />
               )}
               {/* Lock icon for locked phases */}
               {status === 'locked' && !isHovered && (
                 <text x={node.x} y={node.y + 24} textAnchor="middle"
-                  fill="#2d6a3f" fontSize="10" style={{ pointerEvents: 'none' }}>
+                  fill="var(--brand-600)" fontSize="10" style={{ pointerEvents: 'none' }}>
                   🔒
                 </text>
               )}
@@ -166,15 +166,15 @@ export const PhaseTree: React.FC<PhaseTreeProps> = ({ phaseStatus, phaseOutputs,
         })}
 
         {/* Ground shadow */}
-        <ellipse cx="380" cy="578" rx="75" ry="5" fill="#1e4a28" fillOpacity="0.4" />
+        <ellipse cx="380" cy="578" rx="75" ry="5" fill="var(--brand-700)" fillOpacity="0.4" />
       </svg>
 
       {/* Color legend */}
       <div className="absolute bottom-2 left-0 right-0 flex items-center justify-center gap-5 text-xs" style={{ color: '#4a7a56' }}>
         {[
           { color: '#22c55e', label: 'Completed' },
-          { color: '#fbbf24', label: 'Active' },
-          { color: '#142b1a', label: 'Locked', border: '#1e4a28' },
+          { color: 'var(--orange-400)', label: 'Active' },
+          { color: 'var(--brand-800)', label: 'Locked', border: 'var(--brand-700)' },
         ].map(({ color, label, border }) => (
           <span key={label} className="flex items-center gap-1.5">
             <span className="w-3 h-3 rounded-full inline-block"
@@ -183,8 +183,8 @@ export const PhaseTree: React.FC<PhaseTreeProps> = ({ phaseStatus, phaseOutputs,
           </span>
         ))}
         <span className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded-full inline-block bg-[#fbbf24]" />
-          <span className="text-[#fbbf24]">•</span> Has AI content
+          <span className="w-3 h-3 rounded-full inline-block bg-[var(--orange-400)]" />
+          <span className="text-[var(--orange-400)]">•</span> Has AI content
         </span>
       </div>
 
@@ -196,7 +196,7 @@ export const PhaseTree: React.FC<PhaseTreeProps> = ({ phaseStatus, phaseOutputs,
             left: '50%',
             bottom: '36px',
             transform: 'translateX(-50%)',
-            background: '#0f1f15',
+            background: 'var(--brand-850)',
             border: `1px solid ${hoveredColors.stroke}55`,
             borderRadius: '14px',
             padding: '10px 20px',
@@ -205,15 +205,15 @@ export const PhaseTree: React.FC<PhaseTreeProps> = ({ phaseStatus, phaseOutputs,
           }}
         >
           <div className="flex items-center justify-center gap-2 mb-1">
-            <span className="w-2.5 h-2.5 rounded-full" style={{ background: hoveredColors.fill !== '#142b1a' ? hoveredColors.stroke : '#2d6a3f' }} />
-            <p style={{ color: hoveredColors.fill !== '#142b1a' ? hoveredColors.stroke : '#4ade80', fontSize: '13px', fontWeight: 700 }}>
+            <span className="w-2.5 h-2.5 rounded-full" style={{ background: hoveredColors.fill !== 'var(--brand-800)' ? hoveredColors.stroke : 'var(--brand-600)' }} />
+            <p style={{ color: hoveredColors.fill !== 'var(--brand-800)' ? hoveredColors.stroke : 'var(--blue-400)', fontSize: '13px', fontWeight: 700 }}>
               {hoveredPhaseConfig.title}
             </p>
           </div>
           <p style={{ color: '#4a7a56', fontSize: '11px' }}>
             {hoveredPhaseConfig.description}
           </p>
-          <p style={{ color: '#6b9e7a', fontSize: '10px', marginTop: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '10px', marginTop: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Step {hoveredPhaseConfig.stepNumber} · {(phaseStatus[hoveredPhase] || 'locked').replace('_', ' ')}
           </p>
         </div>

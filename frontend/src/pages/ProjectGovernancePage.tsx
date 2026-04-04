@@ -455,7 +455,7 @@ export const ProjectGovernancePage: React.FC = () => {
                     {Object.entries(branchDiff.summary).map(([key, value]) => (
                       <div key={key} className="rounded-lg border border-gray-100 p-3 flex items-center justify-between">
                         <span className="capitalize text-gray-600">{key.replace('_', ' ')}</span>
-                        <span className={`font-semibold ${value > 0 ? 'text-emerald-600' : value < 0 ? 'text-rose-600' : 'text-gray-900'}`}>
+                        <span className={`font-semibold ${value > 0 ? 'text-blue-400' : value < 0 ? 'text-rose-600' : 'text-gray-900'}`}>
                           {value}
                         </span>
                       </div>

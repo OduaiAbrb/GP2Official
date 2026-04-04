@@ -277,7 +277,7 @@ export const ProjectSummaryPage: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="text-sm text-gray-500 flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
+              <CheckCircle2 className="h-4 w-4 text-blue-400" />
               {activeTasks} tasks still in motion
             </CardContent>
           </Card>
@@ -392,7 +392,7 @@ export const ProjectSummaryPage: React.FC = () => {
                   <span
                     className={`text-xs px-2 py-1 rounded-full capitalize ${
                       phase.status === 'completed'
-                        ? 'bg-emerald-100 text-emerald-800'
+                        ? 'bg-blue-900/30 text-blue-200'
                         : phase.status === 'in_progress'
                         ? 'bg-blue-100 text-blue-800'
                         : phase.status === 'ready'
@@ -419,7 +419,7 @@ export const ProjectSummaryPage: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-3">
               {snapshotMessage && (
-                <div className="rounded-md border border-green-100 bg-green-50 px-3 py-2 text-sm text-green-800">
+                <div className="rounded-md border border-blue-700/30 bg-blue-900/20 px-3 py-2 text-sm text-blue-200">
                   {snapshotMessage}
                 </div>
               )}
@@ -451,7 +451,7 @@ export const ProjectSummaryPage: React.FC = () => {
                       <span
                         className={`text-xs px-2 py-1 rounded-full capitalize ${
                           status === 'new'
-                            ? 'bg-emerald-100 text-emerald-800'
+                            ? 'bg-blue-900/30 text-blue-200'
                             : status === 'updated'
                             ? 'bg-amber-100 text-amber-700'
                             : 'bg-gray-100 text-gray-500'
@@ -499,8 +499,8 @@ export const ProjectSummaryPage: React.FC = () => {
                   create follow-up tickets.
                 </p>
               </div>
-              <div className="rounded-md border border-emerald-100 bg-emerald-50 p-3 flex items-start gap-2">
-                <TrendingUp className="h-4 w-4 text-emerald-500 mt-0.5" />
+              <div className="rounded-md border border-blue-700/30 bg-blue-900/20 p-3 flex items-start gap-2">
+                <TrendingUp className="h-4 w-4 text-blue-400 mt-0.5" />
                 <p>
                   Capture a milestone snapshot: export requirements/SRS now so stakeholders can sign off on the current
                   iteration.

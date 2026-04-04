@@ -143,7 +143,7 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
 
   const colorMap: Record<string, { bg: string; border: string; text: string }> = {
     blue: { bg: 'bg-blue-100', border: 'border-blue-300', text: 'text-blue-700' },
-    emerald: { bg: 'bg-emerald-100', border: 'border-emerald-300', text: 'text-emerald-700' },
+    emerald: { bg: 'bg-blue-900/30', border: 'border-blue-600/50', text: 'text-blue-300' },
     purple: { bg: 'bg-purple-100', border: 'border-purple-300', text: 'text-purple-700' },
     amber: { bg: 'bg-amber-100', border: 'border-amber-300', text: 'text-amber-700' },
     red: { bg: 'bg-red-100', border: 'border-red-300', text: 'text-red-700' },
@@ -500,13 +500,13 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
       {activeTab === 'stack' && (
         <div className="space-y-4">
           {suggestedTechs.length > 0 && (
-            <Card className="border-emerald-200 bg-emerald-50/60">
+            <Card className="border-blue-700/40 bg-blue-900/20/60">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-emerald-800 text-base">
+                <CardTitle className="flex items-center gap-2 text-blue-200 text-base">
                   <Sparkles className="h-4 w-4" />
                   Suggested technologies to learn
                 </CardTitle>
-                <CardDescription className="text-emerald-700">
+                <CardDescription className="text-blue-300">
                   Based on your current requirements (features, platforms, and constraints).
                 </CardDescription>
               </CardHeader>
@@ -514,10 +514,10 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
                 {suggestedTechs.map((s) => (
                   <div
                     key={s.label}
-                    className="px-3 py-2 rounded-lg bg-white shadow-sm border border-emerald-200 max-w-xs"
+                    className="px-3 py-2 rounded-lg bg-white shadow-sm border border-blue-700/40 max-w-xs"
                   >
-                    <div className="text-xs font-semibold text-emerald-800 mb-1">{s.label}</div>
-                    <div className="text-[11px] text-emerald-700 leading-snug">{s.details}</div>
+                    <div className="text-xs font-semibold text-blue-200 mb-1">{s.label}</div>
+                    <div className="text-[11px] text-blue-300 leading-snug">{s.details}</div>
                   </div>
                 ))}
               </CardContent>
@@ -539,7 +539,7 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
                       idx <= 2 ? 'Beginner' : idx <= 5 ? 'Intermediate' : 'Advanced';
                     const levelClass =
                       level === 'Beginner'
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        ? 'bg-blue-900/20 text-blue-300 border-blue-700/40'
                         : level === 'Intermediate'
                         ? 'bg-amber-50 text-amber-700 border-amber-200'
                         : 'bg-purple-50 text-purple-700 border-purple-200';
@@ -569,7 +569,7 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
               </CardHeader>
               <CardContent className="pt-0 space-y-2 text-xs text-gray-700">
                 {suggestedTechs.slice(0, 3).map((s) => (
-                  <div key={s.label} className="p-2 rounded-lg border border-[#1e4a28] bg-white">
+                  <div key={s.label} className="p-2 rounded-lg border border-[var(--brand-700)] bg-white">
                     <div className="font-semibold mb-0.5">{s.label}</div>
                     <div className="text-[11px] leading-snug">{s.details}</div>
                   </div>
@@ -630,14 +630,14 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
                     {visibleItems.map((item, idx) => (
                       <div
                         key={item.name}
-                        className="p-3 rounded-xl border border-[#1e4a28] bg-white hover:border-emerald-300 hover:bg-emerald-50 transition-all"
+                        className="p-3 rounded-xl border border-[var(--brand-700)] bg-white hover:border-blue-600/50 hover:bg-blue-900/20 transition-all"
                       >
                         <div className="flex items-center justify-between mb-1">
                           <span className="font-medium text-gray-900 text-sm">{item.name}</span>
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="text-[10px] text-emerald-600 px-1 h-6"
+                            className="text-[10px] text-blue-400 px-1 h-6"
                             onClick={() => handleToggleRecommended(category, idx)}
                           >
                             {item.recommended ? 'Recommended' : 'Mark' }
@@ -671,9 +671,9 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
       {activeTab === 'flow' && (
         <div className="space-y-4">
           <Card>
-            <CardHeader className="bg-gradient-to-r from-emerald-50 to-teal-50 border-b">
+            <CardHeader className="bg-gradient-to-r from-blue-900/20 to-blue-900/10 border-b">
               <CardTitle className="flex items-center gap-2">
-                <GitBranch className="h-5 w-5 text-emerald-600" />
+                <GitBranch className="h-5 w-5 text-blue-400" />
                 Request Flow Diagram
               </CardTitle>
               <CardDescription>How a request flows through the system</CardDescription>
@@ -860,7 +860,7 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
           <div className="grid md:grid-cols-2 gap-6">
             <div>
               <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                <CheckCircle2 className="h-4 w-4 text-blue-400" />
                 Best Practices
               </h4>
               {editingNotes ? (
@@ -918,9 +918,9 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
               </div>
               <div className="text-sm text-blue-600">Technologies</div>
             </div>
-            <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200 text-center">
-              <div className="text-2xl font-bold text-emerald-700">4</div>
-              <div className="text-sm text-emerald-600">Layers</div>
+            <div className="p-4 bg-blue-900/20 rounded-xl border border-blue-700/40 text-center">
+              <div className="text-2xl font-bold text-blue-300">4</div>
+              <div className="text-sm text-blue-400">Layers</div>
             </div>
             <div className="p-4 bg-purple-50 rounded-xl border border-purple-200 text-center">
               <div className="text-2xl font-bold text-purple-700">

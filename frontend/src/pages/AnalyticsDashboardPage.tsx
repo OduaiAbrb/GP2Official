@@ -146,7 +146,7 @@ export const AnalyticsDashboardPage: React.FC = () => {
   }, [id]);
 
   const getRiskConfig = (risk: string) => ({
-    low:    { color: 'var(--blue-400)', bg: 'rgba(74,222,128,0.12)',  label: 'Low Risk' },
+    low:    { color: 'var(--blue-400)', bg: 'rgba(26,111,212,0.12)',  label: 'Low Risk' },
     medium: { color: '#D4A017', bg: 'rgba(212,160,23,0.12)',  label: 'Medium Risk' },
     high:   { color: '#C1440E', bg: 'rgba(193,68,14,0.12)',   label: 'High Risk' },
   }[risk] || { color: 'var(--text-muted)', bg: 'rgba(107,158,122,0.12)', label: 'Unknown' });
@@ -156,7 +156,7 @@ export const AnalyticsDashboardPage: React.FC = () => {
 
   const cardStyle = {
     background: 'var(--brand-850)',
-    border: '1px solid rgba(30,74,40,0.6)',
+    border: '1px solid rgba(26,46,69,0.6)',
     borderRadius: '16px',
   };
 
@@ -181,7 +181,7 @@ export const AnalyticsDashboardPage: React.FC = () => {
           {/* Header */}
           <div className="flex items-center gap-4 mb-8">
             <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, var(--blue-600), var(--blue-400))', boxShadow: '0 10px 30px rgba(74,222,128,0.2)' }}>
+              style={{ background: 'linear-gradient(135deg, var(--blue-600), var(--blue-400))', boxShadow: '0 10px 30px rgba(26,111,212,0.2)' }}>
               <BarChart3 className="w-7 h-7 text-[var(--brand-900)]" />
             </div>
             <div>
@@ -195,13 +195,13 @@ export const AnalyticsDashboardPage: React.FC = () => {
             {/* Progress */}
             <div className="p-6" style={cardStyle}>
               <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 rounded-lg" style={{ background: 'rgba(74,222,128,0.12)' }}>
+                <div className="p-2 rounded-lg" style={{ background: 'rgba(26,111,212,0.12)' }}>
                   <TrendingUp className="w-5 h-5 text-[var(--blue-400)]" />
                 </div>
                 <span className="text-[var(--text-muted)] text-sm">Progress</span>
               </div>
               <p className="text-3xl font-bold text-[var(--text-primary)]">{analytics?.projectProgress}%</p>
-              <div className="mt-2 h-2 rounded-full overflow-hidden" style={{ background: 'rgba(30,74,40,0.5)' }}>
+              <div className="mt-2 h-2 rounded-full overflow-hidden" style={{ background: 'rgba(26,46,69,0.5)' }}>
                 <div className="h-full rounded-full transition-all"
                   style={{ width: `${analytics?.projectProgress}%`, background: 'linear-gradient(to right, var(--blue-600), var(--blue-400))' }} />
               </div>
@@ -216,7 +216,7 @@ export const AnalyticsDashboardPage: React.FC = () => {
                 <span className="text-[var(--text-muted)] text-sm">Requirements</span>
               </div>
               <p className="text-3xl font-bold text-[var(--text-primary)]">{analytics?.completedRequirements}/{analytics?.totalRequirements}</p>
-              <p className="text-xs text-[#4a7a56] mt-1">Completed</p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">Completed</p>
             </div>
 
             {/* AI Generations */}
@@ -228,7 +228,7 @@ export const AnalyticsDashboardPage: React.FC = () => {
                 <span className="text-[var(--text-muted)] text-sm">AI Generations</span>
               </div>
               <p className="text-3xl font-bold text-[var(--text-primary)]">{analytics?.aiGenerations}</p>
-              <p className="text-xs text-[#4a7a56] mt-1">Total calls</p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">Total calls</p>
             </div>
 
             {/* Risk */}
@@ -240,7 +240,7 @@ export const AnalyticsDashboardPage: React.FC = () => {
                 <span className="text-[var(--text-muted)] text-sm">Risk Level</span>
               </div>
               <p className="text-2xl font-bold" style={{ color: risk.color }}>{risk.label}</p>
-              <p className="text-xs text-[#4a7a56] mt-1">Current status</p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">Current status</p>
             </div>
           </div>
 
@@ -264,7 +264,7 @@ export const AnalyticsDashboardPage: React.FC = () => {
                           minHeight: '6px',
                         }}
                       />
-                      <span className="text-xs text-[#4a7a56]">{day.day}</span>
+                      <span className="text-xs text-[var(--text-muted)]">{day.day}</span>
                     </div>
                   );
                 })}
@@ -283,11 +283,11 @@ export const AnalyticsDashboardPage: React.FC = () => {
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full" style={{ background: phase.color }} />
-                        <span className="text-xs text-[#a8d5a8]">{phase.name}</span>
+                        <span className="text-xs text-[var(--text-muted)]">{phase.name}</span>
                       </div>
-                      <span className="text-xs text-[#4a7a56]">{phase.progress}%</span>
+                      <span className="text-xs text-[var(--text-muted)]">{phase.progress}%</span>
                     </div>
-                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(30,74,40,0.5)' }}>
+                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(26,46,69,0.5)' }}>
                       <div className="h-full rounded-full transition-all"
                         style={{
                           width: `${phase.progress}%`,
@@ -295,7 +295,7 @@ export const AnalyticsDashboardPage: React.FC = () => {
                             ? phase.color
                             : phase.status === 'in_progress'
                             ? `linear-gradient(to right, ${phase.color}88, ${phase.color})`
-                            : 'rgba(74,122,86,0.2)',
+                            : 'rgba(26,46,69,0.2)',
                         }}
                       />
                     </div>
@@ -313,11 +313,11 @@ export const AnalyticsDashboardPage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-2xl font-bold text-[var(--text-primary)]">{analytics?.estimatedCompletion}</p>
-                  <p className="text-sm text-[#4a7a56] mt-1">Projected completion date</p>
+                  <p className="text-sm text-[var(--text-muted)] mt-1">Projected completion date</p>
                 </div>
                 <div className="text-right">
                   <p className="text-xl font-semibold text-[#D4A017]">{analytics?.completedPhases}/{analytics?.totalPhases}</p>
-                  <p className="text-sm text-[#4a7a56]">Phases complete</p>
+                  <p className="text-sm text-[var(--text-muted)]">Phases complete</p>
                 </div>
               </div>
               {/* Mini phase dots */}
@@ -327,7 +327,7 @@ export const AnalyticsDashboardPage: React.FC = () => {
                     style={{
                       background: phase.status === 'completed' ? phase.color
                         : phase.status === 'in_progress' ? `${phase.color}55`
-                        : 'rgba(30,74,40,0.4)',
+                        : 'rgba(26,46,69,0.4)',
                     }}
                   />
                 ))}
@@ -348,9 +348,9 @@ export const AnalyticsDashboardPage: React.FC = () => {
                   { icon: AlertTriangle,color: '#C1440E', text: '2 potential requirement conflicts detected — review recommended' },
                 ].map(({ icon: Icon, color, text }) => (
                   <div key={text} className="flex items-start gap-3 p-3 rounded-xl"
-                    style={{ background: 'rgba(15,31,21,0.8)', border: '1px solid rgba(30,74,40,0.4)' }}>
+                    style={{ background: 'rgba(15,31,21,0.8)', border: '1px solid rgba(26,46,69,0.4)' }}>
                     <Icon className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color }} />
-                    <p className="text-xs text-[#a8d5a8]">{text}</p>
+                    <p className="text-xs text-[var(--text-muted)]">{text}</p>
                   </div>
                 ))}
               </div>
@@ -374,11 +374,11 @@ export const AnalyticsDashboardPage: React.FC = () => {
                   style={{ background: `${color}0d`, border: `1px solid ${color}25` }}>
                   <p className="text-xs text-[var(--text-muted)] mb-2">{name.replace('Agent','')}</p>
                   <p className="text-2xl font-bold" style={{ color }}>{calls}</p>
-                  <p className="text-xs text-[#4a7a56]">calls</p>
-                  <div className="mt-2 h-1 rounded-full" style={{ background: 'rgba(30,74,40,0.3)' }}>
+                  <p className="text-xs text-[var(--text-muted)]">calls</p>
+                  <div className="mt-2 h-1 rounded-full" style={{ background: 'rgba(26,46,69,0.3)' }}>
                     <div className="h-full rounded-full" style={{ width: `${success}%`, background: color }} />
                   </div>
-                  <p className="text-xs text-[#4a7a56] mt-1">{success}% success</p>
+                  <p className="text-xs text-[var(--text-muted)] mt-1">{success}% success</p>
                 </div>
               ))}
             </div>

@@ -111,9 +111,9 @@ export const FinalSummaryPhase: React.FC<FinalSummaryPhaseProps> = ({
               <div className="text-2xl font-bold text-blue-700">{stats.requirements}</div>
               <div className="text-sm text-blue-600">Requirements</div>
             </div>
-            <div className="p-4 bg-emerald-50 rounded-xl text-center">
-              <div className="text-2xl font-bold text-emerald-700">{stats.tasks}</div>
-              <div className="text-sm text-emerald-600">Tasks</div>
+            <div className="p-4 bg-blue-900/20 rounded-xl text-center">
+              <div className="text-2xl font-bold text-blue-300">{stats.tasks}</div>
+              <div className="text-sm text-blue-400">Tasks</div>
             </div>
             <div className="p-4 bg-purple-50 rounded-xl text-center">
               <div className="text-2xl font-bold text-purple-700">{stats.artifacts}</div>
@@ -146,7 +146,7 @@ export const FinalSummaryPhase: React.FC<FinalSummaryPhaseProps> = ({
                   key={phase.id}
                   className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all cursor-pointer hover:shadow-md ${
                     isComplete
-                      ? 'border-emerald-200 bg-emerald-50'
+                      ? 'border-blue-700/40 bg-blue-900/20'
                       : isInProgress
                       ? 'border-blue-200 bg-blue-50'
                       : 'border-gray-200 bg-gray-50'
@@ -166,7 +166,7 @@ export const FinalSummaryPhase: React.FC<FinalSummaryPhaseProps> = ({
                     <Badge variant={isComplete ? 'success' : isInProgress ? 'warning' : 'secondary'}>
                       {status.replace('_', ' ')}
                     </Badge>
-                    {isComplete && <CheckCircle2 className="h-5 w-5 text-emerald-500" />}
+                    {isComplete && <CheckCircle2 className="h-5 w-5 text-blue-400" />}
                     <ArrowRight className="h-4 w-4 text-gray-400" />
                   </div>
                 </div>

@@ -83,7 +83,7 @@ export const ProjectsPage: React.FC = () => {
       planning:  { color: 'text-[var(--blue-300)]',   bgColor: 'bg-[var(--blue-400)]/10',   borderColor: 'border-[var(--blue-400)]/30',  icon: Loader2,      label: 'Planning' },
       active:    { color: 'text-[var(--blue-400)]',   bgColor: 'bg-[var(--blue-400)]/15',   borderColor: 'border-[var(--blue-400)]/40',  icon: CheckCircle,  label: 'Active' },
       completed: { color: 'text-[var(--orange-400)]',   bgColor: 'bg-[var(--orange-400)]/10',   borderColor: 'border-[var(--orange-400)]/30',  icon: CheckCircle,  label: 'Completed' },
-      archived:  { color: 'text-[#a8d5a8]',   bgColor: 'bg-[var(--brand-700)]/10',   borderColor: 'border-[var(--brand-700)]/30',  icon: AlertCircle,  label: 'Archived' },
+      archived:  { color: 'text-[var(--text-muted)]',   bgColor: 'bg-[var(--brand-700)]/10',   borderColor: 'border-[var(--brand-700)]/30',  icon: AlertCircle,  label: 'Archived' },
     };
     return configs[status] || configs.draft;
   };
@@ -155,9 +155,9 @@ export const ProjectsPage: React.FC = () => {
             const Icon = action.icon;
             const colorClasses = {
               forest: 'from-[var(--blue-400)] to-[var(--blue-600)] hover:shadow-[var(--blue-400)]/20',
-              sage:   'from-[var(--blue-300)] to-[#4a7a56] hover:shadow-[var(--blue-300)]/20',
-              amber:  'from-[var(--orange-400)] to-[#d97706] hover:shadow-[var(--orange-400)]/20',
-              green:  'from-emerald-500 to-emerald-600 hover:shadow-emerald-500/20',
+              sage:   'from-[var(--blue-300)] to-[var(--text-muted)] hover:shadow-[var(--blue-300)]/20',
+              amber:  'from-[var(--orange-400)] to-[var(--orange-600)] hover:shadow-[var(--orange-400)]/20',
+              green:  'from-blue-600 to-blue-500 hover:shadow-blue-500/20',
             }[action.color] || 'from-[var(--blue-400)] to-[var(--blue-600)]';
 
             return (
@@ -228,7 +228,7 @@ export const ProjectsPage: React.FC = () => {
               </>
             ) : (
               <>
-                <div className="w-28 h-28 rounded-3xl bg-gradient-to-br from-[var(--brand-700)]/60 to-[var(--brand-850)] flex items-center justify-center mx-auto mb-8 border border-[rgba(30,74,40,0.5)] shadow-lg shadow-[var(--blue-400)]/10">
+                <div className="w-28 h-28 rounded-3xl bg-gradient-to-br from-[var(--brand-700)]/60 to-[var(--brand-850)] flex items-center justify-center mx-auto mb-8 border border-[rgba(26,46,69,0.5)] shadow-lg shadow-[var(--blue-400)]/10">
                   <Sparkles className="w-14 h-14 text-[var(--blue-400)]" />
                 </div>
                 <h3 className="text-3xl font-bold text-[var(--text-primary)] mb-4">Plant Your First Seed</h3>
@@ -329,7 +329,7 @@ export const ProjectsPage: React.FC = () => {
                           >
                             <button
                               onClick={() => navigate(`/projects/${projectId}`)}
-                              className="w-full flex items-center gap-2 px-4 py-3 text-sm text-[#a8d5a8] hover:bg-[var(--brand-700)]/30 transition-colors"
+                              className="w-full flex items-center gap-2 px-4 py-3 text-sm text-[var(--text-muted)] hover:bg-[var(--brand-700)]/30 transition-colors"
                             >
                               <Edit3 className="w-4 h-4" />
                               Edit

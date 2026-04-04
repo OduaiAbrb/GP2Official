@@ -108,7 +108,7 @@ export const SystemDesignPhase: React.FC<SystemDesignPhaseProps> = ({
   ];
 
   const methodColors: Record<string, string> = {
-    GET: 'bg-emerald-100 text-emerald-700 border-emerald-300',
+    GET: 'bg-blue-900/30 text-blue-300 border-blue-600/50',
     POST: 'bg-blue-100 text-blue-700 border-blue-300',
     PUT: 'bg-amber-100 text-amber-700 border-amber-300',
     DELETE: 'bg-red-100 text-red-700 border-red-300',
@@ -116,7 +116,7 @@ export const SystemDesignPhase: React.FC<SystemDesignPhaseProps> = ({
   };
 
   const statusColors: Record<string, { bg: string; text: string }> = {
-    complete: { bg: 'bg-emerald-100', text: 'text-emerald-700' },
+    complete: { bg: 'bg-blue-900/30', text: 'text-blue-300' },
     partial: { bg: 'bg-amber-100', text: 'text-amber-700' },
     empty: { bg: 'bg-gray-100', text: 'text-gray-500' },
   };
@@ -143,7 +143,7 @@ export const SystemDesignPhase: React.FC<SystemDesignPhaseProps> = ({
               className={`p-4 rounded-xl border-2 transition-all text-left ${
                 isSelected
                   ? 'border-red-400 bg-red-50 shadow-lg scale-105'
-                  : 'border-[#1e4a28] hover:border-gray-300 hover:bg-gray-50'
+                  : 'border-[var(--brand-700)] hover:border-gray-300 hover:bg-gray-50'
               }`}
             >
               <div className={`p-2 rounded-lg ${colors.bg} w-fit mb-2`}>
@@ -252,8 +252,8 @@ export const SystemDesignPhase: React.FC<SystemDesignPhaseProps> = ({
                     {/* Services Layer */}
                     <div className="flex justify-center gap-4">
                       {['User Service', 'Project Service', 'AI Service', 'Notification'].map((service) => (
-                        <div key={service} className="px-4 py-3 bg-emerald-100 rounded-xl border-2 border-emerald-300">
-                          <span className="font-medium text-emerald-700 text-sm">⚙️ {service}</span>
+                        <div key={service} className="px-4 py-3 bg-blue-900/30 rounded-xl border-2 border-blue-600/50">
+                          <span className="font-medium text-blue-300 text-sm">⚙️ {service}</span>
                         </div>
                       ))}
                     </div>
@@ -285,8 +285,8 @@ export const SystemDesignPhase: React.FC<SystemDesignPhaseProps> = ({
                 <div className="bg-white p-8 rounded-2xl shadow-lg border">
                   <div className="flex gap-8">
                     {/* Users Table */}
-                    <div className="border-2 border-emerald-300 rounded-lg overflow-hidden">
-                      <div className="bg-emerald-100 px-4 py-2 font-medium text-emerald-700">👤 Users</div>
+                    <div className="border-2 border-blue-600/50 rounded-lg overflow-hidden">
+                      <div className="bg-blue-900/30 px-4 py-2 font-medium text-blue-300">👤 Users</div>
                       <div className="p-3 space-y-1 text-sm">
                         <div className="flex items-center gap-2">
                           <span className="text-amber-500">🔑</span> id (PK)
@@ -419,7 +419,7 @@ export const SystemDesignPhase: React.FC<SystemDesignPhaseProps> = ({
                       </thead>
                       <tbody>
                         {group.endpoints.map((endpoint, idx) => (
-                          <tr key={idx} className="border-t border-[#1e4a28] hover:bg-white">
+                          <tr key={idx} className="border-t border-[var(--brand-700)] hover:bg-white">
                             <td className="px-4 py-2">
                               <span className={`px-2 py-1 rounded text-xs font-medium border ${methodColors[endpoint.method]}`}>
                                 {endpoint.method}
@@ -483,11 +483,11 @@ export const SystemDesignPhase: React.FC<SystemDesignPhaseProps> = ({
         </CardHeader>
         <CardContent className="p-6">
           <div className="grid md:grid-cols-3 gap-4">
-            <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200">
-              <div className="text-2xl font-bold text-emerald-700">
+            <div className="p-4 bg-blue-900/20 rounded-xl border border-blue-700/40">
+              <div className="text-2xl font-bold text-blue-300">
                 {diagrams.filter((d) => d.status === 'complete').length}
               </div>
-              <div className="text-sm text-emerald-600">Diagrams Complete</div>
+              <div className="text-sm text-blue-400">Diagrams Complete</div>
             </div>
             <div className="p-4 bg-amber-50 rounded-xl border border-amber-200">
               <div className="text-2xl font-bold text-amber-700">

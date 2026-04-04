@@ -358,12 +358,12 @@ export const PhaseDetailPage: React.FC = () => {
     if (!isStreaming && !streamingText) return null;
     if (!isStreaming && phaseMarkdown) return null;
     return (
-      <div className="rounded-xl p-5 mt-4" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(74,222,128,0.2)' }}>
+      <div className="rounded-xl p-5 mt-4" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(26,111,212,0.2)' }}>
         <div className="flex items-center gap-2 mb-3">
           <Loader2 className="w-4 h-4 animate-spin text-[var(--blue-400)]" />
           <span className="text-xs font-semibold text-[var(--blue-400)]">AI is generating...</span>
         </div>
-        <div className="prose prose-sm max-w-none text-[#a8d5a8]">
+        <div className="prose prose-sm max-w-none text-[var(--text-muted)]">
           <ReactMarkdown>{streamingText + (isStreaming ? ' ▊' : '')}</ReactMarkdown>
         </div>
       </div>
@@ -1432,7 +1432,7 @@ export const PhaseDetailPage: React.FC = () => {
                         variant="outline"
                         onClick={() => navigate(`/projects/${id}`)}
                         className="text-[var(--text-muted)] bg-transparent"
-                        style={{ borderColor: 'rgba(30,74,40,0.6)' }}
+                        style={{ borderColor: 'rgba(26,46,69,0.6)' }}
                       >
                         <ArrowLeft className="mr-2 h-4 w-4" />
                         Back
@@ -1442,7 +1442,7 @@ export const PhaseDetailPage: React.FC = () => {
                           variant="outline"
                           onClick={handleDownload}
                           className="text-[var(--text-muted)] bg-transparent"
-                          style={{ borderColor: 'rgba(30,74,40,0.6)' }}
+                          style={{ borderColor: 'rgba(26,46,69,0.6)' }}
                         >
                           <Download className="mr-2 h-4 w-4" />
                           Export
@@ -1451,9 +1451,9 @@ export const PhaseDetailPage: React.FC = () => {
                       <span className="px-3 py-1.5 rounded-full text-xs font-semibold"
                         style={
                           status === 'completed'
-                            ? { background: 'rgba(74,222,128,0.15)', color: 'var(--blue-400)', border: '1px solid rgba(74,222,128,0.3)' }
+                            ? { background: 'rgba(26,111,212,0.15)', color: 'var(--blue-400)', border: '1px solid rgba(26,111,212,0.3)' }
                             : status === 'locked'
-                            ? { background: 'rgba(30,74,40,0.15)', color: '#4a7a56', border: '1px solid rgba(30,74,40,0.3)' }
+                            ? { background: 'rgba(26,46,69,0.15)', color: 'var(--text-muted)', border: '1px solid rgba(26,46,69,0.3)' }
                             : { background: `${phaseAccentColor}22`, color: phaseAccentColor, border: `1px solid ${phaseAccentColor}44` }
                         }>
                         {status === 'locked' ? '🔒 Locked' : status === 'completed' ? '✓ Completed' : '● Active'}
@@ -1481,10 +1481,10 @@ export const PhaseDetailPage: React.FC = () => {
               {/* Next Phase Banner */}
               {nextPhase && (
                 <div className="rounded-xl p-4 flex flex-wrap items-center justify-between gap-4"
-                  style={{ background: 'var(--brand-850)', border: '1px solid rgba(30,74,40,0.5)' }}>
+                  style={{ background: 'var(--brand-850)', border: '1px solid rgba(26,46,69,0.5)' }}>
                   <div className="flex items-center gap-3">
                     <span className="flex items-center justify-center w-9 h-9 rounded-lg font-bold text-sm"
-                      style={{ background: 'rgba(74,222,128,0.12)', color: 'var(--blue-400)', border: '1px solid rgba(74,222,128,0.25)' }}>
+                      style={{ background: 'rgba(26,111,212,0.12)', color: 'var(--blue-400)', border: '1px solid rgba(26,111,212,0.25)' }}>
                       {nextPhase.stepNumber}
                     </span>
                     <div>
@@ -1626,8 +1626,8 @@ export const PhaseDetailPage: React.FC = () => {
             {/* Cost vs Benefit Comparison card removed here; lives in cost_benefit phase instead */}
             <div className="bg-[var(--brand-900)] border border-[var(--brand-700)]/50 rounded-xl p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-emerald-500/20 rounded-lg border border-emerald-500/30">
-                  <Shield className="h-5 w-5 text-emerald-400" />
+                <div className="p-2 bg-blue-900/200/20 rounded-lg border border-blue-500/30">
+                  <Shield className="h-5 w-5 text-blue-400" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-white">{requirements.filter(r => r.type === 'non_functional').length}</p>
@@ -1984,14 +1984,14 @@ export const PhaseDetailPage: React.FC = () => {
             </div>
             {phaseMarkdown && (
               <div className="rounded-xl p-5 mt-2" style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(107,76,138,0.2)' }}>
-                <div className="prose prose-sm max-w-none" style={{ color: '#a8d5a8' }}>
+                <div className="prose prose-sm max-w-none" style={{ color: 'var(--text-muted)' }}>
                   <ReactMarkdown>{phaseMarkdown}</ReactMarkdown>
                   <RawMarkdownDisclosure />
                 </div>
               </div>
             )}
             {!phaseMarkdown && !isGenerating && (
-              <div className="text-center py-12 text-[#4a7a56]">
+              <div className="text-center py-12 text-[var(--text-muted)]">
                 <Layers className="w-12 h-12 mx-auto mb-3 opacity-30" />
                 <p className="font-medium">No design content yet</p>
                 <p className="text-sm mt-1">Click "Generate Design" to create your system architecture</p>
@@ -2351,7 +2351,7 @@ export const PhaseDetailPage: React.FC = () => {
                                 return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-medium">🟡 {level}</span>;
                               }
                               if (lower.startsWith('low')) {
-                                return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-medium">🟢 {level}</span>;
+                                return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-900/20 text-blue-300 text-[10px] font-medium">🟢 {level}</span>;
                               }
                               return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--brand-700)]/50 text-gray-600 text-[10px] font-medium">{level}</span>;
                             };
@@ -2510,7 +2510,7 @@ export const PhaseDetailPage: React.FC = () => {
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <ListChecks className="h-4 w-4 text-emerald-500" />
+                    <ListChecks className="h-4 w-4 text-blue-400" />
                     Recommended Actions
                   </CardTitle>
                   <CardDescription className="text-xs">
@@ -2523,7 +2523,7 @@ export const PhaseDetailPage: React.FC = () => {
                       {riskDraft.actions.map((action, idx) => (
                         <div key={idx} className="flex items-start gap-2">
                           <textarea
-                            className="flex-1 min-h-[45px] border border-[var(--brand-700)] rounded px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-200"
+                            className="flex-1 min-h-[45px] border border-[var(--brand-700)] rounded px-3 py-2 text-xs focus:ring-2 focus:ring-blue-500/30"
                             placeholder="Describe the recommended action..."
                             value={action}
                             onChange={(e) =>
@@ -2630,11 +2630,11 @@ export const PhaseDetailPage: React.FC = () => {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="bg-gradient-to-br from-emerald-50 to-white border-emerald-100">
+              <Card className="bg-gradient-to-br from-blue-900/20 to-white border-blue-700/30">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-emerald-100 rounded-lg">
-                      <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                    <div className="p-2 bg-blue-900/30 rounded-lg">
+                      <CheckCircle2 className="h-5 w-5 text-blue-400" />
                     </div>
                     <div>
                       <p className="text-2xl font-bold text-white">{completedCount}</p>
@@ -2856,7 +2856,7 @@ export const PhaseDetailPage: React.FC = () => {
                     {tasks.filter((task) => taskFilter === 'all' || (localTaskStatus[task.task_id] || task.status || '').toLowerCase() === taskFilter).map((task) => {
                       const taskStatus = (localTaskStatus[task.task_id] || task.status || '').toLowerCase();
                       const done = taskStatus === 'completed';
-                      const priorityColors: Record<string, string> = { high: 'border-l-red-500', medium: 'border-l-amber-500', low: 'border-l-emerald-500' };
+                      const priorityColors: Record<string, string> = { high: 'border-l-red-500', medium: 'border-l-amber-500', low: 'border-l-blue-500' };
                       return (
                         <div
                           key={task.task_id}
@@ -3324,10 +3324,10 @@ export const PhaseDetailPage: React.FC = () => {
               </div>
             </div>
 
-            <Card className="border-emerald-200 bg-emerald-50/60">
+            <Card className="border-blue-700/40 bg-blue-900/20">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Users className="h-4 w-4 text-emerald-600" />
+                  <Users className="h-4 w-4 text-blue-400" />
                   Team Size Scenario
                 </CardTitle>
                 <CardDescription className="text-xs">
@@ -3338,7 +3338,7 @@ export const PhaseDetailPage: React.FC = () => {
                 <div className="flex flex-col gap-2 text-xs text-gray-300">
                   <div className="flex items-center justify-between">
                     <span>Team size multiplier</span>
-                    <span className="font-mono text-emerald-700">{teamSizeMultiplier.toFixed(2)}×</span>
+                    <span className="font-mono text-blue-300">{teamSizeMultiplier.toFixed(2)}×</span>
                   </div>
                   <input
                     type="range"
@@ -3347,7 +3347,7 @@ export const PhaseDetailPage: React.FC = () => {
                     step={0.1}
                     value={teamSizeMultiplier}
                     onChange={(e) => setTeamSizeMultiplier(parseFloat(e.target.value) || 1)}
-                    className="w-full accent-emerald-600"
+                    className="w-full accent-blue-500"
                   />
                   <div className="flex justify-between text-[10px] text-gray-500">
                     <span>0.5× (very small team)</span>
@@ -3461,7 +3461,7 @@ export const PhaseDetailPage: React.FC = () => {
                               </p>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
-                              <span className="text-[10px] font-mono text-emerald-700">{itemRoi.toFixed(0)}%</span>
+                              <span className="text-[10px] font-mono text-blue-300">{itemRoi.toFixed(0)}%</span>
                               <Button
                                 size="sm"
                                 variant="ghost"
@@ -3482,11 +3482,11 @@ export const PhaseDetailPage: React.FC = () => {
 
             {/* Cost Overview Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card className="bg-gradient-to-br from-emerald-50 to-white border-emerald-100">
+              <Card className="bg-gradient-to-br from-blue-900/20 to-white border-blue-700/30">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-emerald-100 rounded-lg">
-                      <DollarSign className="h-5 w-5 text-emerald-600" />
+                    <div className="p-2 bg-blue-900/30 rounded-lg">
+                      <DollarSign className="h-5 w-5 text-blue-400" />
                     </div>
                     <div>
                       <p className="text-2xl font-bold text-white">${effectiveCostForRoi.toLocaleString()}</p>
@@ -3540,7 +3540,7 @@ export const PhaseDetailPage: React.FC = () => {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
-                    <Sparkles className="h-4 w-4 text-emerald-500" />
+                    <Sparkles className="h-4 w-4 text-blue-400" />
                     AI Summary
                   </CardTitle>
                   <CardDescription className="text-sm">Latest AI output for this phase.</CardDescription>
@@ -3558,7 +3558,7 @@ export const PhaseDetailPage: React.FC = () => {
               <Card className="lg:col-span-2">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5 text-emerald-500" />
+                    <BarChart3 className="h-5 w-5 text-blue-400" />
                     Cost vs Benefit (Current Scenario)
                   </CardTitle>
                   <CardDescription className="text-xs">
@@ -3583,7 +3583,7 @@ export const PhaseDetailPage: React.FC = () => {
                     </div>
                     <div className="h-4 bg-gray-100 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-emerald-500"
+                        className="h-full bg-blue-900/200"
                         style={{ width: `${effectiveCostForRoi > 0 ? Math.min(100, (effectiveBenefit / effectiveCostForRoi) * 50) : 0}%` }}
                       />
                     </div>
@@ -3599,7 +3599,7 @@ export const PhaseDetailPage: React.FC = () => {
                 <CardHeader className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <CardTitle className="flex items-center gap-2">
-                      <PieChart className="h-5 w-5 text-emerald-500" />
+                      <PieChart className="h-5 w-5 text-blue-400" />
                       Cost Distribution by Phase
                     </CardTitle>
                     <CardDescription className="text-xs">
@@ -3727,7 +3727,7 @@ export const PhaseDetailPage: React.FC = () => {
                   <div className="space-y-3">
                     {phaseSlicesForChart.map((slice, idx) => {
                       const percentage = totalCost > 0 && !useManualCostSlices ? (slice.cost / totalCost) * 100 : (slice.cost / manualTotalCost) * 100;
-                      const colors = ['bg-emerald-500', 'bg-blue-500', 'bg-purple-500', 'bg-amber-500', 'bg-pink-500'];
+                      const colors = ['bg-blue-900/200', 'bg-blue-500', 'bg-purple-500', 'bg-amber-500', 'bg-pink-500'];
                       const colorIdx = idx % colors.length;
                       return (
                         <div key={slice.id} className="space-y-1">
@@ -3763,7 +3763,7 @@ export const PhaseDetailPage: React.FC = () => {
                     {['high', 'medium', 'low'].map((priority) => {
                       const data = costByPriority[priority] || { hours: 0, cost: 0 };
                       const percentage = totalCost > 0 ? (data.cost / totalCost) * 100 : 0;
-                      const colors = { high: 'bg-red-500', medium: 'bg-amber-500', low: 'bg-emerald-500' };
+                      const colors = { high: 'bg-red-500', medium: 'bg-amber-500', low: 'bg-blue-900/200' };
                       const icons = { high: '🔴', medium: '🟡', low: '🟢' };
                       return (
                         <div key={priority} className="space-y-1">
@@ -3795,10 +3795,10 @@ export const PhaseDetailPage: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="grid md:grid-cols-3 gap-6">
-                    <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl p-4">
-                      <p className="text-sm text-emerald-700 font-medium mb-2">Conservative Estimate</p>
-                      <p className="text-3xl font-bold text-emerald-800">${Math.round(totalCost * 0.8).toLocaleString()}</p>
-                      <p className="text-xs text-emerald-600 mt-1">-20% buffer</p>
+                    <div className="bg-gradient-to-br from-blue-900/20 to-blue-900/30 rounded-xl p-4">
+                      <p className="text-sm text-blue-300 font-medium mb-2">Conservative Estimate</p>
+                      <p className="text-3xl font-bold text-blue-200">${Math.round(totalCost * 0.8).toLocaleString()}</p>
+                      <p className="text-xs text-blue-400 mt-1">-20% buffer</p>
                     </div>
                     <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4">
                       <p className="text-sm text-blue-700 font-medium mb-2">Base Estimate</p>
@@ -3816,23 +3816,23 @@ export const PhaseDetailPage: React.FC = () => {
             </div>
 
             {/* AI Chat Section */}
-            <Card className="bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200">
+            <Card className="bg-gradient-to-r from-blue-900/20 to-blue-900/10 border-blue-700/40">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-emerald-500" />
+                  <Sparkles className="h-5 w-5 text-blue-400" />
                   AI Cost Analysis
                 </CardTitle>
                 <CardDescription>Ask AI to analyze costs, suggest optimizations, or generate reports</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <textarea
-                  className="w-full border border-emerald-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-400 focus:border-transparent min-h-[100px] bg-[#152238]"
+                  className="w-full border border-blue-700/40 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:border-transparent min-h-[100px] bg-[#152238]"
                   placeholder="Ask AI to analyze your project costs, suggest budget optimizations, or generate a cost breakdown report..."
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                 />
                 <div className="flex gap-2">
-                  <Button onClick={() => handleGenerate()} disabled={isGenerating || status === 'locked'} className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600">
+                  <Button onClick={() => handleGenerate()} disabled={isGenerating || status === 'locked'} className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600">
                     {isGenerating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analyzing...</> : <><Sparkles className="mr-2 h-4 w-4" /> Analyze Costs</>}
                   </Button>
                   <Button variant="outline" onClick={handleDownload} disabled={!phaseMarkdown}>
@@ -3840,7 +3840,7 @@ export const PhaseDetailPage: React.FC = () => {
                   </Button>
                 </div>
                 {phaseMarkdown && (
-                  <div className="border border-emerald-200 rounded-lg bg-[#152238] p-4 mt-4">
+                  <div className="border border-blue-700/40 rounded-lg bg-[#152238] p-4 mt-4">
                     <div className="prose prose-sm max-w-none">
                       <ReactMarkdown>{phaseMarkdown}</ReactMarkdown>
                       <RawMarkdownDisclosure />
@@ -3908,11 +3908,11 @@ export const PhaseDetailPage: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-gradient-to-br from-emerald-50 to-white border-emerald-100">
+            <Card className="bg-gradient-to-br from-blue-900/20 to-white border-blue-700/30">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-emerald-100 rounded-lg">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                  <div className="p-2 bg-blue-900/30 rounded-lg">
+                    <CheckCircle2 className="h-5 w-5 text-blue-400" />
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-white">{requirements.filter(r => r.status === 'approved').length}</p>
@@ -3961,7 +3961,7 @@ export const PhaseDetailPage: React.FC = () => {
               </CardHeader>
               <CardContent className="max-h-[500px] overflow-y-auto space-y-3">
                 {requirements.length > 0 ? requirements.map((req) => (
-                  <div key={req.requirement_id} className={`p-4 rounded-lg border-l-4 ${req.status === 'approved' ? 'border-l-emerald-500 bg-emerald-50' : req.status === 'rejected' ? 'border-l-red-500 bg-red-50' : 'border-l-amber-500 bg-amber-50'}`}>
+                  <div key={req.requirement_id} className={`p-4 rounded-lg border-l-4 ${req.status === 'approved' ? 'border-l-blue-500 bg-blue-900/20' : req.status === 'rejected' ? 'border-l-red-500 bg-red-50' : 'border-l-amber-500 bg-amber-50'}`}>
                     <div className="flex items-start justify-between">
                       <div>
                         <p className="font-medium text-white">{req.title}</p>
@@ -4171,7 +4171,7 @@ export const PhaseDetailPage: React.FC = () => {
                         <div className={`p-2 rounded-lg ${artifact ? 'bg-violet-200' : 'bg-gray-200'}`}>
                           <diagram.icon className={`h-5 w-5 ${artifact ? 'text-violet-600' : 'text-gray-500'}`} />
                         </div>
-                        {artifact && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+                        {artifact && <CheckCircle2 className="h-4 w-4 text-blue-400" />}
                       </div>
                       <p className="font-medium text-white">{diagram.name}</p>
                       <p className="text-xs text-gray-500 mt-1">{diagram.description}</p>
@@ -4376,8 +4376,8 @@ export const PhaseDetailPage: React.FC = () => {
         </div>
       </div>
       {/* Phase Bottom Tabs: History | Traceability | Discussion */}
-      <div className="mt-6 rounded-2xl overflow-hidden" style={{ background: 'var(--brand-850)', border: '1px solid rgba(30,74,40,0.5)' }}>
-        <div className="flex border-b" style={{ borderColor: 'rgba(30,74,40,0.5)' }}>
+      <div className="mt-6 rounded-2xl overflow-hidden" style={{ background: 'var(--brand-850)', border: '1px solid rgba(26,46,69,0.5)' }}>
+        <div className="flex border-b" style={{ borderColor: 'rgba(26,46,69,0.5)' }}>
           {(['history', 'traceability', 'discussion'] as const).map((tab) => {
             const labels: Record<string, string> = { history: 'History', traceability: 'Traceability', discussion: 'Discussion' };
             const isActive = phaseBottomTab === tab;
@@ -4389,7 +4389,7 @@ export const PhaseDetailPage: React.FC = () => {
                 className={`flex-1 px-4 py-3 text-sm font-semibold transition-all ${
                   isActive
                     ? 'text-[var(--blue-400)] border-b-2 border-[var(--blue-400)] bg-[var(--brand-800)]'
-                    : 'text-[var(--text-muted)] hover:text-[#a8d5a8] hover:bg-[var(--brand-800)]/50'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-muted)] hover:bg-[var(--brand-800)]/50'
                 }`}
               >
                 {labels[tab]}
