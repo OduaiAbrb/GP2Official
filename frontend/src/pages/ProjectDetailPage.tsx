@@ -12,6 +12,7 @@ import { formatDate } from '@/lib/utils';
 import { workspacePresets } from '@/constants/workspacePresets';
 import { AIAgentsPanel } from '@/components/AIAgentsPanel';
 import { ProjectProgressBar } from '@/components/ProjectProgressBar';
+import { exportFullProjectPdf } from '@/lib/exportFullProjectPdf';
 
 type DraftSectionKey = 'overview';
 
@@ -324,6 +325,18 @@ export const ProjectDetailPage: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
+  const handleExportFullProjectPdf = () => {
+    if (!project) return;
+    const ok = exportFullProjectPdf({ project, phaseOutputs, phaseStatus });
+    if (!ok) {
+      setError(
+        Object.keys(phaseOutputs).length
+          ? 'Could not open the print window. Please allow popups for this site.'
+          : 'No phase content available to export yet.'
+      );
+    }
+  };
+
   const handlePhaseClick = (phaseId: string) => {
     if (!project) return;
     navigate(`/projects/${project.project_id || project.id}/phases/${phaseId}`);
@@ -599,9 +612,19 @@ export const ProjectDetailPage: React.FC = () => {
                     Select a phase to continue — complete them in order for best results.
                   </p>
                 </div>
-                <Button variant="outline" size="sm" onClick={handleExportAllPhases} disabled={!Object.keys(phaseOutputs).length} className="border-[var(--brand-700)] text-[var(--text-muted)] hover:border-[var(--blue-400)]/50 hover:text-[var(--blue-400)]">
-                  Export All
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={handleExportAllPhases} disabled={!Object.keys(phaseOutputs).length} className="border-[var(--brand-700)] text-[var(--text-muted)] hover:border-[var(--blue-400)]/50 hover:text-[var(--blue-400)]">
+                    Export All (Markdown)
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleExportFullProjectPdf}
+                    disabled={!Object.keys(phaseOutputs).length}
+                    className="bg-gradient-to-r from-[var(--blue-400)] to-[var(--blue-500)] text-[var(--brand-900)] font-semibold disabled:opacity-50"
+                  >
+                    Export Full Project (PDF)
+                  </Button>
+                </div>
               </div>
 
               <PhaseKanban
