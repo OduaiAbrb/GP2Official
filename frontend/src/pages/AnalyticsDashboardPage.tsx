@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { api } from '@/lib/api';
+import { phaseConfigs } from '@/constants/phases';
+import { PhaseActivityTimeline, type PhaseActivityEntry } from '@/components/PhaseActivityTimeline';
+import type { PhaseCompletionMeta, Project } from '@/types';
 import {
   BarChart3,
   TrendingUp,
@@ -61,13 +64,44 @@ const PHASE_META: { key: string; name: string; color: string }[] = [
 
 export const AnalyticsDashboardPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [activityEntries, setActivityEntries] = useState<PhaseActivityEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const projects = await api.getProjects();
+        const projects: Project[] = await api.getProjects();
+        const collectedEntries: PhaseActivityEntry[] = [];
+        for (const proj of projects) {
+          const projectId: string | undefined = proj.project_id || proj.id;
+          const projectName: string = proj.name || 'Untitled project';
+          const meta: Record<string, PhaseCompletionMeta> = proj.phase_completion_meta || {};
+          const status: Record<string, string> = proj.phase_status || {};
+          for (const phase of phaseConfigs) {
+            const m: PhaseCompletionMeta | undefined = meta[phase.id];
+            const st = (status[phase.id] || '').toLowerCase();
+            if (st !== 'completed' && !m?.completed_at) continue;
+            collectedEntries.push({
+              key: `${projectId || projectName}:${phase.id}`,
+              phaseId: phase.id,
+              phaseTitle: phase.title,
+              stepNumber: phase.stepNumber,
+              completedAt: m?.completed_at ?? null,
+              confirmer: m?.completed_by_name || m?.completed_by || null,
+              note: m?.notes ?? null,
+              projectId,
+              projectName,
+            });
+          }
+        }
+        collectedEntries.sort((a, b) => {
+          const ta = a.completedAt ? new Date(a.completedAt).getTime() : 0;
+          const tb = b.completedAt ? new Date(b.completedAt).getTime() : 0;
+          return tb - ta;
+        });
+        setActivityEntries(collectedEntries);
         const totalProjects = projects.length;
 
         // Aggregate phase statuses across all projects (or use id-specific project)
@@ -440,6 +474,24 @@ export const AnalyticsDashboardPage: React.FC = () => {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Cross-project Activity Timeline */}
+          <div className="mt-6">
+            <PhaseActivityTimeline
+              title="Recent Project Activity"
+              description="Confirmed phase completions across all of your projects."
+              emptyTitle="No phase completions yet"
+              emptyDescription="As your team confirms phases across projects, they'll show up here."
+              entries={activityEntries}
+              showProject
+              previewNotes
+              onEntryClick={(entry) => {
+                if (entry.projectId) {
+                  navigate(`/projects/${entry.projectId}/phases/${entry.phaseId}`);
+                }
+              }}
+            />
           </div>
 
         </div>
