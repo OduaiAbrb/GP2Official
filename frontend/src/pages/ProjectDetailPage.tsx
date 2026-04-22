@@ -11,6 +11,7 @@ import Joyride, { STATUS as JoyrideStatus, Step } from 'react-joyride';
 import { formatDate } from '@/lib/utils';
 import { workspacePresets } from '@/constants/workspacePresets';
 import { AIAgentsPanel } from '@/components/AIAgentsPanel';
+import { ProjectProgressBar } from '@/components/ProjectProgressBar';
 
 type DraftSectionKey = 'overview';
 
@@ -458,6 +459,12 @@ export const ProjectDetailPage: React.FC = () => {
                 </span>
               </div>
             </div>
+
+            {/* Project-wide progress summary */}
+            <ProjectProgressBar
+              projectId={project.project_id || project.id || ''}
+              phaseStatus={phaseStatus}
+            />
 
             {/* Workspace Preset Switcher */}
             <div className="pt-4 border-t border-[var(--brand-700)]/50">
