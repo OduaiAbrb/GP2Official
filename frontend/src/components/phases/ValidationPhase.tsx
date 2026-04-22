@@ -105,10 +105,10 @@ export const ValidationPhase: React.FC<ValidationPhaseProps> = ({
     <div className="space-y-6">
       {/* Overview Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card className="bg-gradient-to-br from-teal-50 to-cyan-50 border-teal-200">
+        <Card className="bg-blue-900/20 border-blue-700/40">
           <CardContent className="p-4 text-center">
-            <div className="text-3xl font-bold text-teal-700">{overallProgress}%</div>
-            <div className="text-sm text-teal-600">Overall Validated</div>
+            <div className="text-3xl font-bold text-blue-300">{overallProgress}%</div>
+            <div className="text-sm text-blue-400">Overall Validated</div>
           </CardContent>
         </Card>
         <Card>
@@ -156,10 +156,10 @@ export const ValidationPhase: React.FC<ValidationPhaseProps> = ({
               return (
                 <div
                   key={item.id}
-                  className={`border rounded-lg transition-all ${liveItem.status === 'approved' ? 'border-blue-700/40 bg-blue-900/20/50' :
-                      liveItem.status === 'pending' ? 'border-amber-200 bg-amber-50/50' :
-                        liveItem.status === 'rejected' ? 'border-red-200 bg-red-50/50' :
-                          'border-gray-200 bg-white'
+                  className={`border rounded-lg transition-all ${liveItem.status === 'approved' ? 'border-blue-700/40 bg-blue-900/20' :
+                      liveItem.status === 'pending' ? 'border-amber-700/40 bg-amber-900/10' :
+                        liveItem.status === 'rejected' ? 'border-red-700/40 bg-red-900/10' :
+                          'border-[var(--brand-700)] bg-[var(--brand-850)]'
                     }`}
                 >
                   <div
@@ -177,8 +177,8 @@ export const ValidationPhase: React.FC<ValidationPhaseProps> = ({
                         <MessageSquare className="h-5 w-5 text-blue-500" />
                       )}
                       <div>
-                        <div className="font-medium text-gray-900">{item.name}</div>
-                        <div className="text-sm text-gray-500">{item.description}</div>
+                        <div className="font-medium text-gray-200">{item.name}</div>
+                        <div className="text-sm text-gray-400">{item.description}</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -206,9 +206,9 @@ export const ValidationPhase: React.FC<ValidationPhaseProps> = ({
                         <div className="flex items-start gap-2 text-sm">
                           <MessageSquare className="h-4 w-4 text-gray-400 mt-0.5" />
                           <div className="flex-1">
-                            <span className="text-gray-600">Reviewer comments</span>
+                            <span className="text-gray-400">Reviewer comments</span>
                             <textarea
-                              className="mt-1 w-full border border-gray-200 rounded-md px-2 py-1 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-teal-500"
+                              className="mt-1 w-full border border-[var(--brand-700)] rounded-md px-2 py-1 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50 bg-[#152238] text-gray-200 placeholder-gray-500"
                               rows={2}
                               value={liveItem.comments || ''}
                               onChange={(e) =>

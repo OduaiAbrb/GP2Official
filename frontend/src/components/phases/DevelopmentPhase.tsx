@@ -143,11 +143,11 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
 
   const colorMap: Record<string, { bg: string; border: string; text: string }> = {
     blue: { bg: 'bg-blue-900/30', border: 'border-blue-600/50', text: 'text-blue-300' },
-    purple: { bg: 'bg-purple-100', border: 'border-purple-300', text: 'text-purple-700' },
-    amber: { bg: 'bg-amber-100', border: 'border-amber-300', text: 'text-amber-700' },
-    red: { bg: 'bg-red-100', border: 'border-red-300', text: 'text-red-700' },
-    orange: { bg: 'bg-orange-100', border: 'border-orange-300', text: 'text-orange-700' },
-    cyan: { bg: 'bg-cyan-100', border: 'border-cyan-300', text: 'text-cyan-700' },
+    purple: { bg: 'bg-purple-900/30', border: 'border-purple-600/50', text: 'text-purple-300' },
+    amber: { bg: 'bg-amber-900/30', border: 'border-amber-600/50', text: 'text-amber-300' },
+    red: { bg: 'bg-red-900/30', border: 'border-red-600/50', text: 'text-red-300' },
+    orange: { bg: 'bg-orange-900/30', border: 'border-orange-600/50', text: 'text-orange-300' },
+    cyan: { bg: 'bg-cyan-900/30', border: 'border-cyan-600/50', text: 'text-cyan-300' },
   };
 
   const [techStackData, setTechStackData] = useState<TechStackMap>(initialTechStack);
@@ -485,8 +485,8 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
             onClick={() => setActiveTab(tab.id as typeof activeTab)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all ${
               activeTab === tab.id
-                ? 'bg-white shadow text-gray-900'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-[var(--brand-700)] shadow text-white'
+                : 'text-gray-400 hover:text-gray-200'
             }`}
           >
             <tab.icon className="h-4 w-4" />
@@ -499,7 +499,7 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
       {activeTab === 'stack' && (
         <div className="space-y-4">
           {suggestedTechs.length > 0 && (
-            <Card className="border-blue-700/40 bg-blue-900/20/60">
+            <Card className="border-blue-700/40 bg-blue-900/20">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-blue-200 text-base">
                   <Sparkles className="h-4 w-4" />
@@ -513,7 +513,7 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
                 {suggestedTechs.map((s) => (
                   <div
                     key={s.label}
-                    className="px-3 py-2 rounded-lg bg-white shadow-sm border border-blue-700/40 max-w-xs"
+                    className="px-3 py-2 rounded-lg bg-[var(--brand-800)] border border-blue-700/40 max-w-xs"
                   >
                     <div className="text-xs font-semibold text-blue-200 mb-1">{s.label}</div>
                     <div className="text-[11px] text-blue-300 leading-snug">{s.details}</div>
@@ -532,7 +532,7 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-0">
-                <ol className="space-y-1 text-xs text-gray-700 list-decimal list-inside">
+                <ol className="space-y-1 text-xs text-gray-300 list-decimal list-inside">
                   {suggestedTechs.map((s, idx) => {
                     const level: 'Beginner' | 'Intermediate' | 'Advanced' =
                       idx <= 2 ? 'Beginner' : idx <= 5 ? 'Intermediate' : 'Advanced';
@@ -540,8 +540,8 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
                       level === 'Beginner'
                         ? 'bg-blue-900/20 text-blue-300 border-blue-700/40'
                         : level === 'Intermediate'
-                        ? 'bg-amber-50 text-amber-700 border-amber-200'
-                        : 'bg-purple-50 text-purple-700 border-purple-200';
+                        ? 'bg-amber-900/20 text-amber-300 border-amber-700/40'
+                        : 'bg-purple-900/20 text-purple-300 border-purple-700/40';
                     return (
                       <li key={s.label} className="flex flex-wrap items-start gap-2">
                         <span className={`px-1.5 py-0.5 rounded-full border text-[10px] font-semibold ${levelClass}`}>
@@ -566,10 +566,10 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
                   Start with these 1–3 roadmap areas and ship a small vertical slice using them.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="pt-0 space-y-2 text-xs text-gray-700">
+              <CardContent className="pt-0 space-y-2 text-xs text-gray-300">
                 {suggestedTechs.slice(0, 3).map((s) => (
-                  <div key={s.label} className="p-2 rounded-lg border border-[var(--brand-700)] bg-white">
-                    <div className="font-semibold mb-0.5">{s.label}</div>
+                  <div key={s.label} className="p-2 rounded-lg border border-[var(--brand-700)] bg-[var(--brand-800)]">
+                    <div className="font-semibold mb-0.5 text-gray-200">{s.label}</div>
                     <div className="text-[11px] leading-snug">{s.details}</div>
                   </div>
                 ))}
@@ -581,12 +581,12 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
           <Card>
             <CardContent className="flex flex-wrap items-center gap-3">
               <input
-                className="border rounded-lg px-3 py-1.5 text-xs flex-1 min-w-[160px]"
+                className="border border-[var(--brand-700)] rounded-lg px-3 py-1.5 text-xs flex-1 min-w-[160px] bg-[#152238] text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
                 placeholder="Filter technologies by name or description"
                 value={stackFilter}
                 onChange={(e) => setStackFilter(e.target.value)}
               />
-              <label className="flex items-center gap-1 text-xs text-gray-600">
+              <label className="flex items-center gap-1 text-xs text-gray-400">
                 <input
                   type="checkbox"
                   checked={showRecommendedOnly}
@@ -629,10 +629,10 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
                     {visibleItems.map((item, idx) => (
                       <div
                         key={item.name}
-                        className="p-3 rounded-xl border border-[var(--brand-700)] bg-white hover:border-blue-600/50 hover:bg-blue-900/20 transition-all"
+                        className="p-3 rounded-xl border border-[var(--brand-700)] bg-[var(--brand-850)] hover:border-blue-600/50 hover:bg-blue-900/20 transition-all"
                       >
                         <div className="flex items-center justify-between mb-1">
-                          <span className="font-medium text-gray-900 text-sm">{item.name}</span>
+                          <span className="font-medium text-gray-200 text-sm">{item.name}</span>
                           <Button
                             size="sm"
                             variant="ghost"
@@ -642,7 +642,7 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
                             {item.recommended ? 'Recommended' : 'Mark' }
                           </Button>
                         </div>
-                        <p className="text-[11px] text-gray-600 mb-1">{item.description}</p>
+                        <p className="text-[11px] text-gray-400 mb-1">{item.description}</p>
                         <Badge variant="secondary" className="text-[10px]">
                           {item.category}
                         </Badge>
@@ -701,12 +701,12 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
                 </div>
 
                 {/* Flow Legend */}
-                <div className="mt-6 p-4 bg-gray-50 rounded-xl">
-                  <h4 className="font-medium text-gray-900 mb-3">Flow Details</h4>
+                <div className="mt-6 p-4 bg-[var(--brand-850)] rounded-xl border border-[var(--brand-700)]">
+                  <h4 className="font-medium text-gray-200 mb-3">Flow Details</h4>
                   <div className="grid md:grid-cols-2 gap-4 text-sm">
                     <div>
-                      <h5 className="font-medium text-gray-700 mb-2">Request Path</h5>
-                      <ol className="space-y-1 text-gray-600">
+                      <h5 className="font-medium text-gray-300 mb-2">Request Path</h5>
+                      <ol className="space-y-1 text-gray-400">
                         <li>1. Client sends HTTP request</li>
                         <li>2. API Gateway validates JWT token</li>
                         <li>3. Load balancer routes to healthy instance</li>
@@ -714,8 +714,8 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
                       </ol>
                     </div>
                     <div>
-                      <h5 className="font-medium text-gray-700 mb-2">Response Path</h5>
-                      <ol className="space-y-1 text-gray-600">
+                      <h5 className="font-medium text-gray-300 mb-2">Response Path</h5>
+                      <ol className="space-y-1 text-gray-400">
                         <li>5. Check cache for existing data</li>
                         <li>6. Query database if cache miss</li>
                         <li>7. Serialize response to JSON</li>
@@ -735,7 +735,7 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
                 How to think about request/response flows for different API styles.
               </CardDescription>
             </CardHeader>
-            <CardContent className="pt-0 text-xs text-gray-700 space-y-2">
+            <CardContent className="pt-0 text-xs text-gray-400 space-y-2">
               <div>
                 <p className="font-semibold mb-1">REST APIs</p>
                 <ul className="list-disc list-inside space-y-0.5">
@@ -768,13 +768,13 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
       {/* Folder Structure Tab */}
       {activeTab === 'structure' && (
         <Card>
-          <CardHeader className="bg-gradient-to-r from-purple-50 to-violet-50 border-b flex-row items-center justify-between">
+          <CardHeader className="bg-[var(--brand-850)] border-b border-[var(--brand-700)] flex-row items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2">
-                <FolderTree className="h-5 w-5 text-purple-600" />
+              <CardTitle className="flex items-center gap-2 text-white">
+                <FolderTree className="h-5 w-5 text-purple-400" />
                 Project Folder Structure
               </CardTitle>
-              <CardDescription>Recommended directory organization</CardDescription>
+              <CardDescription className="text-gray-400">Recommended directory organization</CardDescription>
             </div>
             <Button variant="outline" size="sm">
               <Copy className="mr-2 h-4 w-4" />
@@ -846,9 +846,9 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
 
       {/* Performance Notes */}
       <Card>
-        <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50">
-          <CardTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-amber-600" />
+        <CardHeader className="bg-[var(--brand-850)] border-b border-[var(--brand-700)]">
+          <CardTitle className="flex items-center gap-2 text-white">
+            <Zap className="h-5 w-5 text-orange-400" />
             Performance & Scalability Notes
           </CardTitle>
           <Button variant="outline" size="sm" onClick={editingNotes ? saveNotes : startEditingNotes}>
@@ -858,19 +858,19 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
         <CardContent className="p-6">
           <div className="grid md:grid-cols-2 gap-6">
             <div>
-              <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+              <h4 className="font-medium text-gray-200 mb-3 flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-blue-400" />
                 Best Practices
               </h4>
               {editingNotes ? (
                 <textarea
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                  className="w-full border border-[var(--brand-700)] rounded-lg px-3 py-2 text-sm bg-[#152238] text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
                   rows={6}
                   value={notesDraft.bestPractices}
                   onChange={(e) => setNotesDraft((prev) => ({ ...prev, bestPractices: e.target.value }))}
                 />
               ) : (
-                <ul className="space-y-2 text-sm text-gray-600">
+                <ul className="space-y-2 text-sm text-gray-400">
                   {bestPractices.map((note, idx) => (
                     <li key={idx}>• {note}</li>
                   ))}
@@ -878,19 +878,19 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
               )}
             </div>
             <div>
-              <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-amber-500" />
+              <h4 className="font-medium text-gray-200 mb-3 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-orange-400" />
                 Watch Out For
               </h4>
               {editingNotes ? (
                 <textarea
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                  className="w-full border border-[var(--brand-700)] rounded-lg px-3 py-2 text-sm bg-[#152238] text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
                   rows={6}
                   value={notesDraft.watchOuts}
                   onChange={(e) => setNotesDraft((prev) => ({ ...prev, watchOuts: e.target.value }))}
                 />
               ) : (
-                <ul className="space-y-2 text-sm text-gray-600">
+                <ul className="space-y-2 text-sm text-gray-400">
                   {watchOuts.map((note, idx) => (
                     <li key={idx}>• {note}</li>
                   ))}
@@ -903,33 +903,33 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
 
       {/* Summary */}
       <Card>
-        <CardHeader className="bg-gradient-to-r from-gray-50 to-slate-50">
-          <CardTitle className="flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-gray-600" />
+        <CardHeader className="bg-[var(--brand-850)] border-b border-[var(--brand-700)]">
+          <CardTitle className="flex items-center gap-2 text-white">
+            <CheckCircle2 className="h-5 w-5 text-blue-400" />
             Development Phase Summary
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6">
           <div className="grid md:grid-cols-4 gap-4">
-            <div className="p-4 bg-blue-50 rounded-xl border border-blue-200 text-center">
-              <div className="text-2xl font-bold text-blue-700">
+            <div className="p-4 bg-blue-900/20 rounded-xl border border-blue-700/40 text-center">
+              <div className="text-2xl font-bold text-blue-300">
                 {Object.values(techStackData).flat().length}
               </div>
-              <div className="text-sm text-blue-600">Technologies</div>
+              <div className="text-sm text-blue-400">Technologies</div>
             </div>
             <div className="p-4 bg-blue-900/20 rounded-xl border border-blue-700/40 text-center">
               <div className="text-2xl font-bold text-blue-300">4</div>
               <div className="text-sm text-blue-400">Layers</div>
             </div>
-            <div className="p-4 bg-purple-50 rounded-xl border border-purple-200 text-center">
-              <div className="text-2xl font-bold text-purple-700">
+            <div className="p-4 bg-purple-900/20 rounded-xl border border-purple-700/40 text-center">
+              <div className="text-2xl font-bold text-purple-300">
                 {componentBreakdown.reduce((a, c) => a + c.items.length, 0)}
               </div>
-              <div className="text-sm text-purple-600">Components</div>
+              <div className="text-sm text-purple-400">Components</div>
             </div>
-            <div className="p-4 bg-amber-50 rounded-xl border border-amber-200 text-center">
-              <div className="text-2xl font-bold text-amber-700">7</div>
-              <div className="text-sm text-amber-600">Flow Steps</div>
+            <div className="p-4 bg-orange-900/20 rounded-xl border border-orange-700/40 text-center">
+              <div className="text-2xl font-bold text-orange-300">{resolvedFlowSteps.length}</div>
+              <div className="text-sm text-orange-400">Flow Steps</div>
             </div>
           </div>
         </CardContent>

@@ -203,6 +203,7 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
     await persistRoadmap(next);
   };
 
+  const currentYear = new Date().getFullYear();
   const quarters = ['Q1', 'Q2', 'Q3', 'Q4'];
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const statusOptions: RoadmapMilestone['status'][] = ['completed', 'in_progress', 'upcoming'];
@@ -210,13 +211,13 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
   const colorOptions = ['purple', 'blue', 'red', 'green', 'amber', 'cyan', 'emerald'];
 
   const colorMap: Record<string, { bg: string; border: string; text: string; bar: string }> = {
-    purple: { bg: 'bg-purple-100', border: 'border-purple-300', text: 'text-purple-700', bar: 'bg-purple-500' },
-    blue: { bg: 'bg-blue-100', border: 'border-blue-300', text: 'text-blue-700', bar: 'bg-blue-500' },
-    red: { bg: 'bg-red-100', border: 'border-red-300', text: 'text-red-700', bar: 'bg-red-500' },
-    green: { bg: 'bg-blue-900/30', border: 'border-blue-600/50', text: 'text-blue-300', bar: 'bg-blue-500/40' },
-    amber: { bg: 'bg-amber-100', border: 'border-amber-300', text: 'text-amber-700', bar: 'bg-amber-500' },
-    cyan: { bg: 'bg-cyan-100', border: 'border-cyan-300', text: 'text-cyan-700', bar: 'bg-cyan-500' },
-    emerald: { bg: 'bg-blue-900/30', border: 'border-blue-600/50', text: 'text-blue-300', bar: 'bg-blue-500/40' },
+    purple: { bg: 'bg-purple-900/30', border: 'border-purple-600/50', text: 'text-purple-300', bar: 'bg-purple-500' },
+    blue: { bg: 'bg-blue-900/30', border: 'border-blue-600/50', text: 'text-blue-300', bar: 'bg-blue-500' },
+    red: { bg: 'bg-red-900/30', border: 'border-red-600/50', text: 'text-red-300', bar: 'bg-red-500' },
+    green: { bg: 'bg-green-900/30', border: 'border-green-600/50', text: 'text-green-300', bar: 'bg-green-500/70' },
+    amber: { bg: 'bg-amber-900/30', border: 'border-amber-600/50', text: 'text-amber-300', bar: 'bg-amber-500' },
+    cyan: { bg: 'bg-cyan-900/30', border: 'border-cyan-600/50', text: 'text-cyan-300', bar: 'bg-cyan-500' },
+    emerald: { bg: 'bg-emerald-900/30', border: 'border-emerald-600/50', text: 'text-emerald-300', bar: 'bg-emerald-500/70' },
   };
 
   const getStatusIcon = (status: string) => {
@@ -510,7 +511,7 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
 
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ backgroundColor: 'var(--brand-900)' }}>
             <Calendar className="h-4 w-4 text-gray-500" />
-            <span className="text-sm font-medium text-gray-400">2024</span>
+            <span className="text-sm font-medium text-gray-400">{currentYear}</span>
           </div>
         </div>
 
@@ -581,7 +582,7 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
                           className="flex-1 p-3 text-center font-medium text-gray-300"
                           style={{ minWidth: `${monthWidth * 3}%`, borderRight: '1px solid var(--brand-700)' }}
                         >
-                          {q} 2024
+                          {q} {currentYear}
                         </div>
                       ))
                     : months.map((m) => (
@@ -986,7 +987,11 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
             </div>
             <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: 'var(--brand-900)' }}>
               <span className="text-gray-400">Estimated Completion</span>
-              <span className="font-bold text-white">December 2024</span>
+              <span className="font-bold text-white">
+                {milestonesOnly.length > 0
+                  ? `${months[Math.min(11, Math.max(0, Math.floor(milestonesOnly[milestonesOnly.length - 1].endMonth)))]} ${currentYear}`
+                  : `December ${currentYear}`}
+              </span>
             </div>
             <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: 'var(--brand-900)' }}>
               <span className="text-gray-400">Next Milestone</span>

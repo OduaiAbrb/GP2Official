@@ -109,16 +109,16 @@ export const SystemDesignPhase: React.FC<SystemDesignPhaseProps> = ({
 
   const methodColors: Record<string, string> = {
     GET: 'bg-blue-900/30 text-blue-300 border-blue-600/50',
-    POST: 'bg-blue-100 text-blue-700 border-blue-300',
-    PUT: 'bg-amber-100 text-amber-700 border-amber-300',
-    DELETE: 'bg-red-100 text-red-700 border-red-300',
-    PATCH: 'bg-purple-100 text-purple-700 border-purple-300',
+    POST: 'bg-blue-800/40 text-blue-200 border-blue-600/50',
+    PUT: 'bg-orange-900/30 text-orange-300 border-orange-600/50',
+    DELETE: 'bg-red-900/30 text-red-300 border-red-600/50',
+    PATCH: 'bg-purple-900/30 text-purple-300 border-purple-600/50',
   };
 
   const statusColors: Record<string, { bg: string; text: string }> = {
     complete: { bg: 'bg-blue-900/30', text: 'text-blue-300' },
-    partial: { bg: 'bg-amber-100', text: 'text-amber-700' },
-    empty: { bg: 'bg-gray-100', text: 'text-gray-500' },
+    partial: { bg: 'bg-orange-900/30', text: 'text-orange-300' },
+    empty: { bg: 'bg-[var(--brand-700)]', text: 'text-gray-400' },
   };
 
   const handleZoom = (delta: number) => {
@@ -142,15 +142,15 @@ export const SystemDesignPhase: React.FC<SystemDesignPhaseProps> = ({
               onClick={() => setSelectedDiagram(diagram.id)}
               className={`p-4 rounded-xl border-2 transition-all text-left ${
                 isSelected
-                  ? 'border-red-400 bg-red-50 shadow-lg scale-105'
-                  : 'border-[var(--brand-700)] hover:border-gray-300 hover:bg-gray-50'
+                  ? 'border-blue-500/60 bg-blue-900/20 shadow-lg scale-105'
+                  : 'border-[var(--brand-700)] hover:border-blue-700/60 hover:bg-[var(--brand-800)]'
               }`}
             >
               <div className={`p-2 rounded-lg ${colors.bg} w-fit mb-2`}>
                 <span className={colors.text}>{diagram.icon}</span>
               </div>
-              <h4 className="font-medium text-gray-900 text-sm">{diagram.name}</h4>
-              <p className="text-xs text-gray-500 mt-1">{diagram.description}</p>
+              <h4 className="font-medium text-gray-200 text-sm">{diagram.name}</h4>
+              <p className="text-xs text-gray-400 mt-1">{diagram.description}</p>
               <Badge
                 variant={diagram.status === 'complete' ? 'success' : diagram.status === 'partial' ? 'warning' : 'secondary'}
                 className="mt-2"
@@ -164,10 +164,10 @@ export const SystemDesignPhase: React.FC<SystemDesignPhaseProps> = ({
 
       {/* Diagram Canvas */}
       <Card className="overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-red-50 to-rose-50 border-b flex-row items-center justify-between">
+        <CardHeader className="bg-[var(--brand-850)] border-b border-[var(--brand-700)] flex-row items-center justify-between">
           <div>
-            <CardTitle className="flex items-center gap-2">
-              <Layers className="h-5 w-5 text-red-600" />
+            <CardTitle className="flex items-center gap-2 text-white">
+              <Layers className="h-5 w-5 text-blue-400" />
               {diagrams.find((d) => d.id === selectedDiagram)?.name || 'Select a Diagram'}
             </CardTitle>
             <CardDescription>
@@ -207,7 +207,7 @@ export const SystemDesignPhase: React.FC<SystemDesignPhaseProps> = ({
         <CardContent className="p-0">
           <div
             ref={diagramRef}
-            className={`relative overflow-auto bg-gray-50 ${isPanning ? 'cursor-grab active:cursor-grabbing' : ''}`}
+            className={`relative overflow-auto bg-[#152238] ${isPanning ? 'cursor-grab active:cursor-grabbing' : ''}`}
             style={{ height: '500px' }}
           >
             <div
@@ -358,13 +358,13 @@ export const SystemDesignPhase: React.FC<SystemDesignPhaseProps> = ({
       </Card>
 
       {/* Open Canvas Button */}
-      <Card className="bg-gradient-to-r from-red-50 to-rose-50 border-red-200">
+      <Card className="bg-blue-900/20 border-blue-700/40">
         <CardContent className="p-4 flex items-center justify-between">
           <div>
-            <h3 className="font-medium text-gray-900">Visual Diagram Editor</h3>
-            <p className="text-sm text-gray-500">Create and edit diagrams in the full canvas view</p>
+            <h3 className="font-medium text-white">Visual Diagram Editor</h3>
+            <p className="text-sm text-gray-400">Create and edit diagrams in the full canvas view</p>
           </div>
-          <Button onClick={onOpenCanvas} className="bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700">
+          <Button onClick={onOpenCanvas} className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white">
             <ExternalLink className="mr-2 h-4 w-4" />
             Open Canvas Studio
           </Button>
@@ -373,18 +373,18 @@ export const SystemDesignPhase: React.FC<SystemDesignPhaseProps> = ({
 
       {/* API Contract Table */}
       <Card>
-        <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50 border-b">
-          <CardTitle className="flex items-center gap-2">
-            <FileJson className="h-5 w-5 text-gray-600" />
+        <CardHeader className="bg-[var(--brand-850)] border-b border-[var(--brand-700)]">
+          <CardTitle className="flex items-center gap-2 text-white">
+            <FileJson className="h-5 w-5 text-blue-400" />
             API Contract Table
           </CardTitle>
-          <CardDescription>REST API endpoints and their specifications</CardDescription>
+          <CardDescription className="text-gray-400">REST API endpoints and their specifications</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           {apiGroups.map((group) => {
             const isExpanded = expandedApi.has(group.id);
             return (
-              <div key={group.id} className="border-b last:border-b-0">
+              <div key={group.id} className="border-b border-[var(--brand-700)] last:border-b-0">
                 <button
                   onClick={() => {
                     setExpandedApi((prev) => {
@@ -394,41 +394,41 @@ export const SystemDesignPhase: React.FC<SystemDesignPhaseProps> = ({
                       return next;
                     });
                   }}
-                  className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                  className="w-full px-4 py-3 flex items-center justify-between hover:bg-[var(--brand-800)] transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <Server className="h-4 w-4 text-gray-500" />
-                    <span className="font-medium text-gray-900">{group.name}</span>
+                    <Server className="h-4 w-4 text-gray-400" />
+                    <span className="font-medium text-gray-200">{group.name}</span>
                     <Badge variant="secondary">{group.endpoints.length} endpoints</Badge>
                   </div>
-                  {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  {isExpanded ? <ChevronUp className="h-4 w-4 text-gray-400" /> : <ChevronDown className="h-4 w-4 text-gray-400" />}
                 </button>
 
                 {isExpanded && (
-                  <div className="bg-gray-50 border-t">
+                  <div className="bg-[var(--brand-850)] border-t border-[var(--brand-700)]">
                     <table className="w-full text-sm">
-                      <thead className="bg-gray-100">
+                      <thead className="bg-[var(--brand-800)]">
                         <tr>
-                          <th className="px-4 py-2 text-left font-medium text-gray-600">Method</th>
-                          <th className="px-4 py-2 text-left font-medium text-gray-600">Endpoint</th>
-                          <th className="px-4 py-2 text-left font-medium text-gray-600">Description</th>
-                          <th className="px-4 py-2 text-left font-medium text-gray-600">Request</th>
-                          <th className="px-4 py-2 text-left font-medium text-gray-600">Response</th>
-                          <th className="px-4 py-2 text-left font-medium text-gray-600">Status</th>
+                          <th className="px-4 py-2 text-left font-medium text-gray-400">Method</th>
+                          <th className="px-4 py-2 text-left font-medium text-gray-400">Endpoint</th>
+                          <th className="px-4 py-2 text-left font-medium text-gray-400">Description</th>
+                          <th className="px-4 py-2 text-left font-medium text-gray-400">Request</th>
+                          <th className="px-4 py-2 text-left font-medium text-gray-400">Response</th>
+                          <th className="px-4 py-2 text-left font-medium text-gray-400">Status</th>
                         </tr>
                       </thead>
                       <tbody>
                         {group.endpoints.map((endpoint, idx) => (
-                          <tr key={idx} className="border-t border-[var(--brand-700)] hover:bg-white">
+                          <tr key={idx} className="border-t border-[var(--brand-700)] hover:bg-[var(--brand-800)]">
                             <td className="px-4 py-2">
                               <span className={`px-2 py-1 rounded text-xs font-medium border ${methodColors[endpoint.method]}`}>
                                 {endpoint.method}
                               </span>
                             </td>
-                            <td className="px-4 py-2 font-mono text-xs">{endpoint.path}</td>
-                            <td className="px-4 py-2 text-gray-600">{endpoint.description}</td>
-                            <td className="px-4 py-2 font-mono text-xs text-gray-500">{endpoint.requestBody || '-'}</td>
-                            <td className="px-4 py-2 font-mono text-xs text-gray-500">{endpoint.responseBody || '-'}</td>
+                            <td className="px-4 py-2 font-mono text-xs text-blue-300">{endpoint.path}</td>
+                            <td className="px-4 py-2 text-gray-300">{endpoint.description}</td>
+                            <td className="px-4 py-2 font-mono text-xs text-gray-400">{endpoint.requestBody || '-'}</td>
+                            <td className="px-4 py-2 font-mono text-xs text-gray-400">{endpoint.responseBody || '-'}</td>
                             <td className="px-4 py-2">
                               <Badge variant={endpoint.status === 'implemented' ? 'success' : endpoint.status === 'planned' ? 'warning' : 'destructive'}>
                                 {endpoint.status}
@@ -447,13 +447,13 @@ export const SystemDesignPhase: React.FC<SystemDesignPhaseProps> = ({
       </Card>
 
       {/* AI Generate Section */}
-      <Card className="bg-gradient-to-r from-red-50 to-rose-50 border-red-200">
+      <Card className="bg-blue-900/20 border-blue-700/40">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-red-500" />
+          <CardTitle className="flex items-center gap-2 text-white">
+            <Sparkles className="h-5 w-5 text-blue-400" />
             AI Design Assistant
           </CardTitle>
-          <CardDescription>Generate diagrams and design artifacts with AI</CardDescription>
+          <CardDescription className="text-gray-400">Generate diagrams and design artifacts with AI</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -475,9 +475,9 @@ export const SystemDesignPhase: React.FC<SystemDesignPhaseProps> = ({
 
       {/* Summary */}
       <Card>
-        <CardHeader className="bg-gradient-to-r from-gray-50 to-slate-50">
-          <CardTitle className="flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-gray-600" />
+        <CardHeader className="bg-[var(--brand-850)] border-b border-[var(--brand-700)]">
+          <CardTitle className="flex items-center gap-2 text-white">
+            <CheckCircle2 className="h-5 w-5 text-blue-400" />
             Design Phase Summary
           </CardTitle>
         </CardHeader>
@@ -489,17 +489,17 @@ export const SystemDesignPhase: React.FC<SystemDesignPhaseProps> = ({
               </div>
               <div className="text-sm text-blue-400">Diagrams Complete</div>
             </div>
-            <div className="p-4 bg-amber-50 rounded-xl border border-amber-200">
-              <div className="text-2xl font-bold text-amber-700">
+            <div className="p-4 bg-orange-900/20 rounded-xl border border-orange-700/40">
+              <div className="text-2xl font-bold text-orange-300">
                 {diagrams.filter((d) => d.status === 'partial').length}
               </div>
-              <div className="text-sm text-amber-600">In Progress</div>
+              <div className="text-sm text-orange-400">In Progress</div>
             </div>
-            <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
-              <div className="text-2xl font-bold text-blue-700">
+            <div className="p-4 bg-[var(--brand-750,#152238)] rounded-xl border border-[var(--brand-700)]">
+              <div className="text-2xl font-bold text-gray-200">
                 {apiGroups.reduce((a, g) => a + g.endpoints.filter((e) => e.status === 'implemented').length, 0)}
               </div>
-              <div className="text-sm text-blue-600">APIs Implemented</div>
+              <div className="text-sm text-gray-400">APIs Implemented</div>
             </div>
           </div>
         </CardContent>
