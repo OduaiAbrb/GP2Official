@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, ArrowLeft, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 
 interface EndpointProps {
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'WS';
@@ -117,9 +117,9 @@ const DocsPage: React.FC = () => {
           Back
         </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <BookOpen size={18} color="#1A6FD4" />
-          <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '16px', color: '#E8EDF5' }}>
-            Acorn API Documentation
+          <img src="/acorn-logo.png" alt="Acorn" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} />
+          <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '14px', color: '#4a6070' }}>
+            / API Documentation
           </span>
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>

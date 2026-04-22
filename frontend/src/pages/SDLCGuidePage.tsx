@@ -425,11 +425,8 @@ const SDLCGuidePage: React.FC = () => {
             <ArrowLeft size={14} /> <span className="sg-nav-back-label">Back</span>
           </button>
           <div className="sg-nav-brand-divider" style={{ width: '1px', height: '16px', background: 'rgba(26,111,212,0.3)' }} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-            <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'linear-gradient(135deg, #1A6FD4, #0d2b52)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Zap size={13} color="#fff" />
-            </div>
-            <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '16px' }}>Acorn</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+            <img src="/acorn-logo.png" alt="Acorn" style={{ height: '36px', width: 'auto', objectFit: 'contain', flexShrink: 0 }} />
             <span className="sg-nav-brand-sub" style={{ color: '#4a6070', fontSize: '13px' }}>/ SDLC Guide</span>
           </div>
         </div>
