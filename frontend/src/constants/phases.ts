@@ -103,14 +103,24 @@ export const phaseConfigs: PhaseConfig[] = [
     order: 8,
   },
   {
+    id: 'testing',
+    title: 'Testing',
+    shortTitle: 'Testing',
+    description: 'AI-driven test data generation and coverage audit',
+    canvasMode: 'freeform',
+    stepNumber: 10,
+    color: 'teal',
+    order: 9,
+  },
+  {
     id: 'summary',
     title: 'Summary',
     shortTitle: 'Summary',
     description: 'Final summary, risks, and next steps',
     canvasMode: 'freeform',
-    stepNumber: 10,
+    stepNumber: 11,
     color: 'gold',
-    order: 9,
+    order: 10,
   },
 ];
 
@@ -131,26 +141,27 @@ export const getPrevPhase = (currentId: string): PhaseConfig | undefined => {
 
 // Per-phase color system — hex values for direct use in SVG/inline styles
 export const phaseHexColors: Record<string, { fill: string; text: string; glow: string }> = {
-  planning:               { fill: '#D4A017', text: '#0a150e', glow: '#D4A01799' },
-  feasibility_study:      { fill: '#7BA05B', text: '#0a150e', glow: '#7BA05B99' },
-  requirements_gathering: { fill: '#3d8a55', text: '#e8f5e0', glow: '#3d8a5599' },
-  validation:             { fill: '#5F7A8A', text: '#e8f5e0', glow: '#5F7A8A99' },
-  design:                 { fill: '#6B4C8A', text: '#e8f5e0', glow: '#6B4C8A99' },
-  development:            { fill: '#8B5E3C', text: '#e8f5e0', glow: '#8B5E3C99' },
-  tasks:                  { fill: '#D4A017', text: '#0a150e', glow: '#D4A01799' },
-  cost_benefit:           { fill: '#2A9D8F', text: '#e8f5e0', glow: '#2A9D8F99' },
-  risks:                  { fill: '#C1440E', text: '#e8f5e0', glow: '#C1440E99' },
-  summary:                { fill: '#4ade80', text: '#0a150e', glow: '#4ade8099' },
+  planning:               { fill: '#D4A017', text: 'var(--brand-900)', glow: '#D4A01799' },
+  feasibility_study:      { fill: '#7BA05B', text: 'var(--brand-900)', glow: '#7BA05B99' },
+  requirements_gathering: { fill: 'var(--blue-500)', text: 'var(--text-primary)', glow: 'var(--blue-500)99' },
+  validation:             { fill: '#5F7A8A', text: 'var(--text-primary)', glow: '#5F7A8A99' },
+  design:                 { fill: '#6B4C8A', text: 'var(--text-primary)', glow: '#6B4C8A99' },
+  development:            { fill: '#8B5E3C', text: 'var(--text-primary)', glow: '#8B5E3C99' },
+  tasks:                  { fill: '#D4A017', text: 'var(--brand-900)', glow: '#D4A01799' },
+  cost_benefit:           { fill: '#2A9D8F', text: 'var(--text-primary)', glow: '#2A9D8F99' },
+  risks:                  { fill: '#C1440E', text: 'var(--text-primary)', glow: '#C1440E99' },
+  testing:                { fill: '#0EA5E9', text: 'var(--text-primary)', glow: '#0EA5E999' },
+  summary:                { fill: 'var(--blue-400)', text: 'var(--brand-900)', glow: 'var(--blue-400)99' },
 };
 
 // Tailwind class palette (kept for backwards compat)
 export const phaseColors: Record<string, { bg: string; border: string; text: string; gradient: string; accent: string }> = {
   forest: {
-    bg: 'bg-forest-800',
-    border: 'border-forest-600',
-    text: 'text-forest-400',
-    gradient: 'from-forest-400 to-forest-300',
-    accent: '#4ade80'
+    bg: 'bg-blue-900/30',
+    border: 'border-blue-600/50',
+    text: 'text-blue-400',
+    gradient: 'from-blue-600 to-blue-500',
+    accent: 'var(--blue-400)'
   },
   sage: {
     bg: 'bg-sage-900',
@@ -206,6 +217,6 @@ export const phaseColors: Record<string, { bg: string; border: string; text: str
     border: 'border-amber-600/40',
     text: 'text-amber-300',
     gradient: 'from-amber-300 to-amber-200',
-    accent: '#4ade80'
+    accent: 'var(--blue-400)'
   },
 };

@@ -4,9 +4,8 @@ import logging
 import json
 import asyncio
 import time
-from google import genai as _genai_module
-from google.genai import types as genai_types
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Request, status, Query
+from openai import AsyncOpenAI
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional
@@ -17,10 +16,16 @@ from services.phase_flow_service import PhaseFlowService, PHASE_ORDER, PHASE_TIT
 from services.project_service import ProjectService
 from config import settings
 
+try:
+    from slowapi import Limiter
+    from slowapi.util import get_remote_address
+    limiter = Limiter(key_func=get_remote_address)
+    RATE_LIMIT_AVAILABLE = True
+except ImportError:
+    RATE_LIMIT_AVAILABLE = False
+
 router = APIRouter()
 logger = logging.getLogger(__name__)
-
-_genai_client = _genai_module.Client(api_key=settings.gemini_api_key) if settings.gemini_api_key else None
 phase_service = PhaseFlowService()
 project_service = ProjectService()
 
@@ -123,6 +128,7 @@ async def stream_phase_generation(
                 "tasks": "Author the Execution Map: epics, stories, tasks with time estimates, dependencies, milestones, and Gantt data.",
                 "cost_benefit": "Produce a concise Cost & Benefit analysis: cost drivers, estimated benefits, ROI, and budget hotspots.",
                 "risks": "Compile an actionable Risk Register with Risk Overview, Risk Register table, Before/After mitigation comparison, and Recommended Actions checklist.",
+                "testing": "Produce a Testing Plan: key test categories, critical test scenarios for functional requirements, edge cases, boundary conditions, and a coverage checklist.",
                 "summary": "Compile the Project Summary: achievements, final metrics, lessons learned, outstanding risks, and recommendations.",
             }
 
@@ -140,19 +146,23 @@ async def stream_phase_generation(
                 "Produce a structured Markdown response with headings, bullet lists, and clear action items."
             )
 
+            openai_client = AsyncOpenAI(api_key=settings.openai_api_key)
+
             collected_text = ""
-            async for chunk in _genai_client.aio.models.generate_content_stream(
-                model=settings.gemini_pro_model,
-                contents=full_prompt,
-                config=genai_types.GenerateContentConfig(
-                    system_instruction=system_message,
-                    max_output_tokens=4000,
-                    temperature=0.7,
-                ),
-            ):
-                if chunk.text:
-                    collected_text += chunk.text
-                    yield f"event: token\ndata: {json.dumps({'text': chunk.text})}\n\n"
+            stream = await openai_client.chat.completions.create(
+                model=settings.openai_model,
+                messages=[
+                    {"role": "system", "content": system_message},
+                    {"role": "user", "content": full_prompt},
+                ],
+                max_tokens=4000,
+                stream=True,
+            )
+            async for chunk in stream:
+                if chunk.choices and chunk.choices[0].delta.content:
+                    text = chunk.choices[0].delta.content
+                    collected_text += text
+                    yield f"event: token\ndata: {json.dumps({'text': text})}\n\n"
                     await asyncio.sleep(0)  # yield control
 
             # Persist the result in the background

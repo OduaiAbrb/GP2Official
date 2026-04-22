@@ -117,10 +117,10 @@ const SeverityBadge: React.FC<{ severity: string }> = ({ severity }) => {
 const ConflictResultView: React.FC<{ data: any }> = ({ data }) => (
   <div className="space-y-3">
     <div className="flex items-center gap-3 p-3 rounded-xl"
-      style={{ background: 'rgba(15,31,21,0.8)', border: '1px solid rgba(30,74,40,0.4)' }}>
+      style={{ background: 'rgba(15,31,21,0.8)', border: '1px solid rgba(26,46,69,0.4)' }}>
       <div className="text-center">
-        <p className="text-2xl font-bold text-[#f0e4c8]">{data.summary?.total_conflicts ?? 0}</p>
-        <p className="text-xs text-[#8a7055]">Total Conflicts</p>
+        <p className="text-2xl font-bold text-[var(--text-primary)]">{data.summary?.total_conflicts ?? 0}</p>
+        <p className="text-xs text-[var(--text-muted)]">Total Conflicts</p>
       </div>
       <div className="flex gap-3 text-sm">
         {[['critical','#C1440E'], ['high','#D4A017'], ['medium','#5F7A8A'], ['low','#7BA05B']].map(([k, c]) => (
@@ -130,16 +130,16 @@ const ConflictResultView: React.FC<{ data: any }> = ({ data }) => (
           </span>
         ))}
       </div>
-      <p className="text-xs text-[#8a7055] flex-1">Score: {data.summary?.overall_quality_score ?? '—'}/100</p>
+      <p className="text-xs text-[var(--text-muted)] flex-1">Score: {data.summary?.overall_quality_score ?? '—'}/100</p>
     </div>
     {(data.conflicts || []).map((c: any) => (
-      <div key={c.conflict_id} className="p-3 rounded-xl" style={{ background: '#142b1a', border: '1px solid rgba(30,74,40,0.5)' }}>
+      <div key={c.conflict_id} className="p-3 rounded-xl" style={{ background: 'var(--brand-800)', border: '1px solid rgba(26,46,69,0.5)' }}>
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[#f0e4c8] text-sm font-semibold">{c.title}</span>
+          <span className="text-[var(--text-primary)] text-sm font-semibold">{c.title}</span>
           <SeverityBadge severity={c.severity} />
         </div>
-        <p className="text-xs text-[#8a7055] mb-1.5">{c.description}</p>
-        <p className="text-xs text-[#D4A017]">💡 {c.suggested_resolution}</p>
+        <p className="text-xs text-[var(--text-muted)] mb-1.5">{c.description}</p>
+        <p className="text-xs text-[var(--blue-400)]">💡 {c.suggested_resolution}</p>
       </div>
     ))}
   </div>
@@ -149,14 +149,14 @@ const TechStackResultView: React.FC<{ data: any }> = ({ data }) => {
   const stack = data.recommended_stack || {};
   return (
     <div className="space-y-3">
-      <p className="text-xs text-[#8a7055]">{data.summary}</p>
+      <p className="text-xs text-[var(--text-muted)]">{data.summary}</p>
       <div className="grid grid-cols-2 gap-3">
         {Object.entries(stack).map(([layer, info]: [string, any]) => (
-          <div key={layer} className="p-3 rounded-xl" style={{ background: '#142b1a', border: '1px solid rgba(30,74,40,0.5)' }}>
-            <p className="text-xs font-bold text-[#D4A017] uppercase mb-2">{layer}</p>
+          <div key={layer} className="p-3 rounded-xl" style={{ background: 'var(--brand-800)', border: '1px solid rgba(26,46,69,0.5)' }}>
+            <p className="text-xs font-bold text-[var(--blue-400)] uppercase mb-2">{layer}</p>
             {typeof info === 'object' && Object.entries(info).filter(([k]) => k !== 'rationale').map(([k, v]) => (
-              <p key={k} className="text-xs text-[#c8b090]">
-                <span className="text-[#8a7055]">{k}: </span>{String(v)}
+              <p key={k} className="text-xs text-[var(--text-muted)]">
+                <span className="text-[var(--text-muted)]">{k}: </span>{String(v)}
               </p>
             ))}
           </div>
@@ -168,33 +168,33 @@ const TechStackResultView: React.FC<{ data: any }> = ({ data }) => {
 
 const SecurityResultView: React.FC<{ data: any }> = ({ data }) => (
   <div className="space-y-3">
-    <div className="flex items-center gap-4 p-3 rounded-xl" style={{ background: 'rgba(15,31,21,0.8)', border: '1px solid rgba(30,74,40,0.4)' }}>
+    <div className="flex items-center gap-4 p-3 rounded-xl" style={{ background: 'rgba(15,31,21,0.8)', border: '1px solid rgba(26,46,69,0.4)' }}>
       <div className="text-center">
-        <p className="text-2xl font-bold" style={{ color: data.security_score > 70 ? '#4ade80' : data.security_score > 50 ? '#D4A017' : '#C1440E' }}>
+        <p className="text-2xl font-bold" style={{ color: data.security_score > 70 ? 'var(--blue-400)' : data.security_score > 50 ? '#D4A017' : '#C1440E' }}>
           {data.security_score}/100
         </p>
-        <p className="text-xs text-[#8a7055]">Security Score</p>
+        <p className="text-xs text-[var(--text-muted)]">Security Score</p>
       </div>
       <SeverityBadge severity={data.risk_level} />
-      <p className="text-xs text-[#8a7055] flex-1">{data.executive_summary}</p>
+      <p className="text-xs text-[var(--text-muted)] flex-1">{data.executive_summary}</p>
     </div>
     {(data.findings || []).map((f: any) => (
-      <div key={f.finding_id} className="p-3 rounded-xl" style={{ background: '#142b1a', border: '1px solid rgba(30,74,40,0.5)' }}>
+      <div key={f.finding_id} className="p-3 rounded-xl" style={{ background: 'var(--brand-800)', border: '1px solid rgba(26,46,69,0.5)' }}>
         <div className="flex items-center justify-between mb-1">
-          <span className="text-[#f0e4c8] text-sm font-semibold">{f.title}</span>
+          <span className="text-[var(--text-primary)] text-sm font-semibold">{f.title}</span>
           <SeverityBadge severity={f.severity} />
         </div>
-        <p className="text-xs text-[#8a7055] mb-1">{f.description}</p>
+        <p className="text-xs text-[var(--text-muted)] mb-1">{f.description}</p>
         <p className="text-xs text-[#D4A017]">OWASP: {f.owasp_category}</p>
-        <p className="text-xs text-[#D4A017] mt-1">Fix: {f.recommendation}</p>
+        <p className="text-xs text-[var(--blue-400)] mt-1">Fix: {f.recommendation}</p>
       </div>
     ))}
   </div>
 );
 
 const GenericJsonView: React.FC<{ data: any; color: string }> = ({ data, color }) => (
-  <div className="rounded-xl overflow-hidden" style={{ background: '#0a150e', border: '1px solid rgba(30,74,40,0.5)' }}>
-    <pre className="text-xs text-[#c8b090] p-4 overflow-auto max-h-80">
+  <div className="rounded-xl overflow-hidden" style={{ background: 'var(--brand-900)', border: '1px solid rgba(26,46,69,0.5)' }}>
+    <pre className="text-xs text-[var(--text-muted)] p-4 overflow-auto max-h-80">
       {JSON.stringify(data, null, 2)}
     </pre>
   </div>
@@ -234,9 +234,14 @@ export const AIAgentsPanel: React.FC<Props> = ({
       }));
       setExpanded(prev => ({ ...prev, [agent.type]: true }));
     } catch (e: any) {
+      const status = e?.response?.status;
+      const detail = e?.response?.data?.detail || e?.message || 'Agent failed';
+      const friendlyError = status === 429
+        ? 'Daily AI quota reached — resets at midnight PT. Try again tomorrow or upgrade your Gemini API plan.'
+        : detail;
       setResults(prev => ({
         ...prev,
-        [agent.type]: { type: agent.type, name: agent.name, data: null, error: e.message, color: agent.color },
+        [agent.type]: { type: agent.type, name: agent.name, data: null, error: friendlyError, color: agent.color },
       }));
     } finally {
       setRunningAgent(null);
@@ -249,7 +254,7 @@ export const AIAgentsPanel: React.FC<Props> = ({
       <button
         onClick={() => setIsOpen(o => !o)}
         className="fixed bottom-24 right-6 z-40 flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm shadow-xl transition-all hover:scale-105"
-        style={{ background: 'linear-gradient(135deg, #2d6a3f, #4ade80)', color: '#0a150e', boxShadow: '0 8px 24px rgba(74,222,128,0.25)' }}
+        style={{ background: 'linear-gradient(135deg, var(--brand-600), var(--blue-400))', color: 'var(--brand-900)', boxShadow: '0 8px 24px rgba(26,111,212,0.25)' }}
       >
         <Sparkles className="w-4 h-4" />
         AI Agents
@@ -259,16 +264,16 @@ export const AIAgentsPanel: React.FC<Props> = ({
       {isOpen && (
         <div
           className="fixed right-0 top-0 bottom-0 z-40 overflow-y-auto shadow-2xl"
-          style={{ width: '360px', background: '#0f1f15', borderLeft: '1px solid rgba(30,74,40,0.5)' }}
+          style={{ width: '360px', background: 'var(--brand-850)', borderLeft: '1px solid rgba(26,46,69,0.5)' }}
         >
           <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4"
-            style={{ background: '#0f1f15', borderBottom: '1px solid rgba(30,74,40,0.4)' }}>
+            style={{ background: 'var(--brand-850)', borderBottom: '1px solid rgba(26,46,69,0.4)' }}>
             <div>
-              <h2 className="font-bold text-[#f0e4c8]">AI Agents</h2>
-              <p className="text-xs text-[#8a7055]">Specialized analysis tools</p>
+              <h2 className="font-bold text-[var(--text-primary)]">AI Agents</h2>
+              <p className="text-xs text-[var(--text-muted)]">Specialized analysis tools</p>
             </div>
             <button onClick={() => setIsOpen(false)}
-              className="w-8 h-8 flex items-center justify-center rounded-lg text-[#8a7055] hover:text-[#f0e4c8] hover:bg-[#3d2412] transition-all">
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--brand-700)] transition-all">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -281,7 +286,7 @@ export const AIAgentsPanel: React.FC<Props> = ({
 
               return (
                 <div key={agent.type} className="rounded-2xl overflow-hidden"
-                  style={{ background: '#142b1a', border: `1px solid ${agent.color}25` }}>
+                  style={{ background: 'var(--brand-800)', border: `1px solid ${agent.color}25` }}>
                   <div className="p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-start gap-3">
@@ -290,15 +295,15 @@ export const AIAgentsPanel: React.FC<Props> = ({
                           {agent.icon}
                         </div>
                         <div>
-                          <p className="font-semibold text-[#f0e4c8] text-sm">{agent.name}</p>
-                          <p className="text-xs text-[#8a7055] mt-0.5">{agent.description}</p>
+                          <p className="font-semibold text-[var(--text-primary)] text-sm">{agent.name}</p>
+                          <p className="text-xs text-[var(--text-muted)] mt-0.5">{agent.description}</p>
                         </div>
                       </div>
                       <button
                         onClick={() => runAgent(agent)}
                         disabled={!!runningAgent}
                         className="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:scale-105 disabled:opacity-50"
-                        style={{ background: agent.color, color: '#0a150e' }}
+                        style={{ background: agent.color, color: 'var(--brand-900)' }}
                       >
                         {isRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Run'}
                       </button>

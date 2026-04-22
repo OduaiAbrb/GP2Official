@@ -144,8 +144,6 @@ for _name, _stub in [
     ("openai", _make_openai_stub()),
     ("google", _make_google_stub()),
     ("google.generativeai", MagicMock()),
-    ("google.genai", MagicMock()),
-    ("google.genai.types", MagicMock()),
     ("anthropic", _make_anthropic_stub()),
     ("bleach", _make_bleach_stub()),
     ("reportlab", _make_reportlab_stub()),

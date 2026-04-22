@@ -1,21 +1,83 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import {
-  Mail,
-  Lock,
-  ArrowRight,
-  Eye,
-  EyeOff,
-  AlertCircle,
-  Loader2,
-  CheckCircle2,
-  Shield,
-  Building2,
-  Award,
-  TreePine,
-  Leaf
-} from 'lucide-react';
+import { Mail, Lock, ArrowRight, Eye, EyeOff, AlertCircle, Loader2, Zap } from 'lucide-react';
+
+/* ── Animated SDLC pipeline on the left panel ── */
+const PIPELINE_NODES = ['Brief', 'Requirements', 'SRS', 'Design', 'Tasks', 'Deploy'];
+
+const PipelineAnimation: React.FC = () => {
+  const [step, setStep] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setStep(s => (s + 1) % (PIPELINE_NODES.length * 2 + 4)), 600);
+    return () => clearInterval(id);
+  }, []);
+
+  const nodeVisible = (i: number) => step >= i * 2;
+  const lineVisible = (i: number) => step >= i * 2 + 1;
+
+  return (
+    <svg width="100%" height="200" viewBox="0 0 520 200" style={{ overflow: 'visible' }}>
+      <defs>
+        <filter id="glow-blue">
+          <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+          <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      {PIPELINE_NODES.map((label, i) => {
+        const x = 20 + i * 84;
+        const show = nodeVisible(i);
+        const isLast = i === PIPELINE_NODES.length - 1;
+        const isActive = step >= PIPELINE_NODES.length * 2 + 1 && i === PIPELINE_NODES.length - 1;
+        return (
+          <g key={label}>
+            {/* Connector line */}
+            {!isLast && lineVisible(i) && (
+              <line
+                x1={x + 64} y1={70} x2={x + 84} y2={70}
+                stroke="#F97316" strokeWidth="2.5"
+                strokeDasharray="60" strokeDashoffset="0"
+                style={{ animation: 'pipelineDraw 0.35s ease forwards' }}
+              />
+            )}
+            {/* Node box */}
+            {show && (
+              <g style={{ animation: 'nodeAppear 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards' }}>
+                <rect
+                  x={x} y={50} width={64} height={38} rx={8}
+                  fill={isActive ? '#F97316' : '#1A6FD4'}
+                  opacity={0.92}
+                  filter="url(#glow-blue)"
+                />
+                <text x={x + 32} y={74} textAnchor="middle"
+                  fill="#fff" fontSize="11" fontFamily="DM Sans, sans-serif" fontWeight="600">
+                  {label}
+                </text>
+                {/* Arrow head */}
+                {!isLast && (
+                  <polygon
+                    points={`${x+64},66 ${x+72},70 ${x+64},74`}
+                    fill="#F97316" opacity={lineVisible(i) ? 1 : 0}
+                  />
+                )}
+              </g>
+            )}
+          </g>
+        );
+      })}
+      {/* "Acorn AI" label below */}
+      {step >= PIPELINE_NODES.length * 2 + 2 && (
+        <text x="260" y="140" textAnchor="middle"
+          fill="rgba(26,111,212,0.6)" fontSize="13"
+          fontFamily="Syne, sans-serif" fontWeight="700" letterSpacing="0.15em"
+          style={{ animation: 'revealUp 0.6s ease forwards' }}>
+          POWERED BY GEMINI AI
+        </text>
+      )}
+    </svg>
+  );
+};
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -24,254 +86,168 @@ const LoginPage: React.FC = () => {
   const [formData, setFormData]         = useState({ email: '', password: '' });
   const [error, setError]               = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  const [isVisible, setIsVisible]       = useState(false);
-  const [focusedField, setFocusedField] = useState<string | null>(null);
-  const [loginSuccess, setLoginSuccess] = useState(false);
+  const [focused, setFocused]           = useState<string | null>(null);
 
-  useEffect(() => {
-    setIsVisible(true);
-    if (isAuthenticated) navigate('/projects');
-  }, [isAuthenticated, navigate]);
+  useEffect(() => { if (isAuthenticated) navigate('/projects'); }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-
-    if (!formData.email || !formData.password) {
-      setError('Please fill in all fields');
-      return;
-    }
-
+    if (!formData.email || !formData.password) { setError('Please fill in all fields'); return; }
     try {
       await login(formData.email, formData.password);
-      setLoginSuccess(true);
-      setTimeout(() => navigate('/projects'), 500);
+      navigate('/projects');
     } catch (err: any) {
       setError(err.message || 'Invalid email or password');
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    if (error) setError(null);
-  };
-
-  const trustBadges = [
-    { icon: Shield,   label: 'Enterprise Security' },
-    { icon: Building2, label: 'SOC 2 Compliant' },
-    { icon: Award,    label: 'ISO 27001' },
-  ];
+  const inputStyle = (name: string): React.CSSProperties => ({
+    width: '100%', padding: '13px 16px 13px 44px',
+    background: 'var(--brand-800)',
+    border: `1px solid ${focused === name ? 'var(--blue-500)' : 'rgba(26,111,212,0.25)'}`,
+    borderRadius: '10px', color: 'var(--text-primary)',
+    fontSize: '15px', fontFamily: "'DM Sans', sans-serif",
+    outline: 'none', transition: 'border-color 0.2s, box-shadow 0.2s',
+    boxShadow: focused === name ? '0 0 0 3px rgba(26,111,212,0.18)' : 'none',
+    boxSizing: 'border-box',
+  });
 
   return (
-    <div className="min-h-screen bg-[#130c07] flex relative overflow-hidden">
-      {/* Background Effects */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-grid opacity-20" />
-        <div className="glow-orb glow-orb-amber w-[600px] h-[600px]" style={{ top: '10%', left: '20%' }} />
-        <div className="glow-orb glow-orb-bark w-[500px] h-[500px]" style={{ bottom: '20%', right: '30%' }} />
-      </div>
+    <div style={{ minHeight: '100vh', display: 'flex', background: 'var(--brand-900)' }}>
 
-      {/* Left Panel - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#D4A017]/10 via-[#130c07] to-[#130c07]" />
+      {/* ── Left: animated canvas ── */}
+      <div style={{
+        width: '50%', display: 'none', flexDirection: 'column',
+        background: 'linear-gradient(160deg, #0d2b52 0%, #0D1B2A 60%, #111f30 100%)',
+        borderRight: '1px solid rgba(26,111,212,0.2)',
+        padding: '40px', position: 'relative', overflow: 'hidden',
+      }} className="lg:flex flex-col">
+        {/* Grid overlay */}
+        <div className="bg-grid" style={{ position: 'absolute', inset: 0, opacity: 0.5 }} />
+        <div className="glow-orb glow-orb-forest" style={{ width: '400px', height: '400px', top: '10%', left: '-10%' }} />
 
-        <div className="relative z-10 flex flex-col justify-center px-16 xl:px-24 w-full">
-          {/* Logo */}
-          <div className={`flex items-center gap-4 mb-16 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-12'}`}>
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-[#D4A017] to-[#8B5E3C] rounded-2xl blur-xl opacity-50" />
-              <div className="relative w-16 h-16 bg-gradient-to-br from-[#D4A017] to-[#c8870f] rounded-2xl flex items-center justify-center shadow-2xl">
-                <TreePine className="w-8 h-8 text-[#130c07]" />
-              </div>
-            </div>
-            <span className="text-4xl font-bold text-gradient-forest">Acorn</span>
+        {/* Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'relative', zIndex: 1 }}>
+          <div style={{
+            width: '40px', height: '40px', borderRadius: '10px',
+            background: 'linear-gradient(135deg, #1A6FD4, #0d2b52)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 0 20px rgba(26,111,212,0.4)',
+          }}>
+            <Zap size={20} color="#fff" />
           </div>
-
-          {/* Headline */}
-          <h1 className={`text-5xl xl:text-6xl font-bold text-[#f0e4c8] leading-[1.1] mb-8 transition-all duration-1000 delay-200 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-12'}`}>
-            Welcome Back to
-            <span className="block text-gradient-forest mt-3">Your Forest</span>
-          </h1>
-
-          <p className={`text-xl text-[#8a7055] mb-16 max-w-lg leading-relaxed transition-all duration-1000 delay-300 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-12'}`}>
-            Continue growing your project ideas into comprehensive plans with AI-powered intelligence.
-          </p>
-
-          {/* Trust Badges */}
-          <div className={`flex items-center gap-6 transition-all duration-1000 delay-500 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-12'}`}>
-            {trustBadges.map((badge, index) => {
-              const Icon = badge.icon;
-              return (
-                <div
-                  key={index}
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#221508]/50 border border-[#3d2412]/50"
-                >
-                  <Icon className="w-5 h-5 text-[#D4A017]" />
-                  <span className="text-sm font-medium text-[#c8b090]">{badge.label}</span>
-                </div>
-              );
-            })}
-          </div>
+          <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '22px', color: 'var(--text-primary)' }}>Acorn</span>
         </div>
 
-        {/* Decorative Line */}
-        <div className="absolute right-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[#D4A017]/30 to-transparent" />
+        {/* Centre content */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', zIndex: 1 }}>
+          <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '32px', color: 'var(--text-primary)', marginBottom: '12px', lineHeight: 1.2 }}>
+            AI-Powered<br />Project Planning
+          </h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '15px', fontFamily: "'DM Sans', sans-serif", marginBottom: '48px', lineHeight: 1.7 }}>
+            Describe your project and Acorn generates a complete SDLC plan — requirements, SRS, designs, tasks, risk analysis, and cost estimates.
+          </p>
+          <PipelineAnimation />
+        </div>
+
+        {/* Bottom tagline */}
+        <p style={{ color: 'var(--text-faint)', fontSize: '12px', fontFamily: "'DM Sans', sans-serif", position: 'relative', zIndex: 1 }}>
+          Trusted by product teams worldwide
+        </p>
       </div>
 
-      {/* Right Panel - Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-12 relative z-10">
-        <div
-          className={`w-full max-w-md transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
-          style={{ transitionDelay: '400ms' }}
-        >
-          {/* Mobile Logo */}
-          <div className="lg:hidden flex items-center gap-3 mb-12 justify-center">
-            <div className="w-12 h-12 bg-gradient-to-br from-[#D4A017] to-[#c8870f] rounded-xl flex items-center justify-center shadow-lg">
-              <TreePine className="w-6 h-6 text-[#130c07]" />
+      {/* ── Right: login form ── */}
+      <div style={{
+        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '40px 24px',
+        background: 'var(--brand-900)',
+      }}>
+        <div style={{ width: '100%', maxWidth: '400px' }} className="animate-reveal-up">
+          {/* Mobile logo */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '40px' }} className="lg:hidden">
+            <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'linear-gradient(135deg, #1A6FD4, #0d2b52)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Zap size={16} color="#fff" />
             </div>
-            <span className="text-2xl font-bold text-gradient-forest">Acorn</span>
+            <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '18px', color: 'var(--text-primary)' }}>Acorn</span>
           </div>
 
-          {/* Form Card */}
-          <div className="card-glass p-10">
-            <div className="text-center mb-10">
-              <h2 className="text-3xl font-bold text-[#f0e4c8] mb-3">Sign In</h2>
-              <p className="text-[#8a7055]">Access your project workspace</p>
+          <h1 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '28px', color: 'var(--text-primary)', marginBottom: '6px' }}>
+            Welcome back
+          </h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: '15px', fontFamily: "'DM Sans', sans-serif", marginBottom: '32px' }}>
+            Sign in to your workspace
+          </p>
+
+          {error && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '10px',
+              padding: '12px 16px', borderRadius: '10px',
+              background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
+              marginBottom: '20px',
+            }}>
+              <AlertCircle size={16} color="#ef4444" />
+              <span style={{ color: '#fca5a5', fontSize: '14px', fontFamily: "'DM Sans', sans-serif" }}>{error}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {/* Email */}
+            <div className="delay-100 animate-reveal-up" style={{ position: 'relative' }}>
+              <Mail size={16} color="var(--text-faint)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+              <input
+                type="email" name="email" placeholder="you@company.com"
+                value={formData.email}
+                onChange={e => { setFormData(p => ({ ...p, email: e.target.value })); setError(null); }}
+                onFocus={() => setFocused('email')} onBlur={() => setFocused(null)}
+                style={inputStyle('email')}
+                autoComplete="email"
+              />
             </div>
 
-            {/* Error Message */}
-            {error && (
-              <div className="mb-8 p-4 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center gap-3 animate-reveal-up">
-                <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
-                <span className="text-red-400 text-sm font-medium">{error}</span>
-              </div>
-            )}
-
-            {/* Success Message */}
-            {loginSuccess && (
-              <div className="mb-8 p-4 rounded-xl bg-green-500/10 border border-green-500/30 flex items-center gap-3 animate-reveal-up">
-                <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0" />
-                <span className="text-green-400 text-sm font-medium">Login successful! Redirecting...</span>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Email Field */}
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-[#c8b090] block">Email Address</label>
-                <div className="relative">
-                  <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${
-                    focusedField === 'email' ? 'text-[#D4A017]' : 'text-[#8a7055]'
-                  }`} />
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    onFocus={() => setFocusedField('email')}
-                    onBlur={() => setFocusedField(null)}
-                    className="input pl-12"
-                    placeholder="you@company.com"
-                    data-testid="login-email-input"
-                  />
-                </div>
-              </div>
-
-              {/* Password Field */}
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-[#c8b090] block">Password</label>
-                <div className="relative">
-                  <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${
-                    focusedField === 'password' ? 'text-[#D4A017]' : 'text-[#8a7055]'
-                  }`} />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    onFocus={() => setFocusedField('password')}
-                    onBlur={() => setFocusedField(null)}
-                    className="input pl-12 pr-12"
-                    placeholder="••••••••"
-                    data-testid="login-password-input"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#8a7055] hover:text-[#c8b090] transition-colors"
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Remember & Forgot */}
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    className="w-4 h-4 rounded border-[#3d2412] bg-[#221508] text-[#D4A017] focus:ring-[#D4A017]/30 focus:ring-offset-0"
-                  />
-                  <span className="text-sm text-[#8a7055] group-hover:text-[#c8b090] transition-colors">Remember me</span>
-                </label>
-                <a href="#" className="text-sm text-[#D4A017] hover:text-[#e8bf40] transition-colors font-medium">
-                  Forgot password?
-                </a>
-              </div>
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={isLoading || loginSuccess}
-                className="w-full btn-primary py-4 text-base group disabled:opacity-50 disabled:cursor-not-allowed"
-                data-testid="login-submit-btn"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Signing in...
-                  </>
-                ) : loginSuccess ? (
-                  <>
-                    <CheckCircle2 className="w-5 h-5" />
-                    Success!
-                  </>
-                ) : (
-                  <>
-                    Sign In
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform duration-300" />
-                  </>
-                )}
+            {/* Password */}
+            <div className="delay-200 animate-reveal-up" style={{ position: 'relative' }}>
+              <Lock size={16} color="var(--text-faint)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+              <input
+                type={showPassword ? 'text' : 'password'} name="password" placeholder="Your password"
+                value={formData.password}
+                onChange={e => { setFormData(p => ({ ...p, password: e.target.value })); setError(null); }}
+                onFocus={() => setFocused('password')} onBlur={() => setFocused(null)}
+                style={{ ...inputStyle('password'), paddingRight: '44px' }}
+                autoComplete="current-password"
+              />
+              <button type="button" onClick={() => setShowPassword(!showPassword)}
+                style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', padding: '4px' }}>
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
-            </form>
-
-            {/* Divider */}
-            <div className="relative my-10">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-[#3d2412]" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-[#221508]/80 text-[#8a7055]">New to Acorn?</span>
-              </div>
             </div>
 
-            {/* Register Link */}
-            <Link
-              to="/register"
-              className="block w-full btn-secondary py-4 text-center"
+            {/* Submit */}
+            <button type="submit" disabled={isLoading}
+              className="delay-300 animate-reveal-up"
+              style={{
+                width: '100%', padding: '14px',
+                background: isLoading ? 'rgba(249,115,22,0.5)' : 'linear-gradient(135deg, #F97316, #cc4900)',
+                border: 'none', borderRadius: '10px',
+                color: '#fff', fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: '15px',
+                cursor: isLoading ? 'not-allowed' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                boxShadow: '0 4px 20px rgba(249,115,22,0.35)',
+                transition: 'all 0.2s',
+                marginTop: '4px',
+              }}
+              onMouseEnter={e => { if (!isLoading) e.currentTarget.style.transform = 'translateY(-1px)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
             >
-              Create Enterprise Account
-            </Link>
-          </div>
+              {isLoading ? <Loader2 size={18} style={{ animation: 'rotate-slow 1s linear infinite' }} /> : <><ArrowRight size={18} />Sign In</>}
+            </button>
+          </form>
 
-          {/* Footer */}
-          <p className="text-center text-[#8a7055] text-sm mt-10">
-            By signing in, you agree to our{' '}
-            <a href="#" className="text-[#D4A017] hover:text-[#e8bf40] transition-colors">Terms of Service</a>
-            {' '}and{' '}
-            <a href="#" className="text-[#D4A017] hover:text-[#e8bf40] transition-colors">Privacy Policy</a>
+          <p style={{ textAlign: 'center', marginTop: '24px', color: 'var(--text-muted)', fontSize: '14px', fontFamily: "'DM Sans', sans-serif" }}>
+            Don't have an account?{' '}
+            <Link to="/register" style={{ color: 'var(--blue-300)', fontWeight: 600, textDecoration: 'none' }}>
+              Create one free
+            </Link>
           </p>
         </div>
       </div>

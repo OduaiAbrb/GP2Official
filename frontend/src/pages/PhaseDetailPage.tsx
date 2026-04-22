@@ -1,18 +1,32 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AIChatAssistant } from '@/components/AIChatAssistant';
 import { Layout } from '@/components/Layout';
+import { useToast } from '@/contexts/ToastContext';
+import { AISuggestionsPanel } from '@/components/AISuggestionsPanel';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { api } from '@/lib/api';
-import type { Artifact, Project, Task, Requirement, SandboxRunResult } from '@/types';
+import type {
+  Artifact,
+  Project,
+  Task,
+  Requirement,
+  SandboxRunResult,
+  VersionHistoryEntry,
+  TraceabilityMatrixData,
+  NegotiationThread as NegotiationThreadData,
+  NegotiationComment,
+} from '@/types';
 import { phaseConfigs, getPhaseConfig, getNextPhase, phaseColors } from '@/constants/phases';
 import { workspacePresets } from '@/constants/workspacePresets';
 import { useAuthStore } from '@/store/authStore';
 import ReactMarkdown from 'react-markdown';
 import { PhaseNavigation } from '@/components/PhaseNavigation';
-import { ArchitectureDiagram, parseArchitectureJson } from '@/components/ArchitectureDiagram';
+import { VersionHistory } from '@/components/VersionHistory';
+import { TraceabilityMatrix } from '@/components/TraceabilityMatrix';
+import { NegotiationThread } from '@/components/NegotiationThread';
 import {
   FeasibilityStudyPhase,
   PlanningRoadmapPhase,
@@ -22,6 +36,7 @@ import {
   FinalSummaryPhase,
   ValidationPhase,
   DesignPhase,
+  TestingPhase,
 } from '@/components/phases';
 import {
   ArrowLeft,
@@ -62,6 +77,8 @@ import {
   Undo2,
   Printer,
   Play,
+  Copy,
+  Check,
 } from 'lucide-react';
 
 type RiskRegisterRow = {
@@ -109,6 +126,7 @@ const createDefaultRiskDraft = (): RiskDraft => ({
 export const PhaseDetailPage: React.FC = () => {
   const { id, phaseId } = useParams<{ id: string; phaseId: string }>();
   const navigate = useNavigate();
+  const { success: toastSuccess, error: toastError } = useToast();
   const [project, setProject] = useState<Project | null>(null);
   const [artifacts, setArtifacts] = useState<Artifact[]>([]);
   const [phaseStatus, setPhaseStatus] = useState<Record<string, string>>({});
@@ -132,7 +150,14 @@ export const PhaseDetailPage: React.FC = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [streamingText, setStreamingText] = useState('');
+  const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [phaseBottomTab, setPhaseBottomTab] = useState<'history' | 'traceability' | 'discussion'>('history');
+  const [versionEntries, setVersionEntries] = useState<VersionHistoryEntry[]>([]);
+  const [traceabilityMatrix, setTraceabilityMatrix] = useState<TraceabilityMatrixData | null>(null);
+  const [discussionThread, setDiscussionThread] = useState<NegotiationThreadData | null>(null);
+  const [discussionComments, setDiscussionComments] = useState<NegotiationComment[]>([]);
   const [syncingCanvas, setSyncingCanvas] = useState(false);
   const [requirements, setRequirements] = useState<Requirement[]>([]);
   const [editingTask, setEditingTask] = useState<string | null>(null);
@@ -199,7 +224,7 @@ export const PhaseDetailPage: React.FC = () => {
   const [savingRisks, setSavingRisks] = useState(false);
   const { user } = useAuthStore();
   const userAuthority = user?.role_authority || 0;
-  const canTriggerAi = true; // All authenticated users can use AI generation
+  const canTriggerAi = userAuthority >= 3;
 
   const handleUpdateTask = async (taskId: string, patch: Partial<Task>) => {
     try {
@@ -219,6 +244,155 @@ export const PhaseDetailPage: React.FC = () => {
       console.error('Failed to sync requirements from backend', err);
     }
   };
+
+  const latestArtifact = useMemo(() => {
+    if (!phaseId) return null;
+    return artifacts.find((art) => art.type === `PHASE_${phaseId.toUpperCase()}`);
+  }, [artifacts, phaseId]);
+
+  const phaseMarkdown = latestArtifact?.content_json?.markdown || '';
+  const phaseRawMarkdown = latestArtifact?.content_json?.raw_markdown || '';
+
+  const loadVersionHistory = useCallback(async () => {
+    if (!id || !latestArtifact?.artifact_id) {
+      setVersionEntries([]);
+      return;
+    }
+    try {
+      const versions = await api.getVersionHistory(id, 'artifact', latestArtifact.artifact_id, 20);
+      setVersionEntries(versions);
+    } catch (err) {
+      console.error('Failed to load version history', err);
+      setVersionEntries([]);
+    }
+  }, [id, latestArtifact]);
+
+  const loadTraceability = useCallback(async () => {
+    if (!id || phaseId !== 'requirements_gathering') {
+      setTraceabilityMatrix(null);
+      return;
+    }
+    try {
+      const matrix = await api.getTraceabilityMatrix(id);
+      setTraceabilityMatrix(matrix);
+    } catch (err) {
+      console.error('Failed to load traceability matrix', err);
+      setTraceabilityMatrix(null);
+    }
+  }, [id, phaseId]);
+
+  const loadDiscussion = useCallback(async () => {
+    if (!id || !phaseId) {
+      setDiscussionThread(null);
+      setDiscussionComments([]);
+      return;
+    }
+    try {
+      const threads = await api.getNegotiationThreads(id);
+      let thread = threads.find((item) => item.requirement_id === phaseId);
+      if (!thread) {
+        thread = await api.createNegotiationThread(id, {
+          title: `${phaseConfig?.title || 'Phase'} Discussion`,
+          description: 'Discuss requirements, changes, and decisions for this phase.',
+          requirement_id: phaseId,
+          status: 'open',
+          priority: 'medium',
+        });
+      }
+      const details = await api.getNegotiationThread(id, thread.id);
+      setDiscussionThread(details.thread);
+      setDiscussionComments(details.comments);
+    } catch (err) {
+      console.error('Failed to load discussion thread', err);
+      setDiscussionThread(null);
+      setDiscussionComments([]);
+    }
+  }, [id, phaseId, phaseConfig]);
+
+  const handleCompareVersions = useCallback(async (fromVersion: number, toVersion: number) => {
+    if (!id || !latestArtifact?.artifact_id) return null;
+    try {
+      const diff = await api.compareVersions(id, 'artifact', latestArtifact.artifact_id, fromVersion, toVersion);
+      toastSuccess(diff.summary || 'Version comparison complete');
+      return diff;
+    } catch (err) {
+      console.error('Failed to compare versions', err);
+      toastError('Failed to compare versions');
+      return null;
+    }
+  }, [id, latestArtifact, toastError, toastSuccess]);
+
+  const handleRestoreVersion = useCallback(async (versionNumber: number) => {
+    if (!id || !latestArtifact?.artifact_id) return;
+    try {
+      await api.restoreVersion(id, 'artifact', latestArtifact.artifact_id, versionNumber);
+      toastSuccess(`Restored version ${versionNumber}`);
+      const [arts, versions] = await Promise.all([
+        api.getArtifacts(id),
+        api.getVersionHistory(id, 'artifact', latestArtifact.artifact_id, 20),
+      ]);
+      setArtifacts(arts);
+      setVersionEntries(versions);
+    } catch (err) {
+      console.error('Failed to restore version', err);
+      toastError('Failed to restore version');
+    }
+  }, [id, latestArtifact, toastError, toastSuccess]);
+
+  const handleCreateTraceabilityLink = useCallback(async (sourceId: string, targetId: string) => {
+    if (!id) return;
+    const requirement = requirements.find((item) => item.requirement_id === sourceId);
+    const task = tasks.find((item) => item.task_id === targetId);
+    if (!requirement || !task) return;
+
+    try {
+      await api.createTraceabilityLink(id, {
+        source_type: 'requirement',
+        source_id: sourceId,
+        source_name: requirement.title,
+        target_type: 'task',
+        target_id: targetId,
+        target_name: task.title,
+        link_type: 'implements',
+      });
+      toastSuccess('Traceability link created');
+      await loadTraceability();
+    } catch (err) {
+      console.error('Failed to create traceability link', err);
+      toastError('Failed to create traceability link');
+    }
+  }, [id, loadTraceability, requirements, tasks, toastError, toastSuccess]);
+
+  const handleAddDiscussionComment = useCallback(async (content: string, parentId?: string) => {
+    if (!id || !discussionThread) return;
+    try {
+      await api.addNegotiationComment(id, discussionThread.id, {
+        content,
+        parent_id: parentId,
+        requirement_id: phaseId,
+      });
+      const details = await api.getNegotiationThread(id, discussionThread.id);
+      setDiscussionThread(details.thread);
+      setDiscussionComments(details.comments);
+    } catch (err) {
+      console.error('Failed to add comment', err);
+      toastError('Failed to add comment');
+    }
+  }, [discussionThread, id, phaseId, toastError]);
+
+  const handleResolveDiscussion = useCallback(async (resolution: string) => {
+    if (!id || !discussionThread) return;
+    try {
+      const thread = await api.resolveNegotiationThread(id, discussionThread.id, resolution);
+      setDiscussionThread(thread);
+      const details = await api.getNegotiationThread(id, discussionThread.id);
+      setDiscussionComments(details.comments);
+      toastSuccess('Discussion resolved');
+    } catch (err) {
+      console.error('Failed to resolve discussion', err);
+      toastError('Failed to resolve discussion');
+    }
+  }, [discussionThread, id, toastError, toastSuccess]);
 
   useEffect(() => {
     if (!id) return;
@@ -286,6 +460,20 @@ export const PhaseDetailPage: React.FC = () => {
     loadProjectData();
   }, [id, teamSizeMultiplier, roleMix]);
 
+  useEffect(() => {
+    if (phaseBottomTab === 'history') {
+      loadVersionHistory();
+      return;
+    }
+    if (phaseBottomTab === 'traceability') {
+      loadTraceability();
+      return;
+    }
+    if (phaseBottomTab === 'discussion') {
+      loadDiscussion();
+    }
+  }, [phaseBottomTab, loadVersionHistory, loadTraceability, loadDiscussion]);
+
   // Auto-generate phase content on first visit if no content exists
   const autoGenerateTriggeredRef = useRef<Set<string>>(new Set());
   useEffect(() => {
@@ -325,13 +513,34 @@ export const PhaseDetailPage: React.FC = () => {
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
-  const latestArtifact = useMemo(() => {
-    if (!phaseId) return null;
-    return artifacts.find((art) => art.type === `PHASE_${phaseId.toUpperCase()}`);
-  }, [artifacts, phaseId]);
+  const nestedDiscussionComments = useMemo(() => {
+    const byId = new Map(discussionComments.map((comment) => [comment.id, { ...comment, replies: [] as any[] }]));
+    const roots: any[] = [];
 
-  const phaseMarkdown = latestArtifact?.content_json?.markdown || '';
-  const phaseRawMarkdown = latestArtifact?.content_json?.raw_markdown || '';
+    discussionComments.forEach((comment) => {
+      const current = byId.get(comment.id);
+      if (!current) return;
+      if (comment.parent_id && byId.has(comment.parent_id)) {
+        byId.get(comment.parent_id)!.replies.push(current);
+      } else {
+        roots.push(current);
+      }
+    });
+
+    return roots;
+  }, [discussionComments]);
+
+  // Copy-to-clipboard helper
+  const [copied, setCopied] = useState(false);
+  const handleCopyContent = useCallback(() => {
+    const text = phaseMarkdown || phaseRawMarkdown;
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      toastSuccess('Content copied to clipboard');
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, [phaseMarkdown, phaseRawMarkdown, toastSuccess]);
 
   const RawMarkdownDisclosure: React.FC = () => {
     if (!phaseRawMarkdown || phaseRawMarkdown === phaseMarkdown) {
@@ -342,10 +551,26 @@ export const PhaseDetailPage: React.FC = () => {
         <summary className="cursor-pointer font-medium text-gray-600">
           Show raw AI output
         </summary>
-        <pre className="mt-2 whitespace-pre-wrap rounded-lg border border-[#3d2412] bg-[#3d2412]/50 p-3 text-[11px] leading-relaxed text-gray-300 overflow-x-auto">
+        <pre className="mt-2 whitespace-pre-wrap rounded-lg border border-[var(--brand-700)] bg-[var(--brand-700)]/50 p-3 text-[11px] leading-relaxed text-gray-300 overflow-x-auto">
           {phaseRawMarkdown}
         </pre>
       </details>
+    );
+  };
+
+  const StreamingOverlay: React.FC = () => {
+    if (!isStreaming && !streamingText) return null;
+    if (!isStreaming && phaseMarkdown) return null;
+    return (
+      <div className="rounded-xl p-5 mt-4" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(26,111,212,0.2)' }}>
+        <div className="flex items-center gap-2 mb-3">
+          <Loader2 className="w-4 h-4 animate-spin text-[var(--blue-400)]" />
+          <span className="text-xs font-semibold text-[var(--blue-400)]">AI is generating...</span>
+        </div>
+        <div className="prose prose-sm max-w-none text-[var(--text-muted)]">
+          <ReactMarkdown>{streamingText + (isStreaming ? ' ▊' : '')}</ReactMarkdown>
+        </div>
+      </div>
     );
   };
 
@@ -521,6 +746,44 @@ export const PhaseDetailPage: React.FC = () => {
     }
   };
 
+  const generateWithStreaming = (phase: string, prompt: string): Promise<void> => {
+    return new Promise((resolve) => {
+      setStreamingText('');
+      setIsStreaming(true);
+      const token = localStorage.getItem('access_token') || '';
+      const url = `/api/projects/${id}/phases/${phase}/generate/stream/?prompt=${encodeURIComponent(prompt)}&token=${encodeURIComponent(token)}`;
+      const es = new EventSource(url);
+
+      es.addEventListener('token', (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          setStreamingText((prev) => prev + (data.text || ''));
+        } catch {
+          setStreamingText((prev) => prev + (event.data || ''));
+        }
+      });
+
+      es.addEventListener('done', () => {
+        es.close();
+        setIsStreaming(false);
+        resolve();
+      });
+
+      es.addEventListener('error', (event) => {
+        es.close();
+        setIsStreaming(false);
+        setError('Streaming generation failed. Falling back to standard generation.');
+        resolve();
+      });
+
+      es.onerror = () => {
+        es.close();
+        setIsStreaming(false);
+        resolve();
+      };
+    });
+  };
+
   const handleGenerate = async (prompt?: string) => {
     if (!id || !phaseId) return;
     if (!canTriggerAi) {
@@ -587,10 +850,16 @@ export const PhaseDetailPage: React.FC = () => {
 
         userPrompt = `${userPrompt}\n${scenarioSummary}`;
       }
+
+      // Try streaming first for real-time feedback
+      await generateWithStreaming(phaseId, userPrompt);
+
+      // After streaming completes, fetch final structured data
       const response = await api.generatePhase(id, phaseId, userPrompt);
       setPhaseStatus(response.phase_status);
       const updatedArtifacts = await api.getArtifacts(id);
       setArtifacts(updatedArtifacts);
+      toastSuccess(`${phaseId.replace(/_/g, ' ')} phase generated successfully`);
 
       // Auto-sync AI outputs into structured project fields for certain phases
       const latestPhaseArtifact = updatedArtifacts.find(
@@ -997,7 +1266,7 @@ export const PhaseDetailPage: React.FC = () => {
             const defaultSections = [
               { id: 'market', title: 'Market Feasibility', color: 'purple' },
               { id: 'technical', title: 'Technical Feasibility', color: 'blue' },
-              { id: 'economic', title: 'Economic Feasibility', color: 'green' },
+              { id: 'economic', title: 'Economic Feasibility', color: 'blue' },
               { id: 'operational', title: 'Operational Feasibility', color: 'amber' },
               { id: 'legal', title: 'Legal / Compliance Feasibility', color: 'red' },
             ];
@@ -1038,7 +1307,9 @@ export const PhaseDetailPage: React.FC = () => {
       }
       if (prompt) setInput(''); // Clear input if prompt was provided externally
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to generate phase output');
+      const msg = err.response?.data?.detail || 'Failed to generate phase output';
+      setError(msg);
+      toastError(msg);
     } finally {
       setIsGenerating(false);
     }
@@ -1262,7 +1533,7 @@ export const PhaseDetailPage: React.FC = () => {
       const x = Math.max(0, ((t.start.getTime() - min.getTime()) / totalMs) * 100);
       const width = Math.max(4, ((t.end.getTime() - t.start.getTime()) / totalMs) * 100);
       const status = (localTaskStatus[t.task_id] || t.status || '').toLowerCase();
-      const color = status === 'completed' ? '#D4A017' : status === 'in_progress' ? '#c8870f' : '#5c3820';
+      const color = status === 'completed' ? '#1A6FD4' : status === 'in_progress' ? '#F97316' : '#8899AA';
       const isMilestone = (t.tags || []).includes('milestone');
       return { id: t.task_id, title: t.title, x, width, y: 50 + idx * (barHeight + 16), color, isMilestone };
     });
@@ -1293,12 +1564,32 @@ export const PhaseDetailPage: React.FC = () => {
   if (isLoading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64 bg-slate-50">
-          <div className="flex flex-col items-center gap-4">
-            <Loader2 className="h-10 w-10 animate-spin text-amber-500" />
-            <span className="text-slate-400 text-sm">Loading phase...</span>
+        <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+          {/* Header skeleton */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '28px' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'rgba(26,46,69,0.6)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+            <div style={{ width: '180px', height: '28px', borderRadius: '6px', background: 'rgba(26,46,69,0.6)', animation: 'pulse 1.5s ease-in-out infinite' }} />
           </div>
+          {/* Phase header skeleton */}
+          <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--brand-850)', border: '1px solid rgba(26,46,69,0.5)', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
+              <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'rgba(26,46,69,0.6)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ width: '200px', height: '22px', borderRadius: '6px', background: 'rgba(26,46,69,0.6)', animation: 'pulse 1.5s ease-in-out infinite', marginBottom: '8px' }} />
+                <div style={{ width: '300px', height: '14px', borderRadius: '6px', background: 'rgba(26,46,69,0.4)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+              </div>
+            </div>
+          </div>
+          {/* Content skeletons */}
+          {[1, 2, 3].map(i => (
+            <div key={i} style={{ padding: '20px', borderRadius: '14px', background: 'var(--brand-850)', border: '1px solid rgba(26,46,69,0.4)', marginBottom: '16px' }}>
+              <div style={{ width: `${60 + i * 10}%`, height: '16px', borderRadius: '6px', background: 'rgba(26,46,69,0.6)', animation: 'pulse 1.5s ease-in-out infinite', marginBottom: '12px' }} />
+              <div style={{ width: '100%', height: '12px', borderRadius: '6px', background: 'rgba(26,46,69,0.4)', animation: 'pulse 1.5s ease-in-out infinite', marginBottom: '8px' }} />
+              <div style={{ width: '80%', height: '12px', borderRadius: '6px', background: 'rgba(26,46,69,0.3)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+            </div>
+          ))}
         </div>
+        <style>{`@keyframes pulse { 0%,100%{opacity:0.6} 50%{opacity:1} }`}</style>
       </Layout>
     );
   }
@@ -1306,9 +1597,9 @@ export const PhaseDetailPage: React.FC = () => {
   if (!project || !phaseConfig) {
     return (
       <Layout>
-        <div className="text-center py-16 bg-[#130c07]">
+        <div className="text-center py-16 bg-[var(--brand-900)]">
           <h2 className="text-2xl font-bold text-white mb-4">Phase not found</h2>
-          <Button onClick={() => navigate(`/projects/${id}`)} className="bg-gradient-to-r from-[#D4A017] to-[#b8962e] hover:from-[#e6c358] hover:to-[#D4A017] text-[#130c07] font-semibold">Back to Project</Button>
+          <Button onClick={() => navigate(`/projects/${id}`)} className="bg-gradient-to-r from-[var(--blue-400)] to-[#b8962e] hover:from-[#e6c358] hover:to-[var(--blue-400)] text-[var(--brand-900)] font-semibold">Back to Project</Button>
         </div>
       </Layout>
     );
@@ -1327,30 +1618,30 @@ export const PhaseDetailPage: React.FC = () => {
   // Phase-specific accent color for the header
   const phaseAccentColor = (() => {
     const colors: Record<string, string> = {
-      planning: '#D4A017', feasibility_study: '#c8895a', requirements_gathering: '#a86d0e',
-      validation: '#e8bf40', design: '#D4A017', development: '#8B5E3C',
-      tasks: '#D4A017', cost_benefit: '#c8870f', risks: '#C1440E', summary: '#a0845c',
+      planning: '#D4A017', feasibility_study: '#7BA05B', requirements_gathering: 'var(--blue-500)',
+      validation: '#5F7A8A', design: '#6B4C8A', development: '#8B5E3C',
+      tasks: '#D4A017', cost_benefit: '#2A9D8F', risks: '#C1440E', testing: '#0EA5E9', summary: 'var(--blue-400)',
     };
-    return colors[phaseId || ''] || '#D4A017';
+    return colors[phaseId || ''] || 'var(--blue-400)';
   })();
 
   const PhaseWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     return (
       <Layout>
-        <div className="min-h-[calc(100vh-4rem)] bg-[#130c07]">
+        <div className="min-h-[calc(100vh-4rem)] bg-[var(--brand-900)]">
           {/* Horizontal Navigation */}
           <PhaseNavigation projectId={id} variant="horizontal" phaseStatus={phaseStatus} />
 
           <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6">
             <div className="space-y-5">
               {/* Phase Header */}
-              <div className="rounded-2xl overflow-hidden shadow-lg" style={{ background: '#130c07', border: `1px solid ${phaseAccentColor}30` }}>
+              <div className="rounded-2xl overflow-hidden shadow-lg" style={{ background: 'var(--brand-850)', border: `1px solid ${phaseAccentColor}30` }}>
                 <div className="h-1" style={{ background: `linear-gradient(to right, ${phaseAccentColor}, ${phaseAccentColor}88)` }} />
                 <div className="p-5 sm:p-6">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="flex items-center gap-4">
                       <div className="flex items-center justify-center w-12 h-12 rounded-xl font-bold text-lg shadow-lg"
-                        style={{ background: phaseAccentColor, color: '#0a150e' }}>
+                        style={{ background: phaseAccentColor, color: 'var(--brand-900)' }}>
                         {phaseConfig.stepNumber}
                       </div>
                       <div>
@@ -1358,7 +1649,7 @@ export const PhaseDetailPage: React.FC = () => {
                           style={{ color: phaseAccentColor }}>
                           Phase {(phaseConfig.order || 0) + 1} of {phaseConfigs.length}
                         </p>
-                        <h1 className="text-xl sm:text-2xl font-bold text-[#f0e4c8]">
+                        <h1 className="text-xl sm:text-2xl font-bold text-[var(--text-primary)]">
                           {phaseConfig.title}
                         </h1>
                       </div>
@@ -1367,8 +1658,8 @@ export const PhaseDetailPage: React.FC = () => {
                       <Button
                         variant="outline"
                         onClick={() => navigate(`/projects/${id}`)}
-                        className="text-[#8a7055] bg-transparent"
-                        style={{ borderColor: 'rgba(61,36,18,0.6)' }}
+                        className="text-[var(--text-muted)] bg-transparent"
+                        style={{ borderColor: 'rgba(26,46,69,0.6)' }}
                       >
                         <ArrowLeft className="mr-2 h-4 w-4" />
                         Back
@@ -1377,8 +1668,8 @@ export const PhaseDetailPage: React.FC = () => {
                         <Button
                           variant="outline"
                           onClick={handleDownload}
-                          className="text-[#8a7055] bg-transparent"
-                          style={{ borderColor: 'rgba(61,36,18,0.6)' }}
+                          className="text-[var(--text-muted)] bg-transparent"
+                          style={{ borderColor: 'rgba(26,46,69,0.6)' }}
                         >
                           <Download className="mr-2 h-4 w-4" />
                           Export
@@ -1387,9 +1678,9 @@ export const PhaseDetailPage: React.FC = () => {
                       <span className="px-3 py-1.5 rounded-full text-xs font-semibold"
                         style={
                           status === 'completed'
-                            ? { background: 'rgba(212,160,23,0.15)', color: '#D4A017', border: '1px solid rgba(212,160,23,0.3)' }
+                            ? { background: 'rgba(26,111,212,0.15)', color: 'var(--blue-400)', border: '1px solid rgba(26,111,212,0.3)' }
                             : status === 'locked'
-                            ? { background: 'rgba(61,36,18,0.5)', color: '#8a7055', border: '1px solid rgba(61,36,18,0.8)' }
+                            ? { background: 'rgba(26,46,69,0.15)', color: 'var(--text-muted)', border: '1px solid rgba(26,46,69,0.3)' }
                             : { background: `${phaseAccentColor}22`, color: phaseAccentColor, border: `1px solid ${phaseAccentColor}44` }
                         }>
                         {status === 'locked' ? '🔒 Locked' : status === 'completed' ? '✓ Completed' : '● Active'}
@@ -1397,7 +1688,7 @@ export const PhaseDetailPage: React.FC = () => {
                     </div>
                   </div>
                   {phaseConfig.description && (
-                    <p className="mt-2 text-sm text-[#8a7055] max-w-2xl ml-16">{phaseConfig.description}</p>
+                    <p className="mt-2 text-sm text-[var(--text-muted)] max-w-2xl ml-16">{phaseConfig.description}</p>
                   )}
                 </div>
               </div>
@@ -1409,7 +1700,7 @@ export const PhaseDetailPage: React.FC = () => {
                   <Shield className="h-5 w-5 text-[#D4A017] flex-shrink-0" />
                   <div>
                     <p className="font-medium text-[#D4A017] text-sm">Limited Access</p>
-                    <p className="text-[#8a7055] text-xs">You have {user?.role_label || 'reviewer'} access. A Program Manager must trigger AI generation.</p>
+                    <p className="text-[var(--text-muted)] text-xs">You have {user?.role_label || 'reviewer'} access. A Program Manager must trigger AI generation.</p>
                   </div>
                 </div>
               )}
@@ -1417,20 +1708,20 @@ export const PhaseDetailPage: React.FC = () => {
               {/* Next Phase Banner */}
               {nextPhase && (
                 <div className="rounded-xl p-4 flex flex-wrap items-center justify-between gap-4"
-                  style={{ background: '#1a1008', border: '1px solid rgba(61,36,18,0.8)' }}>
+                  style={{ background: 'var(--brand-850)', border: '1px solid rgba(26,46,69,0.5)' }}>
                   <div className="flex items-center gap-3">
                     <span className="flex items-center justify-center w-9 h-9 rounded-lg font-bold text-sm"
-                      style={{ background: 'rgba(212,160,23,0.15)', color: '#D4A017', border: '1px solid rgba(212,160,23,0.3)' }}>
+                      style={{ background: 'rgba(26,111,212,0.12)', color: 'var(--blue-400)', border: '1px solid rgba(26,111,212,0.25)' }}>
                       {nextPhase.stepNumber}
                     </span>
                     <div>
-                      <p className="text-[10px] uppercase tracking-wider font-semibold text-[#D4A017]">Continue to Next</p>
-                      <p className="font-semibold text-[#f0e4c8]">{nextPhase.title}</p>
+                      <p className="text-[10px] uppercase tracking-wider font-semibold text-[var(--blue-400)]">Continue to Next</p>
+                      <p className="font-semibold text-[var(--text-primary)]">{nextPhase.title}</p>
                     </div>
                   </div>
                   <Button
                     className="font-semibold shadow-lg"
-                    style={{ background: 'linear-gradient(135deg, #b8860b, #D4A017)', color: '#130c07', border: 'none' }}
+                    style={{ background: 'linear-gradient(135deg, var(--blue-600), var(--blue-400))', color: 'var(--brand-900)', border: 'none' }}
                     onClick={() => navigate(`/projects/${id}/phases/${nextPhase.id}`)}
                   >
                     Continue
@@ -1449,24 +1740,40 @@ export const PhaseDetailPage: React.FC = () => {
 
               {/* Compact AI Regenerate Bar - only show if content exists or generating */}
               {phaseId !== 'validation' && (
-                <div className="bg-[#130c07] rounded-xl border border-[#3d2412] overflow-hidden">
+                <div className="bg-[var(--brand-900)] rounded-xl border border-[var(--brand-700)] overflow-hidden">
                   <div className="p-3 sm:p-4">
                     {isGenerating ? (
                       <div className="flex items-center justify-center gap-3 py-2">
-                        <Loader2 className="h-5 w-5 animate-spin text-[#D4A017]" />
+                        <Loader2 className="h-5 w-5 animate-spin text-[var(--blue-400)]" />
                         <span className="text-sm font-medium text-gray-300">Generating content with AI...</span>
                       </div>
                     ) : (
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
-                          <Sparkles className="h-4 w-4 text-[#D4A017]" />
+                          <Sparkles className="h-4 w-4 text-[var(--blue-400)]" />
                           <span className="text-sm text-gray-400">Content auto-generated</span>
                         </div>
                         <div className="flex items-center gap-2">
+                          <button
+                            onClick={handleCopyContent}
+                            disabled={!phaseMarkdown && !phaseRawMarkdown}
+                            title="Copy content to clipboard"
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: '6px',
+                              padding: '6px 10px', borderRadius: '8px',
+                              background: copied ? 'rgba(26,111,212,0.15)' : 'rgba(255,255,255,0.04)',
+                              border: `1px solid ${copied ? 'rgba(26,111,212,0.4)' : 'rgba(26,46,69,0.6)'}`,
+                              color: copied ? '#3d8fe0' : '#4a6070',
+                              fontSize: '12px', cursor: 'pointer', transition: 'all 0.2s',
+                            }}
+                          >
+                            {copied ? <Check size={13} /> : <Copy size={13} />}
+                            {copied ? 'Copied' : 'Copy'}
+                          </button>
                           <input
                             ref={regenerateInputRef}
                             type="text"
-                            className="w-48 sm:w-64 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-500 border border-[#3d2412] bg-[#152238] focus:border-[#D4A017] focus:ring-1 focus:ring-[#D4A017]/30 transition-all"
+                            className="w-48 sm:w-64 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-500 border border-[var(--brand-700)] bg-[#152238] focus:border-[var(--blue-400)] focus:ring-1 focus:ring-[var(--blue-400)]/30 transition-all"
                             placeholder="Custom prompt (optional)"
                           />
                           <Button
@@ -1475,7 +1782,7 @@ export const PhaseDetailPage: React.FC = () => {
                               const prompt = regenerateInputRef.current?.value || `Regenerate ${phaseId?.replace('_', ' ')} content`;
                               handleGenerate(prompt);
                             }}
-                            className="bg-[#152238] hover:bg-[#3d2412] text-[#D4A017] border border-[#D4A017]/30 hover:border-[#D4A017] text-sm px-3 py-1.5 font-medium"
+                            className="bg-[#152238] hover:bg-[var(--brand-700)] text-[var(--blue-400)] border border-[var(--blue-400)]/30 hover:border-[var(--blue-400)] text-sm px-3 py-1.5 font-medium"
                           >
                             <Undo2 className="h-3.5 w-3.5 mr-1.5" />
                             Regenerate
@@ -1485,6 +1792,17 @@ export const PhaseDetailPage: React.FC = () => {
                     )}
                   </div>
                 </div>
+              )}
+
+              {/* AI Suggestions Panel */}
+              {phaseId && project && (
+                <AISuggestionsPanel
+                  projectId={id || ''}
+                  phase={phaseId}
+                  phaseContent={phaseMarkdown}
+                  projectName={project.name}
+                  projectDescription={project.description || ''}
+                />
               )}
 
               {/* Phase Content */}
@@ -1547,7 +1865,7 @@ export const PhaseDetailPage: React.FC = () => {
         <div className="space-y-6">
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-[#130c07] border border-[#3d2412]/50 rounded-xl p-4">
+            <div className="bg-[var(--brand-900)] border border-[var(--brand-700)]/50 rounded-xl p-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-500/20 rounded-lg border border-blue-500/30">
                   <FileText className="h-5 w-5 text-blue-400" />
@@ -1560,10 +1878,10 @@ export const PhaseDetailPage: React.FC = () => {
             </div>
 
             {/* Cost vs Benefit Comparison card removed here; lives in cost_benefit phase instead */}
-            <div className="bg-[#130c07] border border-[#3d2412]/50 rounded-xl p-4">
+            <div className="bg-[var(--brand-900)] border border-[var(--brand-700)]/50 rounded-xl p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-emerald-500/20 rounded-lg border border-emerald-500/30">
-                  <Shield className="h-5 w-5 text-emerald-400" />
+                <div className="p-2 bg-blue-900/200/20 rounded-lg border border-blue-500/30">
+                  <Shield className="h-5 w-5 text-blue-400" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-white">{requirements.filter(r => r.type === 'non_functional').length}</p>
@@ -1571,10 +1889,10 @@ export const PhaseDetailPage: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="bg-[#130c07] border border-[#3d2412]/50 rounded-xl p-4">
+            <div className="bg-[var(--brand-900)] border border-[var(--brand-700)]/50 rounded-xl p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-[#D4A017]/20 rounded-lg border border-[#D4A017]/30">
-                  <TrendingUp className="h-5 w-5 text-[#D4A017]" />
+                <div className="p-2 bg-[var(--blue-400)]/20 rounded-lg border border-[var(--blue-400)]/30">
+                  <TrendingUp className="h-5 w-5 text-[var(--blue-400)]" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-white">{requirements.filter(r => r.priority === 'high').length}</p>
@@ -1585,8 +1903,8 @@ export const PhaseDetailPage: React.FC = () => {
           </div>
 
           {/* Requirements Catalog */}
-          <div className="bg-[#130c07] border border-[#3d2412]/50 rounded-2xl overflow-hidden">
-            <div className="p-5 border-b border-[#3d2412]/30">
+          <div className="bg-[var(--brand-900)] border border-[var(--brand-700)]/50 rounded-2xl overflow-hidden">
+            <div className="p-5 border-b border-[var(--brand-700)]/30">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h3 className="font-bold text-white">Requirements Catalog</h3>
@@ -1597,7 +1915,7 @@ export const PhaseDetailPage: React.FC = () => {
                   variant="outline"
                   size="sm"
                   onClick={handleSyncRequirements}
-                  className="border-[#3d2412] text-gray-400 hover:border-[#D4A017]/50 hover:text-[#D4A017]"
+                  className="border-[var(--brand-700)] text-gray-400 hover:border-[var(--blue-400)]/50 hover:text-[var(--blue-400)]"
                 >
                   Sync Validation
                 </Button>
@@ -1605,14 +1923,14 @@ export const PhaseDetailPage: React.FC = () => {
             </div>
             <div className="p-6">
               {/* Add Requirement */}
-              <div className="mb-6 p-4 border border-dashed border-[#3d2412] rounded-lg bg-[#152238]/50 space-y-3">
+              <div className="mb-6 p-4 border border-dashed border-[var(--brand-700)] rounded-lg bg-[#152238]/50 space-y-3">
                 <div className="flex items-center justify-between gap-2 mb-2">
                   <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-[#D4A017]" />
+                    <FileText className="h-4 w-4 text-[var(--blue-400)]" />
                     <span className="text-sm font-medium text-white">Add Requirement</span>
                   </div>
                   <select
-                    className="text-xs border border-[#3d2412] rounded px-2 py-1 bg-[#152238] text-gray-300"
+                    className="text-xs border border-[var(--brand-700)] rounded px-2 py-1 bg-[#152238] text-gray-300"
                     value={requirementDraft.type}
                     onChange={(e) => setRequirementDraft({ ...requirementDraft, type: e.target.value })}
                   >
@@ -1621,20 +1939,20 @@ export const PhaseDetailPage: React.FC = () => {
                   </select>
                 </div>
                 <input
-                  className="w-full border border-[#3d2412] rounded-lg px-3 py-2 text-sm bg-[#152238] text-white placeholder-gray-500 focus:border-[#D4A017] focus:ring-1 focus:ring-[#D4A017]/30"
+                  className="w-full border border-[var(--brand-700)] rounded-lg px-3 py-2 text-sm bg-[#152238] text-white placeholder-gray-500 focus:border-[var(--blue-400)] focus:ring-1 focus:ring-[var(--blue-400)]/30"
                   placeholder="Requirement title..."
                   value={requirementDraft.title}
                   onChange={(e) => setRequirementDraft({ ...requirementDraft, title: e.target.value })}
                 />
                 <textarea
-                  className="w-full border border-[#3d2412] rounded-lg px-3 py-2 text-sm bg-[#152238] text-white placeholder-gray-500 focus:border-[#D4A017] focus:ring-1 focus:ring-[#D4A017]/30 min-h-[70px]"
+                  className="w-full border border-[var(--brand-700)] rounded-lg px-3 py-2 text-sm bg-[#152238] text-white placeholder-gray-500 focus:border-[var(--blue-400)] focus:ring-1 focus:ring-[var(--blue-400)]/30 min-h-[70px]"
                   placeholder="Requirement description..."
                   value={requirementDraft.description}
                   onChange={(e) => setRequirementDraft({ ...requirementDraft, description: e.target.value })}
                 />
                 <div className="flex flex-wrap items-center gap-3">
                   <select
-                    className="border border-[#3d2412] rounded-lg px-2 py-1.5 text-xs bg-[#152238] text-gray-300"
+                    className="border border-[var(--brand-700)] rounded-lg px-2 py-1.5 text-xs bg-[#152238] text-gray-300"
                     value={requirementDraft.priority}
                     onChange={(e) => setRequirementDraft({ ...requirementDraft, priority: e.target.value })}
                   >
@@ -1644,7 +1962,7 @@ export const PhaseDetailPage: React.FC = () => {
                     <option value="critical">Critical</option>
                   </select>
                   <select
-                    className="border border-[#3d2412] rounded-lg px-2 py-1.5 text-xs bg-[#152238] text-gray-300"
+                    className="border border-[var(--brand-700)] rounded-lg px-2 py-1.5 text-xs bg-[#152238] text-gray-300"
                     value={requirementDraft.status}
                     onChange={(e) => setRequirementDraft({ ...requirementDraft, status: e.target.value })}
                   >
@@ -1655,7 +1973,7 @@ export const PhaseDetailPage: React.FC = () => {
                   </select>
                   <Button
                     size="sm"
-                    className="ml-auto bg-gradient-to-r from-[#D4A017] to-[#b8962e] hover:from-[#e6c358] hover:to-[#D4A017] text-[#130c07] font-semibold"
+                    className="ml-auto bg-gradient-to-r from-[var(--blue-400)] to-[#b8962e] hover:from-[#e6c358] hover:to-[var(--blue-400)] text-[var(--brand-900)] font-semibold"
                     disabled={!requirementDraft.title.trim()}
                     onClick={async () => {
                       if (!id || !requirementDraft.title.trim()) return;
@@ -1695,7 +2013,7 @@ export const PhaseDetailPage: React.FC = () => {
               ) : (
                 <div className="space-y-3">
                   {requirements.map((req) => (
-                    <div key={req.requirement_id} className="p-4 border border-[#3d2412]/50 rounded-lg bg-[#152238]/30 hover:bg-[#152238] transition-colors">
+                    <div key={req.requirement_id} className="p-4 border border-[var(--brand-700)]/50 rounded-lg bg-[#152238]/30 hover:bg-[#152238] transition-colors">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
@@ -1713,14 +2031,14 @@ export const PhaseDetailPage: React.FC = () => {
                           {editingRequirementId === req.requirement_id ? (
                             <div className="space-y-2 mt-1">
                               <input
-                                className="w-full border border-[#3d2412] rounded-lg px-3 py-1.5 text-sm"
+                                className="w-full border border-[var(--brand-700)] rounded-lg px-3 py-1.5 text-sm"
                                 value={editingRequirementDraft.title}
                                 onChange={(e) =>
                                   setEditingRequirementDraft((prev) => ({ ...prev, title: e.target.value }))
                                 }
                               />
                               <textarea
-                                className="w-full border border-[#3d2412] rounded-lg px-3 py-1.5 text-sm"
+                                className="w-full border border-[var(--brand-700)] rounded-lg px-3 py-1.5 text-sm"
                                 rows={3}
                                 value={editingRequirementDraft.description}
                                 onChange={(e) =>
@@ -1729,7 +2047,7 @@ export const PhaseDetailPage: React.FC = () => {
                               />
                               <div className="flex flex-wrap items-center gap-2">
                                 <select
-                                  className="border border-[#3d2412] rounded-lg px-2 py-1.5 text-xs bg-[#152238]"
+                                  className="border border-[var(--brand-700)] rounded-lg px-2 py-1.5 text-xs bg-[#152238]"
                                   value={editingRequirementDraft.priority}
                                   onChange={(e) =>
                                     setEditingRequirementDraft((prev) => ({ ...prev, priority: e.target.value }))
@@ -1741,7 +2059,7 @@ export const PhaseDetailPage: React.FC = () => {
                                   <option value="critical">Critical</option>
                                 </select>
                                 <select
-                                  className="border border-[#3d2412] rounded-lg px-2 py-1.5 text-xs bg-[#152238]"
+                                  className="border border-[var(--brand-700)] rounded-lg px-2 py-1.5 text-xs bg-[#152238]"
                                   value={editingRequirementDraft.status}
                                   onChange={(e) =>
                                     setEditingRequirementDraft((prev) => ({ ...prev, status: e.target.value }))
@@ -1820,11 +2138,11 @@ export const PhaseDetailPage: React.FC = () => {
                 </div>
               )}
 
-              <div className="mt-4 pt-2 border-t border-dashed border-[#3d2412] flex items-center justify-between text-[11px] text-gray-500">
+              <div className="mt-4 pt-2 border-t border-dashed border-[var(--brand-700)] flex items-center justify-between text-[11px] text-gray-500">
                 <label className="inline-flex items-center gap-2 cursor-pointer select-none">
                   <input
                     type="checkbox"
-                    className="rounded border-[#3d2412] bg-[#152238] text-[#D4A017] focus:ring-[#D4A017]"
+                    className="rounded border-[var(--brand-700)] bg-[#152238] text-[var(--blue-400)] focus:ring-[var(--blue-400)]"
                     checked={useCustomRoi}
                     onChange={(e) => setUseCustomRoi(e.target.checked)}
                   />
@@ -1840,29 +2158,29 @@ export const PhaseDetailPage: React.FC = () => {
           </div>
 
           {/* AI Generation */}
-          <div className="bg-[#130c07] border border-[#3d2412]/50 rounded-2xl overflow-hidden">
-            <div className="p-5 border-b border-[#3d2412]/30">
+          <div className="bg-[var(--brand-900)] border border-[var(--brand-700)]/50 rounded-2xl overflow-hidden">
+            <div className="p-5 border-b border-[var(--brand-700)]/30">
               <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-[#D4A017]" />
+                <Sparkles className="h-5 w-5 text-[var(--blue-400)]" />
                 <h3 className="font-bold text-white">AI Requirements Assistant</h3>
               </div>
               <p className="text-sm text-gray-500 mt-1">Generate requirements from your project description</p>
             </div>
             <div className="p-6 space-y-4">
               <textarea
-                className="w-full border border-[#3d2412] rounded-lg px-3 py-2 text-sm bg-[#152238] text-white placeholder-gray-500 focus:border-[#D4A017] focus:ring-1 focus:ring-[#D4A017]/30 min-h-[100px]"
+                className="w-full border border-[var(--brand-700)] rounded-lg px-3 py-2 text-sm bg-[#152238] text-white placeholder-gray-500 focus:border-[var(--blue-400)] focus:ring-1 focus:ring-[var(--blue-400)]/30 min-h-[100px]"
                 placeholder="Describe what you want AI to help with: Generate functional requirements, create acceptance criteria, suggest non-functional requirements..."
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
               />
               <div className="flex gap-2 flex-wrap">
-                <Button onClick={() => handleGenerate()} disabled={isGenerating || status === 'locked'} className="bg-gradient-to-r from-[#D4A017] to-[#b8962e] hover:from-[#e6c358] hover:to-[#D4A017] text-[#130c07] font-semibold">
+                <Button onClick={() => handleGenerate()} disabled={isGenerating || status === 'locked'} className="bg-gradient-to-r from-[var(--blue-400)] to-[#b8962e] hover:from-[#e6c358] hover:to-[var(--blue-400)] text-[var(--brand-900)] font-semibold">
                   {isGenerating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</> : <><Sparkles className="mr-2 h-4 w-4" /> Generate Requirements</>}
                 </Button>
-                <Button variant="outline" onClick={() => handleGenerate('Generate functional requirements based on the project brief')} className="border-[#3d2412] text-gray-400 hover:border-[#D4A017]/50 hover:text-[#D4A017]">
+                <Button variant="outline" onClick={() => handleGenerate('Generate functional requirements based on the project brief')} className="border-[var(--brand-700)] text-gray-400 hover:border-[var(--blue-400)]/50 hover:text-[var(--blue-400)]">
                   <Wand2 className="mr-2 h-4 w-4" /> Auto-Generate FR
                 </Button>
-                <Button variant="outline" onClick={() => handleGenerate('Generate non-functional requirements (performance, security, scalability)')} className="border-[#3d2412] text-gray-400 hover:border-[#D4A017]/50 hover:text-[#D4A017]">
+                <Button variant="outline" onClick={() => handleGenerate('Generate non-functional requirements (performance, security, scalability)')} className="border-[var(--brand-700)] text-gray-400 hover:border-[var(--blue-400)]/50 hover:text-[var(--blue-400)]">
                   <Shield className="mr-2 h-4 w-4" /> Auto-Generate NFR
                 </Button>
               </div>
@@ -1891,24 +2209,23 @@ export const PhaseDetailPage: React.FC = () => {
   }
 
   // ============================================
-  // DESIGN PHASE (AI Content + Architecture Diagram)
+  // DESIGN PHASE (AI Content + PlantUML)
   // ============================================
   if (phaseId === 'design') {
     const status = phaseStatus['design'] || 'locked';
-    const archData = phaseMarkdown ? parseArchitectureJson(phaseMarkdown) : null;
     return (
       <PhaseWrapper>
         <div className="space-y-6">
           {/* AI Generate Card */}
-          <div className="rounded-2xl p-6" style={{ background: 'linear-gradient(135deg, #1a1008, #221508)', border: '1px solid rgba(212,160,23,0.3)' }}>
+          <div className="rounded-2xl p-6" style={{ background: 'linear-gradient(135deg, var(--brand-850), var(--brand-800))', border: '1px solid rgba(107,76,138,0.4)' }}>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-xl font-bold text-[#f0e4c8]">System Design</h2>
-                <p className="text-sm text-[#8a7055] mt-1">Architecture overview, component diagrams, data models, and API specs</p>
+                <h2 className="text-xl font-bold text-[var(--text-primary)]">System Design</h2>
+                <p className="text-sm text-[var(--text-muted)] mt-1">Architecture overview, component diagrams, data models, and API specs</p>
               </div>
               <div className="flex items-center gap-3">
                 <Button onClick={() => handleGenerate()} disabled={isGenerating || status === 'locked'}
-                  style={{ background: 'linear-gradient(135deg, #D4A017, #c8870f)', color: '#130c07', border: 'none', fontWeight: 700 }}>
+                  style={{ background: 'linear-gradient(135deg, #6B4C8A, #8B68B0)', color: '#fff', border: 'none' }}>
                   {isGenerating
                     ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Designing...</>
                     : <><Sparkles className="mr-2 h-4 w-4" />Generate Design</>
@@ -1919,28 +2236,16 @@ export const PhaseDetailPage: React.FC = () => {
                 </Button>
               </div>
             </div>
-
-            {/* Architecture Diagram (parsed from AI JSON) */}
-            {archData && (
-              <div className="mb-5">
-                <ArchitectureDiagram data={archData} />
-              </div>
-            )}
-
             {phaseMarkdown && (
-              <div className="rounded-xl p-5 mt-2" style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(212,160,23,0.15)' }}>
-                <div className="flex items-center gap-2 mb-3">
-                  <Sparkles className="w-3.5 h-3.5 text-[#D4A017]" />
-                  <span style={{ color: '#D4A017', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>AI Design Document</span>
-                </div>
-                <div className="prose prose-sm max-w-none text-[#f0e4c8]">
+              <div className="rounded-xl p-5 mt-2" style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(107,76,138,0.2)' }}>
+                <div className="prose prose-sm max-w-none" style={{ color: 'var(--text-muted)' }}>
                   <ReactMarkdown>{phaseMarkdown}</ReactMarkdown>
                   <RawMarkdownDisclosure />
                 </div>
               </div>
             )}
             {!phaseMarkdown && !isGenerating && (
-              <div className="text-center py-12 text-[#8a7055]">
+              <div className="text-center py-12 text-[var(--text-muted)]">
                 <Layers className="w-12 h-12 mx-auto mb-3 opacity-30" />
                 <p className="font-medium">No design content yet</p>
                 <p className="text-sm mt-1">Click "Generate Design" to create your system architecture</p>
@@ -1949,7 +2254,7 @@ export const PhaseDetailPage: React.FC = () => {
           </div>
 
           {/* PlantUML Diagram Editor */}
-          <div className="rounded-2xl p-2" style={{ border: '1px solid rgba(212,160,23,0.2)' }}>
+          <div className="rounded-2xl p-2" style={{ border: '1px solid rgba(107,76,138,0.3)' }}>
             <DesignPhase projectId={id || ''} onOpenCanvas={handleOpenCanvas} />
           </div>
         </div>
@@ -1999,14 +2304,14 @@ export const PhaseDetailPage: React.FC = () => {
         <div className="space-y-6">
           {/* Header */}
           <div className="relative">
-            <div className="absolute -top-10 -left-10 w-32 h-32 bg-red-200/30 rounded-full blur-3xl"></div>
+            <div className="absolute -top-10 -left-10 w-32 h-32 rounded-full blur-3xl" style={{ background: 'var(--orange-500, #F97316)', opacity: 0.08 }}></div>
             <div className="relative flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-2">
                 <Button variant="ghost" onClick={() => navigate(`/projects/${id}`)}>
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Back to Project
                 </Button>
-                <span className="text-xs uppercase text-red-500 font-semibold tracking-widest">Active Risk Review</span>
+                <span className="text-xs uppercase font-semibold tracking-widest" style={{ color: '#fb923c' }}>Active Risk Review</span>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 {isEditingRisks ? (
@@ -2017,7 +2322,7 @@ export const PhaseDetailPage: React.FC = () => {
                     </Button>
                     <Button
                       size="sm"
-                      className="bg-gradient-to-r from-red-500 to-amber-500 text-white border-none"
+                      style={{ background: 'linear-gradient(135deg, #1A6FD4, #F97316)', color: '#fff', border: 'none' }}
                       onClick={handleSaveRisks}
                       disabled={savingRisks || !latestArtifact}
                     >
@@ -2048,17 +2353,17 @@ export const PhaseDetailPage: React.FC = () => {
                 )}
               </div>
               <div className="text-right flex-1 min-w-[220px]">
-                <p className="text-xs uppercase text-gray-500 tracking-wider">Phase</p>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-red-600 to-amber-600 bg-clip-text text-transparent">
+                <p className="text-xs uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Phase</p>
+                <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
                   Risks & Mitigations
                 </h1>
-                <p className="text-sm text-gray-500">{project?.name}</p>
+                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{project?.name}</p>
               </div>
             </div>
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
+            <div className="px-4 py-3 rounded-lg flex items-center gap-2" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5' }}>
               <AlertTriangle className="h-4 w-4" />
               {error}
             </div>
@@ -2069,8 +2374,8 @@ export const PhaseDetailPage: React.FC = () => {
             {/* Overview card */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-red-500" />
+                <CardTitle className="text-sm flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                  <AlertTriangle className="h-4 w-4" style={{ color: '#F97316' }} />
                   Risk Overview
                 </CardTitle>
                 <CardDescription className="text-xs">
@@ -2083,7 +2388,7 @@ export const PhaseDetailPage: React.FC = () => {
                     {riskDraft.overview.map((item, idx) => (
                       <div key={idx} className="flex items-start gap-2">
                         <textarea
-                          className="flex-1 min-h-[50px] border border-[#3d2412] rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-red-200"
+                          className="flex-1 min-h-[50px] border border-[var(--brand-700)] rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-red-200"
                           value={item}
                           onChange={(e) =>
                             setRiskDraft((prev) => {
@@ -2138,8 +2443,8 @@ export const PhaseDetailPage: React.FC = () => {
               {/* Risk Register table */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Grid2X2 className="h-4 w-4 text-red-500" />
+                  <CardTitle className="text-sm flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                    <Grid2X2 className="h-4 w-4" style={{ color: '#F97316' }} />
                     Risk Register
                   </CardTitle>
                   <CardDescription className="text-xs">
@@ -2149,16 +2454,16 @@ export const PhaseDetailPage: React.FC = () => {
                 <CardContent>
                   {isEditingRisks ? (
                     <div className="space-y-3">
-                      <div className="overflow-x-auto border border-[#3d2412] rounded-lg">
+                      <div className="overflow-x-auto border border-[var(--brand-700)] rounded-lg">
                         <table className="w-full text-xs border-collapse">
-                          <thead className="bg-[#3d2412]/50">
+                          <thead className="bg-[var(--brand-700)]/50">
                             <tr>
-                              <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#3d2412]">Risk</th>
-                              <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#3d2412]">Impact</th>
-                              <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#3d2412]">Likelihood</th>
-                              <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#3d2412]">Mitigation</th>
-                              <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#3d2412]">Owner</th>
-                              <th className="px-2 py-2 text-right font-semibold text-gray-300 border-b border-[#3d2412] sr-only">Actions</th>
+                              <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[var(--brand-700)]">Risk</th>
+                              <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[var(--brand-700)]">Impact</th>
+                              <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[var(--brand-700)]">Likelihood</th>
+                              <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[var(--brand-700)]">Mitigation</th>
+                              <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[var(--brand-700)]">Owner</th>
+                              <th className="px-2 py-2 text-right font-semibold text-gray-300 border-b border-[var(--brand-700)] sr-only">Actions</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -2166,7 +2471,7 @@ export const PhaseDetailPage: React.FC = () => {
                               <tr key={idx} className="bg-[#152238]">
                                 <td className="px-2 py-2 border-b border-gray-100">
                                   <input
-                                    className="w-full border border-[#3d2412] rounded px-2 py-1 text-xs"
+                                    className="w-full border border-[var(--brand-700)] rounded px-2 py-1 text-xs"
                                     placeholder="Risk description"
                                     value={row.risk}
                                     onChange={(e) =>
@@ -2180,7 +2485,7 @@ export const PhaseDetailPage: React.FC = () => {
                                 </td>
                                 <td className="px-2 py-2 border-b border-gray-100">
                                   <select
-                                    className="w-full border border-[#3d2412] rounded px-2 py-1 text-xs bg-[#152238]"
+                                    className="w-full border border-[var(--brand-700)] rounded px-2 py-1 text-xs bg-[#152238]"
                                     value={row.impact}
                                     onChange={(e) =>
                                       setRiskDraft((prev) => {
@@ -2197,7 +2502,7 @@ export const PhaseDetailPage: React.FC = () => {
                                 </td>
                                 <td className="px-2 py-2 border-b border-gray-100">
                                   <select
-                                    className="w-full border border-[#3d2412] rounded px-2 py-1 text-xs bg-[#152238]"
+                                    className="w-full border border-[var(--brand-700)] rounded px-2 py-1 text-xs bg-[#152238]"
                                     value={row.likelihood}
                                     onChange={(e) =>
                                       setRiskDraft((prev) => {
@@ -2214,7 +2519,7 @@ export const PhaseDetailPage: React.FC = () => {
                                 </td>
                                 <td className="px-2 py-2 border-b border-gray-100">
                                   <textarea
-                                    className="w-full border border-[#3d2412] rounded px-2 py-1 text-xs min-h-[60px]"
+                                    className="w-full border border-[var(--brand-700)] rounded px-2 py-1 text-xs min-h-[60px]"
                                     placeholder="Mitigation strategy"
                                     value={row.mitigation}
                                     onChange={(e) =>
@@ -2228,7 +2533,7 @@ export const PhaseDetailPage: React.FC = () => {
                                 </td>
                                 <td className="px-2 py-2 border-b border-gray-100">
                                   <input
-                                    className="w-full border border-[#3d2412] rounded px-2 py-1 text-xs"
+                                    className="w-full border border-[var(--brand-700)] rounded px-2 py-1 text-xs"
                                     placeholder="Owner"
                                     value={row.owner}
                                     onChange={(e) =>
@@ -2275,15 +2580,15 @@ export const PhaseDetailPage: React.FC = () => {
                       </div>
                     </div>
                   ) : parsedRisks && parsedRisks.riskRows.length ? (
-                    <div className="overflow-x-auto border border-[#3d2412] rounded-lg">
+                    <div className="overflow-x-auto border border-[var(--brand-700)] rounded-lg">
                       <table className="w-full text-xs border-collapse">
-                        <thead className="bg-[#3d2412]/50">
+                        <thead className="bg-[var(--brand-700)]/50">
                           <tr>
-                            <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#3d2412]">Risk</th>
-                            <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#3d2412]">Impact</th>
-                            <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#3d2412]">Likelihood</th>
-                            <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#3d2412]">Mitigation</th>
-                            <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#3d2412]">Owner</th>
+                            <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[var(--brand-700)]">Risk</th>
+                            <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[var(--brand-700)]">Impact</th>
+                            <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[var(--brand-700)]">Likelihood</th>
+                            <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[var(--brand-700)]">Mitigation</th>
+                            <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[var(--brand-700)]">Owner</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -2294,19 +2599,19 @@ export const PhaseDetailPage: React.FC = () => {
                             const chip = (level: string) => {
                               const lower = level.toLowerCase();
                               if (lower.startsWith('high')) {
-                                return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-50 text-red-700 text-[10px] font-medium">🔴 {level}</span>;
+                                return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium" style={{ background: 'rgba(239,68,68,0.15)', color: '#fca5a5' }}>🔴 {level}</span>;
                               }
                               if (lower.startsWith('medium')) {
-                                return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-medium">🟡 {level}</span>;
+                                return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium" style={{ background: 'rgba(249,115,22,0.15)', color: '#fdba74' }}>🟡 {level}</span>;
                               }
                               if (lower.startsWith('low')) {
-                                return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-medium">🟢 {level}</span>;
+                                return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-900/20 text-blue-300 text-[10px] font-medium">🟢 {level}</span>;
                               }
-                              return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#3d2412]/50 text-gray-600 text-[10px] font-medium">{level}</span>;
+                              return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--brand-700)]/50 text-gray-600 text-[10px] font-medium">{level}</span>;
                             };
 
                             return (
-                              <tr key={idx} className={idx % 2 === 0 ? 'bg-[#152238]' : 'bg-[#3d2412]/50/60'}>
+                              <tr key={idx} className={idx % 2 === 0 ? 'bg-[#152238]' : 'bg-[var(--brand-700)]/50/60'}>
                                 <td className="align-top px-2 py-2 border-b border-gray-100 text-white font-medium w-48">
                                   {row.risk}
                                 </td>
@@ -2342,14 +2647,14 @@ export const PhaseDetailPage: React.FC = () => {
                 <CardContent>
                   {isEditingRisks ? (
                     <div className="space-y-3">
-                      <div className="overflow-x-auto border border-[#3d2412] rounded-lg">
+                      <div className="overflow-x-auto border border-[var(--brand-700)] rounded-lg">
                         <table className="w-full text-xs border-collapse">
-                          <thead className="bg-[#3d2412]/50">
+                          <thead className="bg-[var(--brand-700)]/50">
                             <tr>
-                              <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#3d2412]">Aspect</th>
-                              <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#3d2412]">Before</th>
-                              <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#3d2412]">After</th>
-                              <th className="px-2 py-2 text-right font-semibold text-gray-300 border-b border-[#3d2412] sr-only">Actions</th>
+                              <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[var(--brand-700)]">Aspect</th>
+                              <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[var(--brand-700)]">Before</th>
+                              <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[var(--brand-700)]">After</th>
+                              <th className="px-2 py-2 text-right font-semibold text-gray-300 border-b border-[var(--brand-700)] sr-only">Actions</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -2357,7 +2662,7 @@ export const PhaseDetailPage: React.FC = () => {
                               <tr key={idx} className="bg-[#152238]">
                                 <td className="px-2 py-2 border-b border-gray-100">
                                   <input
-                                    className="w-full border border-[#3d2412] rounded px-2 py-1 text-xs"
+                                    className="w-full border border-[var(--brand-700)] rounded px-2 py-1 text-xs"
                                     placeholder="Aspect"
                                     value={row.aspect}
                                     onChange={(e) =>
@@ -2371,7 +2676,7 @@ export const PhaseDetailPage: React.FC = () => {
                                 </td>
                                 <td className="px-2 py-2 border-b border-gray-100">
                                   <textarea
-                                    className="w-full border border-[#3d2412] rounded px-2 py-1 text-xs min-h-[50px]"
+                                    className="w-full border border-[var(--brand-700)] rounded px-2 py-1 text-xs min-h-[50px]"
                                     placeholder="Before mitigation"
                                     value={row.before}
                                     onChange={(e) =>
@@ -2385,7 +2690,7 @@ export const PhaseDetailPage: React.FC = () => {
                                 </td>
                                 <td className="px-2 py-2 border-b border-gray-100">
                                   <textarea
-                                    className="w-full border border-[#3d2412] rounded px-2 py-1 text-xs min-h-[50px]"
+                                    className="w-full border border-[var(--brand-700)] rounded px-2 py-1 text-xs min-h-[50px]"
                                     placeholder="After mitigation"
                                     value={row.after}
                                     onChange={(e) =>
@@ -2429,18 +2734,18 @@ export const PhaseDetailPage: React.FC = () => {
                       </Button>
                     </div>
                   ) : parsedRisks && parsedRisks.beforeAfter.length ? (
-                    <div className="overflow-x-auto border border-[#3d2412] rounded-lg">
+                    <div className="overflow-x-auto border border-[var(--brand-700)] rounded-lg">
                       <table className="w-full text-xs border-collapse">
-                        <thead className="bg-[#3d2412]/50">
+                        <thead className="bg-[var(--brand-700)]/50">
                           <tr>
-                            <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#3d2412]">Aspect</th>
-                            <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#3d2412]">Before</th>
-                            <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[#3d2412]">After</th>
+                            <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[var(--brand-700)]">Aspect</th>
+                            <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[var(--brand-700)]">Before</th>
+                            <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[var(--brand-700)]">After</th>
                           </tr>
                         </thead>
                         <tbody>
                           {parsedRisks.beforeAfter.map((row, idx) => (
-                            <tr key={idx} className={idx % 2 === 0 ? 'bg-[#152238]' : 'bg-[#3d2412]/50/60'}>
+                            <tr key={idx} className={idx % 2 === 0 ? 'bg-[#152238]' : 'bg-[var(--brand-700)]/50/60'}>
                               <td className="px-2 py-2 border-b border-gray-100 text-white font-medium">{row.aspect}</td>
                               <td className="px-2 py-2 border-b border-gray-100 text-gray-300">{row.before}</td>
                               <td className="px-2 py-2 border-b border-gray-100 text-gray-300">{row.after}</td>
@@ -2459,7 +2764,7 @@ export const PhaseDetailPage: React.FC = () => {
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <ListChecks className="h-4 w-4 text-emerald-500" />
+                    <ListChecks className="h-4 w-4 text-blue-400" />
                     Recommended Actions
                   </CardTitle>
                   <CardDescription className="text-xs">
@@ -2472,7 +2777,7 @@ export const PhaseDetailPage: React.FC = () => {
                       {riskDraft.actions.map((action, idx) => (
                         <div key={idx} className="flex items-start gap-2">
                           <textarea
-                            className="flex-1 min-h-[45px] border border-[#3d2412] rounded px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-200"
+                            className="flex-1 min-h-[45px] border border-[var(--brand-700)] rounded px-3 py-2 text-xs focus:ring-2 focus:ring-blue-500/30"
                             placeholder="Describe the recommended action..."
                             value={action}
                             onChange={(e) =>
@@ -2531,6 +2836,23 @@ export const PhaseDetailPage: React.FC = () => {
   }
 
   // ============================================
+  // TESTING PHASE
+  // ============================================
+  if (phaseId === 'testing') {
+    return (
+      <PhaseWrapper>
+        <TestingPhase
+          projectId={id || ''}
+          onGenerate={handleGenerate}
+          isGenerating={isGenerating}
+          content={phaseMarkdown}
+          requirements={requirements}
+        />
+      </PhaseWrapper>
+    );
+  }
+
+  // ============================================
   // FINAL SUMMARY PHASE
   // ============================================
   if (phaseId === 'summary') {
@@ -2556,507 +2878,262 @@ export const PhaseDetailPage: React.FC = () => {
   // ============================================
   if (phaseId === 'tasks' || phaseId === 'tasks_legacy') {
     const completedCount = tasks.filter((t) => (localTaskStatus[t.task_id] || t.status || '').toLowerCase() === 'completed').length;
-    const progressPct = tasks.length ? Math.round((completedCount / tasks.length) * 100) : 0;
+    const inProgressCount = tasks.filter((t) => (localTaskStatus[t.task_id] || t.status || '').toLowerCase() === 'in_progress').length;
+    const todoCount = tasks.filter((t) => {
+      const s = (localTaskStatus[t.task_id] || t.status || '').toLowerCase();
+      return s === 'planned' || s === 'todo' || s === '';
+    }).length;
     const totalHours = tasks.reduce((sum, t) => sum + (t.estimate_hours || 0), 0);
+
+    const kanbanColumns: { key: string; label: string; accentColor: string; headerBg: string }[] = [
+      { key: 'todo', label: 'To Do', accentColor: '#1A6FD4', headerBg: 'rgba(26,111,212,0.15)' },
+      { key: 'in_progress', label: 'In Progress', accentColor: '#F97316', headerBg: 'rgba(249,115,22,0.15)' },
+      { key: 'done', label: 'Done', accentColor: '#4B7EA3', headerBg: 'rgba(75,126,163,0.12)' },
+    ];
+
+    const getColumnTasks = (colKey: string) =>
+      tasks.filter((t) => {
+        const s = (localTaskStatus[t.task_id] || t.status || '').toLowerCase();
+        if (colKey === 'todo') return s === 'planned' || s === 'todo' || s === '';
+        if (colKey === 'in_progress') return s === 'in_progress';
+        if (colKey === 'done') return s === 'completed';
+        return false;
+      });
+
+    const priorityBorder: Record<string, string> = {
+      high: '3px solid #ef4444',
+      medium: '3px solid #F97316',
+      low: '3px solid #1A6FD4',
+    };
+    const priorityPill: Record<string, { bg: string; color: string }> = {
+      high: { bg: 'rgba(239,68,68,0.15)', color: '#fca5a5' },
+      medium: { bg: 'rgba(249,115,22,0.15)', color: '#fdba74' },
+      low: { bg: 'rgba(26,111,212,0.15)', color: '#93c5fd' },
+    };
 
     return (
       <PhaseWrapper>
         <>
           <div className="space-y-6">
 
-            {/* Stats Overview */}
+            {/* Stats Row */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card className="bg-gradient-to-br from-purple-50 to-white border-purple-100">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-purple-100 rounded-lg">
-                      <ListChecks className="h-5 w-5 text-purple-600" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-white">{tasks.length}</p>
-                      <p className="text-xs text-gray-500">Total Tasks</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="bg-gradient-to-br from-emerald-50 to-white border-emerald-100">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-emerald-100 rounded-lg">
-                      <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-white">{completedCount}</p>
-                      <p className="text-xs text-gray-500">Completed</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="bg-gradient-to-br from-blue-50 to-white border-blue-100">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <Clock className="h-5 w-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-white">{totalHours}h</p>
-                      <p className="text-xs text-gray-500">Est. Hours</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="bg-gradient-to-br from-amber-50 to-white border-amber-100">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-amber-100 rounded-lg">
-                      <TrendingUp className="h-5 w-5 text-amber-600" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-white">{progressPct}%</p>
-                      <p className="text-xs text-gray-500">Progress</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <div className="rounded-xl p-4 flex items-center gap-3" style={{ background: 'var(--brand-800)', border: '1px solid rgba(26,111,212,0.2)' }}>
+                <div className="p-2 rounded-lg" style={{ background: 'rgba(26,111,212,0.15)' }}>
+                  <ListChecks className="h-5 w-5" style={{ color: '#1A6FD4' }} />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold" style={{ color: '#1A6FD4' }}>{tasks.length}</p>
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Total Tasks</p>
+                </div>
+              </div>
+              <div className="rounded-xl p-4 flex items-center gap-3" style={{ background: 'var(--brand-800)', border: '1px solid rgba(26,111,212,0.2)' }}>
+                <div className="p-2 rounded-lg" style={{ background: 'rgba(26,111,212,0.15)' }}>
+                  <CheckCircle2 className="h-5 w-5" style={{ color: '#60a5fa' }} />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold" style={{ color: '#60a5fa' }}>{todoCount}</p>
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>To Do</p>
+                </div>
+              </div>
+              <div className="rounded-xl p-4 flex items-center gap-3" style={{ background: 'var(--brand-800)', border: '1px solid rgba(249,115,22,0.2)' }}>
+                <div className="p-2 rounded-lg" style={{ background: 'rgba(249,115,22,0.12)' }}>
+                  <Clock className="h-5 w-5" style={{ color: '#F97316' }} />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold" style={{ color: '#F97316' }}>{inProgressCount}</p>
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>In Progress</p>
+                </div>
+              </div>
+              <div className="rounded-xl p-4 flex items-center gap-3" style={{ background: 'var(--brand-800)', border: '1px solid rgba(26,111,212,0.2)' }}>
+                <div className="p-2 rounded-lg" style={{ background: 'rgba(26,111,212,0.1)' }}>
+                  <TrendingUp className="h-5 w-5" style={{ color: '#4ade80' }} />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold" style={{ color: '#4ade80' }}>{completedCount}</p>
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Done</p>
+                </div>
+              </div>
             </div>
 
-            {/* Main Content Grid */}
-            <div className="grid gap-6 lg:grid-cols-3">
-              {/* Left Column - Task Management */}
-              <div className="lg:col-span-1 space-y-4">
-                {/* Add Task Card */}
-                <Card className="border-2 border-dashed border-purple-200 hover:border-purple-400 transition-colors">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Plus className="h-4 w-4 text-purple-500" />
-                      Add New Task
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <input
-                      className="w-full border border-[#3d2412] rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-400 focus:border-transparent"
-                      placeholder="Task title..."
-                      value={newTask.title}
-                      onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                    />
-                    <textarea
-                      className="w-full border border-[#3d2412] rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-400 focus:border-transparent resize-none"
-                      placeholder="Description..."
-                      value={newTask.description}
-                      onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                      rows={2}
-                    />
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="text-xs text-gray-500 mb-1 block">Start Date</label>
-                        <input
-                          type="date"
-                          className="w-full border border-[#3d2412] rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-400 focus:border-transparent cursor-pointer hover:border-purple-300 transition-colors"
-                          value={newTask.start_date}
-                          onChange={(e) => setNewTask({ ...newTask, start_date: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs text-gray-500 mb-1 block">Due Date</label>
-                        <input
-                          type="date"
-                          className="w-full border border-[#3d2412] rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-400 focus:border-transparent cursor-pointer hover:border-purple-300 transition-colors"
-                          value={newTask.due_date}
-                          onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
-                          min={newTask.start_date || undefined}
-                        />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <select
-                        className="border border-[#3d2412] rounded-lg px-2 py-1.5 text-sm"
-                        value={newTask.priority}
-                        onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
-                      >
-                        <option value="low">🟢 Low</option>
-                        <option value="medium">🟡 Medium</option>
-                        <option value="high">🔴 High</option>
-                      </select>
-                      <select
-                        className="border border-[#3d2412] rounded-lg px-2 py-1.5 text-sm"
-                        value={newTask.status}
-                        onChange={(e) => setNewTask({ ...newTask, status: e.target.value })}
-                      >
-                        <option value="planned">📋 Planned</option>
-                        <option value="in_progress">🔄 In Progress</option>
-                        <option value="completed">✅ Completed</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-500 mb-1 block">Dependencies (task titles or IDs, comma separated)</label>
-                      <input
-                        className="w-full border border-[#3d2412] rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-purple-400 focus:border-transparent"
-                        placeholder="e.g. Design UI, Implement API"
-                        value={newTask.dependencies}
-                        onChange={(e) => setNewTask({ ...newTask, dependencies: e.target.value })}
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        className="flex-1 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600"
-                        onClick={async () => {
-                          if (!id || !newTask.title.trim()) return;
-                          setCreatingTask(true);
-                          try {
-                            const dependencies = (newTask.dependencies || '')
-                              .split(',')
-                              .map((d) => d.trim())
-                              .filter(Boolean);
+            {/* Action Row */}
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                size="sm"
+                style={{ background: '#1A6FD4', color: '#fff', border: 'none' }}
+                onClick={() => setNewTask({ ...newTask, status: 'planned' })}
+              >
+                <Plus className="h-4 w-4 mr-1" /> Add Task
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={async () => {
+                  if (!id) return;
+                  setAiAddingTasks(true);
+                  try {
+                    await api.generateProject(id, {
+                      detail_level: 'light',
+                      include_tasks: true,
+                      regenerate_requirements: false,
+                      generate_srs: false,
+                      generate_risks: false,
+                      generate_costs: false,
+                    });
+                    const refreshed = await api.getTasks(id);
+                    setTasks(refreshed);
+                  } catch (err) {
+                    console.error('AI task gen failed', err);
+                  } finally {
+                    setAiAddingTasks(false);
+                  }
+                }}
+                disabled={aiAddingTasks}
+              >
+                {aiAddingTasks ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Wand2 className="h-4 w-4 mr-1" />}
+                AI Generate
+              </Button>
+              <span className="text-xs ml-auto" style={{ color: 'var(--text-muted)' }}>{totalHours}h estimated · {completedCount}/{tasks.length} done</span>
+            </div>
 
-                            const payload: any = {
-                              title: newTask.title,
-                              description: newTask.description,
-                              start_date: newTask.start_date || undefined,
-                              due_date: newTask.due_date || undefined,
-                              priority: newTask.priority,
-                              status: newTask.status,
-                              dependencies,
-                              tags: newTask.milestone ? ['milestone'] : [],
-                            };
-                            const created = await api.createTask(id, payload);
-                            setTasks((prev) => [created, ...prev]);
-                            setNewTask({
-                              title: '',
-                              description: '',
-                              start_date: '',
-                              due_date: '',
-                              priority: 'medium',
-                              status: 'planned',
-                              dependencies: '',
-                              milestone: false,
-                            });
-                          } catch (err) {
-                            console.error('Create task failed', err);
-                          } finally {
-                            setCreatingTask(false);
-                          }
-                        }}
-                        disabled={creatingTask || !newTask.title.trim()}
-                      >
-                        {creatingTask ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Add Task'}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={async () => {
-                          if (!id) return;
-                          setAiAddingTasks(true);
-                          try {
-                            await api.generateProject(id, {
-                              detail_level: 'light',
-                              include_tasks: true,
-                              regenerate_requirements: false,
-                              generate_srs: false,
-                              generate_risks: false,
-                              generate_costs: false,
-                            });
-                            const refreshed = await api.getTasks(id);
-                            setTasks(refreshed);
-                          } catch (err) {
-                            console.error('AI task gen failed', err);
-                          } finally {
-                            setAiAddingTasks(false);
-                          }
-                        }}
-                        disabled={aiAddingTasks}
-                      >
-                        {aiAddingTasks ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <>
-                            <Wand2 className="h-4 w-4 mr-1" /> AI
-                          </>
-                        )}
-                      </Button>
+            {/* 3-Column Kanban Board */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {kanbanColumns.map((col) => {
+                const colTasks = getColumnTasks(col.key);
+                return (
+                  <div key={col.key} className="rounded-xl flex flex-col" style={{ background: 'var(--brand-800)', border: '1px solid var(--brand-700)' }}>
+                    {/* Column Header */}
+                    <div className="flex items-center justify-between px-4 py-3 rounded-t-xl" style={{ background: col.headerBg, borderBottom: `1px solid var(--brand-700)` }}>
+                      <span className="font-semibold text-sm" style={{ color: col.accentColor }}>{col.label}</span>
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: col.accentColor + '22', color: col.accentColor }}>{colTasks.length}</span>
                     </div>
-                  </CardContent>
-                </Card>
 
-                {/* Task List */}
-                <Card>
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-sm">Task List</CardTitle>
-                      <select
-                        className="text-xs border border-[#3d2412] rounded px-2 py-1"
-                        value={taskFilter}
-                        onChange={(e) => setTaskFilter(e.target.value as any)}
-                      >
-                        <option value="all">All</option>
-                        <option value="planned">Planned</option>
-                        <option value="in_progress">In Progress</option>
-                        <option value="completed">Completed</option>
-                      </select>
-                    </div>
-                    <div className="mt-2">
-                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all" style={{ width: `${progressPct}%` }} />
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1">{completedCount} of {tasks.length} completed</p>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="max-h-[400px] overflow-y-auto space-y-2">
-                    {tasks.filter((task) => taskFilter === 'all' || (localTaskStatus[task.task_id] || task.status || '').toLowerCase() === taskFilter).map((task) => {
-                      const taskStatus = (localTaskStatus[task.task_id] || task.status || '').toLowerCase();
-                      const done = taskStatus === 'completed';
-                      const priorityColors: Record<string, string> = { high: 'border-l-red-500', medium: 'border-l-amber-500', low: 'border-l-emerald-500' };
-                      return (
-                        <div
-                          key={task.task_id}
-                          className={`p-3 rounded-lg border-l-4 ${priorityColors[task.priority] || 'border-l-gray-300'} bg-[#152238] border border-gray-100 hover:shadow-md transition-shadow cursor-pointer ${done ? 'opacity-60' : ''}`}
-                          onClick={() => setSelectedTask(task)}
-                        >
-                          <div className="flex items-start gap-2">
+                    {/* Task Cards */}
+                    <div className="flex-1 p-3 space-y-2 overflow-y-auto" style={{ maxHeight: 480 }}>
+                      {colTasks.map((task) => {
+                        const prio = (task.priority || 'low').toLowerCase() as keyof typeof priorityBorder;
+                        const pill = priorityPill[prio] || priorityPill.low;
+                        return (
+                          <div
+                            key={task.task_id}
+                            className="rounded-lg p-3 cursor-pointer hover:brightness-110 transition-all"
+                            style={{
+                              background: 'var(--brand-750, #152238)',
+                              borderLeft: priorityBorder[prio] || '3px solid #1A6FD4',
+                              border: '1px solid var(--brand-700)',
+                              borderLeftWidth: '3px',
+                            }}
+                            onClick={() => toggleLocalTaskStatus(task.task_id)}
+                            title="Click to advance status"
+                          >
+                            <p className="font-semibold text-sm mb-1" style={{ color: 'var(--text-primary)' }}>{task.title}</p>
+                            {task.description && (
+                              <p className="text-xs truncate mb-2" style={{ color: 'var(--text-muted)' }}>{task.description}</p>
+                            )}
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="text-[10px] px-2 py-0.5 rounded-full font-medium capitalize" style={{ background: pill.bg, color: pill.color }}>{prio}</span>
+                              {task.estimate_hours > 0 && (
+                                <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(26,111,212,0.1)', color: '#93c5fd' }}>{task.estimate_hours}h</span>
+                              )}
+                              {task.due_date && (
+                                <span className="text-[10px] flex items-center gap-0.5" style={{ color: 'var(--text-muted)' }}>
+                                  <Calendar className="h-2.5 w-2.5" />
+                                  {new Date(task.due_date).toLocaleDateString()}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {colTasks.length === 0 && (
+                        <p className="text-xs text-center py-6" style={{ color: 'var(--text-muted)' }}>No tasks here</p>
+                      )}
+
+                      {/* Inline Add Form — only in To Do column */}
+                      {col.key === 'todo' && (
+                        <div className="mt-3 rounded-lg p-3 space-y-2" style={{ background: 'var(--brand-750, #152238)', border: '1px dashed rgba(26,111,212,0.3)' }}>
+                          <input
+                            className="w-full rounded-lg px-3 py-1.5 text-sm"
+                            style={{ background: 'var(--brand-800)', border: '1px solid var(--brand-700)', color: 'var(--text-primary)' }}
+                            placeholder="New task title..."
+                            value={newTask.title}
+                            onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                          />
+                          <div className="grid grid-cols-2 gap-2">
+                            <select
+                              className="rounded-lg px-2 py-1.5 text-xs"
+                              style={{ background: 'var(--brand-800)', border: '1px solid var(--brand-700)', color: 'var(--text-primary)' }}
+                              value={newTask.priority}
+                              onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
+                            >
+                              <option value="low">Low</option>
+                              <option value="medium">Medium</option>
+                              <option value="high">High</option>
+                            </select>
                             <input
-                              type="checkbox"
-                              checked={done}
-                              onChange={(e) => { e.stopPropagation(); toggleLocalTaskStatus(task.task_id); }}
-                              className="mt-1 rounded"
+                              type="number"
+                              className="rounded-lg px-2 py-1.5 text-xs"
+                              style={{ background: 'var(--brand-800)', border: '1px solid var(--brand-700)', color: 'var(--text-primary)' }}
+                              placeholder="Hours est."
+                              value={newTask.due_date}
+                              onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
                             />
-                            <div className="flex-1 min-w-0">
-                              <p className={`font-medium text-sm ${done ? 'line-through text-gray-400' : 'text-white'}`}>{task.title}</p>
-                              <p className="text-xs text-gray-500 truncate">{task.description}</p>
-                              <div className="flex items-center gap-2 mt-1">
-                                {task.due_date && (
-                                  <span className="text-xs text-gray-400 flex items-center gap-1">
-                                    <Calendar className="h-3 w-3" />
-                                    {new Date(task.due_date).toLocaleDateString()}
-                                  </span>
-                                )}
-                                {task.estimate_hours > 0 && (
-                                  <span className="text-xs text-gray-400">{task.estimate_hours}h</span>
-                                )}
-                              </div>
-                            </div>
-                            <Edit3 className="h-4 w-4 text-gray-300 hover:text-gray-500" onClick={(e) => { e.stopPropagation(); setEditingTask(task.task_id); }} />
                           </div>
+                          <Button
+                            size="sm"
+                            className="w-full"
+                            style={{ background: '#1A6FD4', color: '#fff', border: 'none' }}
+                            onClick={async () => {
+                              if (!id || !newTask.title.trim()) return;
+                              setCreatingTask(true);
+                              try {
+                                const payload: any = {
+                                  title: newTask.title,
+                                  description: newTask.description,
+                                  start_date: newTask.start_date || undefined,
+                                  due_date: newTask.due_date || undefined,
+                                  priority: newTask.priority,
+                                  status: 'planned',
+                                  dependencies: [],
+                                  tags: [],
+                                };
+                                const created = await api.createTask(id, payload);
+                                setTasks((prev) => [created, ...prev]);
+                                setNewTask({ title: '', description: '', start_date: '', due_date: '', priority: 'medium', status: 'planned', dependencies: '', milestone: false });
+                              } catch (err) {
+                                console.error('Create task failed', err);
+                              } finally {
+                                setCreatingTask(false);
+                              }
+                            }}
+                            disabled={creatingTask || !newTask.title.trim()}
+                          >
+                            {creatingTask ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Plus className="h-3 w-3 mr-1" />Add</>}
+                          </Button>
                         </div>
-                      );
-                    })}
-                    {!tasks.length && <p className="text-sm text-gray-500 text-center py-4">No tasks yet. Add one above!</p>}
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Right Column - Gantt Chart & Matrix */}
-              <div className="lg:col-span-2 space-y-4">
-                {/* Enhanced Gantt Chart */}
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                      <div className="flex items-center gap-2">
-                        <BarChart3 className="h-5 w-5 text-purple-500" />
-                        <CardTitle>Project Timeline</CardTitle>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
-                          <button onClick={() => setGanttViewMode('chart')} className={`px-2 py-1 rounded text-xs ${ganttViewMode === 'chart' ? 'bg-[#152238] shadow' : ''}`}>Chart</button>
-                          <button onClick={() => setGanttViewMode('list')} className={`px-2 py-1 rounded text-xs ${ganttViewMode === 'list' ? 'bg-[#152238] shadow' : ''}`}>List</button>
-                          <button onClick={() => setGanttViewMode('board')} className={`px-2 py-1 rounded text-xs ${ganttViewMode === 'board' ? 'bg-[#152238] shadow' : ''}`}>Board</button>
-                        </div>
-                        <select className="text-xs border border-[#3d2412] rounded-lg px-2 py-1" value={ganttScale} onChange={(e) => setGanttScale(e.target.value as any)}>
-                          <option value="auto">Auto</option>
-                          <option value="2w">2 Weeks</option>
-                          <option value="1m">1 Month</option>
-                          <option value="3m">3 Months</option>
-                          <option value="6m">6 Months</option>
-                        </select>
-                        <div className="flex items-center gap-1">
-                          <button onClick={() => setGanttZoom(Math.max(50, ganttZoom - 25))} className="p-1 hover:bg-gray-100 rounded"><ZoomOut className="h-4 w-4" /></button>
-                          <span className="text-xs text-gray-500 w-10 text-center">{ganttZoom}%</span>
-                          <button onClick={() => setGanttZoom(Math.min(200, ganttZoom + 25))} className="p-1 hover:bg-gray-100 rounded"><ZoomIn className="h-4 w-4" /></button>
-                        </div>
-                      </div>
+                      )}
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    {ganttViewMode === 'chart' && (
-                      <div className="relative border border-[#3d2412] rounded-xl bg-gradient-to-b from-gray-50 to-white p-4 overflow-x-auto" style={{ minHeight: Math.max(300, ganttData.height), transform: `scale(${ganttZoom / 100})`, transformOrigin: 'top left' }}>
-                        <div className="min-w-[800px]">
-                          {/* Timeline Header */}
-                          <div className="flex items-center justify-between text-xs text-gray-500 mb-4 pb-2 border-b border-[#3d2412]">
-                            {Array.from({ length: 7 }).map((_, idx) => {
-                              const date = new Date(ganttData.start.getTime() + ((ganttData.end.getTime() - ganttData.start.getTime()) * idx) / 6);
-                              return <span key={idx} className="font-medium">{date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>;
-                            })}
-                          </div>
-                          {/* Task Bars */}
-                          <div className="space-y-3">
-                            {ganttData.bars.map((bar, idx) => {
-                              const task = tasks.find(t => t.task_id === bar.id);
-                              return (
-                                <div key={bar.id} className="flex items-center gap-3">
-                                  <div className="w-32 flex-shrink-0">
-                                    <p className="text-xs font-medium text-gray-300 truncate">{bar.title}</p>
-                                    <p className="text-[10px] text-gray-400">{task?.estimate_hours || 0}h</p>
-                                  </div>
-                                  <div className="flex-1 relative h-8 bg-gray-100 rounded-lg overflow-hidden">
-                                    <div
-                                      className="absolute h-full rounded-lg transition-all duration-300 cursor-pointer hover:opacity-80"
-                                      style={{ left: `${bar.x}%`, width: `${Math.max(8, bar.width)}%`, background: `linear-gradient(135deg, ${bar.color}, ${bar.color}dd)` }}
-                                      onClick={() => setSelectedTask(task || null)}
-                                    >
-                                      <div className="h-full flex items-center justify-center">
-                                        <span className="text-[10px] text-white font-medium truncate px-2">{bar.title}</span>
-                                      </div>
-                                    </div>
-                                    {bar.isMilestone && (
-                                      <div className="absolute top-1/2 -translate-y-1/2" style={{ left: `${bar.x + bar.width}%` }}>
-                                        <div className="w-3 h-3 bg-orange-500 rotate-45 transform"></div>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                          {!ganttData.bars.length && (
-                            <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-                              <Calendar className="h-12 w-12 mb-2 opacity-50" />
-                              <p className="text-sm">No tasks with dates yet</p>
-                              <p className="text-xs">Add tasks with start/due dates to see the timeline</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                    {ganttViewMode === 'board' && (
-                      <div className="grid grid-cols-3 gap-4">
-                        {['planned', 'in_progress', 'completed'].map((status) => (
-                          <div key={status} className="bg-[#3d2412]/50 rounded-xl p-3">
-                            <h4 className="font-medium text-sm text-gray-300 mb-3 capitalize">{status.replace('_', ' ')}</h4>
-                            <div className="space-y-2">
-                              {tasks.filter(t => (localTaskStatus[t.task_id] || t.status || '').toLowerCase() === status).map(task => (
-                                <div key={task.task_id} className="bg-[#152238] p-3 rounded-lg border border-[#3d2412] shadow-sm">
-                                  <p className="text-sm font-medium">{task.title}</p>
-                                  <p className="text-xs text-gray-500 truncate">{task.description}</p>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {ganttViewMode === 'list' && (
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <thead className="bg-[#3d2412]/50">
-                            <tr>
-                              <th className="text-left p-2 font-medium text-gray-600">Task</th>
-                              <th className="text-left p-2 font-medium text-gray-600">Status</th>
-                              <th className="text-left p-2 font-medium text-gray-600">Priority</th>
-                              <th className="text-left p-2 font-medium text-gray-600">Start</th>
-                              <th className="text-left p-2 font-medium text-gray-600">Due</th>
-                              <th className="text-left p-2 font-medium text-gray-600">Hours</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {tasks.map(task => (
-                              <tr key={task.task_id} className="border-b border-gray-100 hover:bg-[#3d2412]/50">
-                                <td className="p-2">{task.title}</td>
-                                <td className="p-2"><Badge variant={task.status === 'completed' ? 'success' : task.status === 'in_progress' ? 'warning' : 'secondary'}>{task.status}</Badge></td>
-                                <td className="p-2 capitalize">{task.priority}</td>
-                                <td className="p-2 text-gray-500">{task.start_date ? new Date(task.start_date).toLocaleDateString() : '-'}</td>
-                                <td className="p-2 text-gray-500">{task.due_date ? new Date(task.due_date).toLocaleDateString() : '-'}</td>
-                                <td className="p-2 text-gray-500">{task.estimate_hours || 0}h</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Eisenhower Matrix */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Grid2X2 className="h-4 w-4 text-blue-500" />
-                      Priority Matrix
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 gap-3">
-                      {[
-                        { label: 'Do First', color: 'bg-red-50 border-red-200', tasks: matrixBuckets.urgentImportant, icon: '🔥' },
-                        { label: 'Schedule', color: 'bg-blue-50 border-blue-200', tasks: matrixBuckets.notUrgentImportant, icon: '📅' },
-                        { label: 'Delegate', color: 'bg-amber-50 border-amber-200', tasks: matrixBuckets.urgentNotImportant, icon: '👥' },
-                        { label: 'Eliminate', color: 'bg-[#3d2412]/50 border-[#3d2412]', tasks: matrixBuckets.notUrgentNotImportant, icon: '🗑️' },
-                      ].map(({ label, color, tasks: bucketTasks, icon }) => (
-                        <div key={label} className={`${color} border rounded-xl p-3`}>
-                          <p className="font-medium text-sm mb-2">{icon} {label}</p>
-                          <div className="space-y-1 max-h-24 overflow-y-auto">
-                            {bucketTasks.length ? bucketTasks.map(task => (
-                              <p key={task.task_id} className="text-xs text-gray-600 truncate">• {task.title}</p>
-                            )) : <p className="text-xs text-gray-400">No tasks</p>}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* AI Actions */}
-                <Card className="bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-200">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Sparkles className="h-4 w-4 text-purple-500" />
-                      <span className="font-medium text-sm text-purple-900">AI Quick Actions</span>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Button size="sm" variant="outline" className="bg-[#152238]" onClick={() => {
-                        const updated = tasks.map((t, idx) => {
-                          const start = t.start_date ? new Date(t.start_date) : new Date(Date.now() + idx * 86400000);
-                          const end = t.due_date ? new Date(t.due_date) : new Date(start.getTime() + 86400000 * 2);
-                          return { ...t, start_date: start.toISOString(), due_date: end.toISOString() };
-                        });
-                        setTasks(updated as any);
-                      }}>
-                        <Calendar className="h-3 w-3 mr-1" /> Auto-fill Dates
-                      </Button>
-                      <Button size="sm" variant="outline" className="bg-[#152238]" onClick={() => {
-                        const sorted = [...tasks].sort((a, b) => {
-                          const order = { high: 0, medium: 1, low: 2 };
-                          return (order[a.priority as keyof typeof order] || 2) - (order[b.priority as keyof typeof order] || 2);
-                        });
-                        setTasks(sorted);
-                      }}>
-                        <TrendingUp className="h-3 w-3 mr-1" /> Sort by Priority
-                      </Button>
-                      <Button size="sm" variant="outline" className="bg-[#152238]" onClick={() => {
-                        const deduped: Record<string, Task> = {};
-                        tasks.forEach((t) => { deduped[t.task_id] = t; });
-                        setTasks(Object.values(deduped));
-                      }}>
-                        <Trash2 className="h-3 w-3 mr-1" /> Remove Duplicates
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+                  </div>
+                );
+              })}
             </div>
 
-            <Card className="bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-200">
+            {/* AI Task Insights */}
+            <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base text-purple-900">
-                  <Sparkles className="h-4 w-4 text-purple-500" />
+                <CardTitle className="flex items-center gap-2 text-base" style={{ color: 'var(--text-primary)' }}>
+                  <Sparkles className="h-4 w-4" style={{ color: '#1A6FD4' }} />
                   AI Task Insights
                 </CardTitle>
-                <CardDescription className="text-sm text-purple-700">
+                <CardDescription style={{ color: 'var(--text-muted)' }}>
                   Ask the assistant to summarize execution risks, propose a new sprint, or refine dependencies.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <textarea
-                  className="w-full border border-purple-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-400 focus:border-transparent min-h-[90px] bg-[#152238]"
-                  placeholder="E.g., “Summarize task dependencies”, “Highlight schedule risks”, “Draft QA tasks for sprint 2”"
+                  className="w-full rounded-lg px-3 py-2 text-sm min-h-[90px]"
+                  style={{ background: 'var(--brand-750, #152238)', border: '1px solid var(--brand-700)', color: 'var(--text-primary)' }}
+                  placeholder="E.g., Summarize task dependencies, highlight schedule risks, draft QA tasks for sprint 2"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                 />
@@ -3064,31 +3141,27 @@ export const PhaseDetailPage: React.FC = () => {
                   <Button
                     onClick={() => handleGenerate()}
                     disabled={isGenerating || status === 'locked'}
-                    className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600"
+                    style={{ background: '#1A6FD4', color: '#fff', border: 'none' }}
                   >
                     {isGenerating ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Thinking...
-                      </>
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Thinking...</>
                     ) : (
-                      <>
-                        <Sparkles className="mr-2 h-4 w-4" /> Generate Insight
-                      </>
+                      <><Sparkles className="mr-2 h-4 w-4" /> Generate Insight</>
                     )}
                   </Button>
                   <Button variant="outline" onClick={handleDownload} disabled={!phaseMarkdown}>
                     <Download className="mr-2 h-4 w-4" /> Export
                   </Button>
                 </div>
-                <div className="border border-purple-100 rounded-xl bg-[#152238]/80 p-4 min-h-[160px]">
+                <div className="rounded-xl p-4 min-h-[120px]" style={{ border: '1px solid var(--brand-700)', background: 'var(--brand-750, #152238)' }}>
                   {phaseMarkdown ? (
-                    <div className="prose prose-sm max-w-none text-gray-300">
+                    <div className="prose prose-sm max-w-none" style={{ color: 'var(--text-primary)' }}>
                       <ReactMarkdown>{phaseMarkdown}</ReactMarkdown>
                       <RawMarkdownDisclosure />
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center justify-center text-sm text-gray-500 gap-1 py-6">
-                      <Sparkles className="h-6 w-6 text-purple-400" />
+                    <div className="flex flex-col items-center justify-center text-sm gap-1 py-6" style={{ color: 'var(--text-muted)' }}>
+                      <Sparkles className="h-6 w-6" style={{ color: '#1A6FD4' }} />
                       <p>No AI output yet for this phase.</p>
                       <p className="text-xs">Describe what you need above to generate a summary.</p>
                     </div>
@@ -3103,21 +3176,21 @@ export const PhaseDetailPage: React.FC = () => {
                 <Card className="w-full max-w-lg m-4" onClick={(e) => e.stopPropagation()}>
                   <CardHeader>
                     <div className="flex items-center justify-between">
-                      <CardTitle>{selectedTask.title}</CardTitle>
+                      <CardTitle style={{ color: 'var(--text-primary)' }}>{selectedTask.title}</CardTitle>
                       <Button variant="ghost" size="sm" onClick={() => setSelectedTask(null)}>
                         <XCircle className="h-4 w-4" />
                       </Button>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <p className="text-sm text-gray-600">{selectedTask.description || 'No description'}</p>
+                    <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{selectedTask.description || 'No description'}</p>
                     <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div><span className="text-gray-500">Status:</span> <Badge>{selectedTask.status}</Badge></div>
-                      <div><span className="text-gray-500">Priority:</span> <span className="capitalize">{selectedTask.priority}</span></div>
-                      <div><span className="text-gray-500">Start:</span> {selectedTask.start_date ? new Date(selectedTask.start_date).toLocaleDateString() : 'Not set'}</div>
-                      <div><span className="text-gray-500">Due:</span> {selectedTask.due_date ? new Date(selectedTask.due_date).toLocaleDateString() : 'Not set'}</div>
-                      <div><span className="text-gray-500">Estimate:</span> {selectedTask.estimate_hours || 0} hours</div>
-                      <div><span className="text-gray-500">Actual:</span> {selectedTask.actual_hours || 0} hours</div>
+                      <div><span style={{ color: 'var(--text-muted)' }}>Status:</span> <Badge>{selectedTask.status}</Badge></div>
+                      <div><span style={{ color: 'var(--text-muted)' }}>Priority:</span> <span className="capitalize" style={{ color: 'var(--text-primary)' }}>{selectedTask.priority}</span></div>
+                      <div><span style={{ color: 'var(--text-muted)' }}>Start:</span> <span style={{ color: 'var(--text-primary)' }}>{selectedTask.start_date ? new Date(selectedTask.start_date).toLocaleDateString() : 'Not set'}</span></div>
+                      <div><span style={{ color: 'var(--text-muted)' }}>Due:</span> <span style={{ color: 'var(--text-primary)' }}>{selectedTask.due_date ? new Date(selectedTask.due_date).toLocaleDateString() : 'Not set'}</span></div>
+                      <div><span style={{ color: 'var(--text-muted)' }}>Estimate:</span> <span style={{ color: 'var(--text-primary)' }}>{selectedTask.estimate_hours || 0} hours</span></div>
+                      <div><span style={{ color: 'var(--text-muted)' }}>Actual:</span> <span style={{ color: 'var(--text-primary)' }}>{selectedTask.actual_hours || 0} hours</span></div>
                     </div>
                   </CardContent>
                 </Card>
@@ -3235,7 +3308,7 @@ export const PhaseDetailPage: React.FC = () => {
 
             {/* Scenario Presets + Team Size Controls */}
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="text-xs text-gray-600">Scenario presets:</div>
+              <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Scenario presets:</div>
               <div className="flex flex-wrap gap-2 text-xs">
                 <Button
                   size="xs"
@@ -3273,10 +3346,10 @@ export const PhaseDetailPage: React.FC = () => {
               </div>
             </div>
 
-            <Card className="border-emerald-200 bg-emerald-50/60">
+            <Card className="border-blue-700/40 bg-blue-900/20">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Users className="h-4 w-4 text-emerald-600" />
+                  <Users className="h-4 w-4 text-blue-400" />
                   Team Size Scenario
                 </CardTitle>
                 <CardDescription className="text-xs">
@@ -3287,7 +3360,7 @@ export const PhaseDetailPage: React.FC = () => {
                 <div className="flex flex-col gap-2 text-xs text-gray-300">
                   <div className="flex items-center justify-between">
                     <span>Team size multiplier</span>
-                    <span className="font-mono text-emerald-700">{teamSizeMultiplier.toFixed(2)}×</span>
+                    <span className="font-mono text-blue-300">{teamSizeMultiplier.toFixed(2)}×</span>
                   </div>
                   <input
                     type="range"
@@ -3296,7 +3369,7 @@ export const PhaseDetailPage: React.FC = () => {
                     step={0.1}
                     value={teamSizeMultiplier}
                     onChange={(e) => setTeamSizeMultiplier(parseFloat(e.target.value) || 1)}
-                    className="w-full accent-emerald-600"
+                    className="w-full accent-blue-500"
                   />
                   <div className="flex justify-between text-[10px] text-gray-500">
                     <span>0.5× (very small team)</span>
@@ -3385,32 +3458,32 @@ export const PhaseDetailPage: React.FC = () => {
 
                 {customCostItems.length > 0 && (
                   <div className="mt-3 space-y-2">
-                    <div className="flex items-center justify-between text-[11px] text-gray-600">
+                    <div className="flex items-center justify-between text-[11px]" style={{ color: 'var(--text-muted)' }}>
                       <span>Total custom cost:</span>
                       <span className="font-mono">{totalCustomCost.toLocaleString()} (mixed currencies)</span>
                     </div>
-                    <div className="flex items-center justify-between text-[11px] text-gray-600">
+                    <div className="flex items-center justify-between text-[11px]" style={{ color: 'var(--text-muted)' }}>
                       <span>Total custom benefit:</span>
                       <span className="font-mono">{totalCustomBenefit.toLocaleString()} (mixed currencies)</span>
                     </div>
-                    <div className="flex items-center justify-between text-[11px] text-gray-600">
+                    <div className="flex items-center justify-between text-[11px]" style={{ color: 'var(--text-muted)' }}>
                       <span>Custom ROI:</span>
                       <span className="font-mono">{isFinite(customRoi) ? `${customRoi.toFixed(0)}%` : 'N/A'}</span>
                     </div>
 
-                    <div className="border-t border-[#3d2412] pt-2 space-y-1 max-h-48 overflow-y-auto">
+                    <div className="border-t border-[var(--brand-700)] pt-2 space-y-1 max-h-48 overflow-y-auto">
                       {customCostItems.map((item) => {
                         const itemRoi = item.cost > 0 ? ((item.benefit - item.cost) / item.cost) * 100 : 0;
                         return (
-                          <div key={item.id} className="flex items-center justify-between text-[11px] bg-[#3d2412]/50 rounded-lg px-2 py-1.5">
+                          <div key={item.id} className="flex items-center justify-between text-[11px] bg-[var(--brand-700)]/50 rounded-lg px-2 py-1.5">
                             <div className="min-w-0">
-                              <p className="font-medium text-gray-800 truncate">{item.description}</p>
+                              <p className="font-medium truncate" style={{ color: 'var(--text-primary)' }}>{item.description}</p>
                               <p className="text-[10px] text-gray-500">
                                 Cost: {item.cost.toLocaleString()} {item.currency} · Benefit: {item.benefit.toLocaleString()} {item.currency}
                               </p>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
-                              <span className="text-[10px] font-mono text-emerald-700">{itemRoi.toFixed(0)}%</span>
+                              <span className="text-[10px] font-mono text-blue-300">{itemRoi.toFixed(0)}%</span>
                               <Button
                                 size="sm"
                                 variant="ghost"
@@ -3431,54 +3504,54 @@ export const PhaseDetailPage: React.FC = () => {
 
             {/* Cost Overview Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card className="bg-gradient-to-br from-emerald-50 to-white border-emerald-100">
+              <Card style={{ background: 'var(--brand-800)', border: '1px solid rgba(26,111,212,0.25)' }}>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-emerald-100 rounded-lg">
-                      <DollarSign className="h-5 w-5 text-emerald-600" />
+                    <div className="p-2 rounded-lg" style={{ background: 'rgba(26,111,212,0.15)' }}>
+                      <DollarSign className="h-5 w-5 text-blue-400" />
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-white">${effectiveCostForRoi.toLocaleString()}</p>
-                      <p className="text-xs text-gray-500">Total Estimated Cost</p>
+                      <p className="text-2xl font-bold" style={{ color: '#60a5fa' }}>${effectiveCostForRoi.toLocaleString()}</p>
+                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Total Estimated Cost</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-              <Card className="bg-gradient-to-br from-blue-50 to-white border-blue-100">
+              <Card style={{ background: 'var(--brand-800)', border: '1px solid rgba(26,111,212,0.25)' }}>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <Clock className="h-5 w-5 text-blue-600" />
+                    <div className="p-2 rounded-lg" style={{ background: 'rgba(26,111,212,0.15)' }}>
+                      <Clock className="h-5 w-5 text-blue-400" />
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-white">{totalHours}h</p>
-                      <p className="text-xs text-gray-500">Total Hours</p>
+                      <p className="text-2xl font-bold" style={{ color: '#60a5fa' }}>{totalHours}h</p>
+                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Total Hours</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-              <Card className="bg-gradient-to-br from-purple-50 to-white border-purple-100">
+              <Card style={{ background: 'var(--brand-800)', border: '1px solid rgba(249,115,22,0.25)' }}>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-purple-100 rounded-lg">
-                      <Target className="h-5 w-5 text-purple-600" />
+                    <div className="p-2 rounded-lg" style={{ background: 'rgba(249,115,22,0.12)' }}>
+                      <Target className="h-5 w-5" style={{ color: '#F97316' }} />
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-white">${effectiveBenefit.toLocaleString()}</p>
-                      <p className="text-xs text-gray-500">Estimated Benefit ({useCustomRoi ? 'custom totals' : '2× assumption'})</p>
+                      <p className="text-2xl font-bold" style={{ color: '#fb923c' }}>${effectiveBenefit.toLocaleString()}</p>
+                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Estimated Benefit ({useCustomRoi ? 'custom totals' : '2× assumption'})</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-              <Card className="bg-gradient-to-br from-amber-50 to-white border-amber-100">
+              <Card style={{ background: 'var(--brand-800)', border: '1px solid rgba(26,111,212,0.25)' }}>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-amber-100 rounded-lg">
-                      <TrendingUp className="h-5 w-5 text-amber-600" />
+                    <div className="p-2 rounded-lg" style={{ background: 'rgba(26,111,212,0.15)' }}>
+                      <TrendingUp className="h-5 w-5 text-blue-400" />
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-white">{roi.toFixed(0)}%</p>
-                      <p className="text-xs text-gray-500">ROI (Benefit vs Cost)</p>
+                      <p className="text-2xl font-bold" style={{ color: '#60a5fa' }}>{roi.toFixed(0)}%</p>
+                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>ROI (Benefit vs Cost)</p>
                     </div>
                   </div>
                 </CardContent>
@@ -3489,7 +3562,7 @@ export const PhaseDetailPage: React.FC = () => {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
-                    <Sparkles className="h-4 w-4 text-emerald-500" />
+                    <Sparkles className="h-4 w-4 text-blue-400" />
                     AI Summary
                   </CardTitle>
                   <CardDescription className="text-sm">Latest AI output for this phase.</CardDescription>
@@ -3507,7 +3580,7 @@ export const PhaseDetailPage: React.FC = () => {
               <Card className="lg:col-span-2">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5 text-emerald-500" />
+                    <BarChart3 className="h-5 w-5 text-blue-400" />
                     Cost vs Benefit (Current Scenario)
                   </CardTitle>
                   <CardDescription className="text-xs">
@@ -3515,12 +3588,12 @@ export const PhaseDetailPage: React.FC = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3 text-xs text-gray-300">
+                  <div className="space-y-3 text-xs" style={{ color: 'var(--text-primary)' }}>
                     <div className="flex items-center justify-between">
                       <span className="font-medium">Total Cost</span>
                       <span className="font-mono">${effectiveCostForRoi.toLocaleString()}</span>
                     </div>
-                    <div className="h-4 bg-gray-100 rounded-full overflow-hidden mb-2">
+                    <div className="h-4 rounded-full overflow-hidden mb-2" style={{ background: 'var(--brand-700)' }}>
                       <div
                         className="h-full bg-rose-500"
                         style={{ width: '50%' }}
@@ -3530,13 +3603,13 @@ export const PhaseDetailPage: React.FC = () => {
                       <span className="font-medium">Estimated Benefit</span>
                       <span className="font-mono">${effectiveBenefit.toLocaleString()}</span>
                     </div>
-                    <div className="h-4 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-4 rounded-full overflow-hidden" style={{ background: 'var(--brand-700)' }}>
                       <div
-                        className="h-full bg-emerald-500"
-                        style={{ width: `${effectiveCostForRoi > 0 ? Math.min(100, (effectiveBenefit / effectiveCostForRoi) * 50) : 0}%` }}
+                        className="h-full"
+                        style={{ background: '#1A6FD4', width: `${effectiveCostForRoi > 0 ? Math.min(100, (effectiveBenefit / effectiveCostForRoi) * 50) : 0}%` }}
                       />
                     </div>
-                    <p className="text-[11px] text-gray-500 mt-2">
+                    <p className="text-[11px] mt-2" style={{ color: 'var(--text-muted)' }}>
                       Bars are normalized for display; focus on the relative size between cost and benefit.
                     </p>
                   </div>
@@ -3548,7 +3621,7 @@ export const PhaseDetailPage: React.FC = () => {
                 <CardHeader className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <CardTitle className="flex items-center gap-2">
-                      <PieChart className="h-5 w-5 text-emerald-500" />
+                      <PieChart className="h-5 w-5 text-blue-400" />
                       Cost Distribution by Phase
                     </CardTitle>
                     <CardDescription className="text-xs">
@@ -3676,15 +3749,15 @@ export const PhaseDetailPage: React.FC = () => {
                   <div className="space-y-3">
                     {phaseSlicesForChart.map((slice, idx) => {
                       const percentage = totalCost > 0 && !useManualCostSlices ? (slice.cost / totalCost) * 100 : (slice.cost / manualTotalCost) * 100;
-                      const colors = ['bg-emerald-500', 'bg-blue-500', 'bg-purple-500', 'bg-amber-500', 'bg-pink-500'];
+                      const colors = ['bg-blue-900/200', 'bg-blue-500', 'bg-purple-500', 'bg-amber-500', 'bg-pink-500'];
                       const colorIdx = idx % colors.length;
                       return (
                         <div key={slice.id} className="space-y-1">
                           <div className="flex items-center justify-between text-sm">
-                            <span className="font-medium capitalize">{slice.label}</span>
-                            <span className="text-gray-500">${Math.round(slice.cost).toLocaleString()} ({Math.round(slice.hours)}h)</span>
+                            <span className="font-medium capitalize" style={{ color: 'var(--text-primary)' }}>{slice.label}</span>
+                            <span style={{ color: 'var(--text-muted)' }}>${Math.round(slice.cost).toLocaleString()} ({Math.round(slice.hours)}h)</span>
                           </div>
-                          <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                          <div className="h-3 rounded-full overflow-hidden" style={{ background: 'var(--brand-700)' }}>
                             <div className={`h-full ${colors[colorIdx]} transition-all`} style={{ width: `${Math.min(100, Math.max(percentage, 0))}%` }} />
                           </div>
                         </div>
@@ -3712,7 +3785,7 @@ export const PhaseDetailPage: React.FC = () => {
                     {['high', 'medium', 'low'].map((priority) => {
                       const data = costByPriority[priority] || { hours: 0, cost: 0 };
                       const percentage = totalCost > 0 ? (data.cost / totalCost) * 100 : 0;
-                      const colors = { high: 'bg-red-500', medium: 'bg-amber-500', low: 'bg-emerald-500' };
+                      const colors = { high: 'bg-red-500', medium: 'bg-amber-500', low: 'bg-blue-900/200' };
                       const icons = { high: '🔴', medium: '🟡', low: '🟢' };
                       return (
                         <div key={priority} className="space-y-1">
@@ -3720,9 +3793,9 @@ export const PhaseDetailPage: React.FC = () => {
                             <span className="font-medium flex items-center gap-2">
                               {icons[priority as keyof typeof icons]} {priority.charAt(0).toUpperCase() + priority.slice(1)} Priority
                             </span>
-                            <span className="text-gray-500">${data.cost.toLocaleString()}</span>
+                            <span style={{ color: 'var(--text-muted)' }}>${data.cost.toLocaleString()}</span>
                           </div>
-                          <div className="h-6 bg-gray-100 rounded-lg overflow-hidden flex items-center">
+                          <div className="h-6 rounded-lg overflow-hidden flex items-center" style={{ background: 'var(--brand-700)' }}>
                             <div className={`h-full ${colors[priority as keyof typeof colors]} transition-all flex items-center justify-end pr-2`} style={{ width: `${Math.max(percentage, 5)}%` }}>
                               <span className="text-xs text-white font-medium">{percentage.toFixed(0)}%</span>
                             </div>
@@ -3744,20 +3817,20 @@ export const PhaseDetailPage: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="grid md:grid-cols-3 gap-6">
-                    <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl p-4">
-                      <p className="text-sm text-emerald-700 font-medium mb-2">Conservative Estimate</p>
-                      <p className="text-3xl font-bold text-emerald-800">${Math.round(totalCost * 0.8).toLocaleString()}</p>
-                      <p className="text-xs text-emerald-600 mt-1">-20% buffer</p>
+                    <div className="rounded-xl p-4" style={{ background: 'var(--brand-800)', border: '1px solid rgba(26,111,212,0.2)' }}>
+                      <p className="text-sm font-medium mb-2" style={{ color: '#93c5fd' }}>Conservative Estimate</p>
+                      <p className="text-3xl font-bold" style={{ color: '#60a5fa' }}>${Math.round(totalCost * 0.8).toLocaleString()}</p>
+                      <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>-20% buffer</p>
                     </div>
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4">
-                      <p className="text-sm text-blue-700 font-medium mb-2">Base Estimate</p>
-                      <p className="text-3xl font-bold text-blue-800">${totalCost.toLocaleString()}</p>
-                      <p className="text-xs text-blue-600 mt-1">Current projection</p>
+                    <div className="rounded-xl p-4" style={{ background: 'var(--brand-800)', border: '1px solid rgba(26,111,212,0.3)' }}>
+                      <p className="text-sm font-medium mb-2" style={{ color: '#1A6FD4' }}>Base Estimate</p>
+                      <p className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>${totalCost.toLocaleString()}</p>
+                      <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Current projection</p>
                     </div>
-                    <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl p-4">
-                      <p className="text-sm text-amber-700 font-medium mb-2">With Contingency</p>
-                      <p className="text-3xl font-bold text-amber-800">${Math.round(totalCost * 1.25).toLocaleString()}</p>
-                      <p className="text-xs text-amber-600 mt-1">+25% contingency</p>
+                    <div className="rounded-xl p-4" style={{ background: 'var(--brand-800)', border: '1px solid rgba(249,115,22,0.2)' }}>
+                      <p className="text-sm font-medium mb-2" style={{ color: '#fdba74' }}>With Contingency</p>
+                      <p className="text-3xl font-bold" style={{ color: '#fb923c' }}>${Math.round(totalCost * 1.25).toLocaleString()}</p>
+                      <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>+25% contingency</p>
                     </div>
                   </div>
                 </CardContent>
@@ -3765,23 +3838,23 @@ export const PhaseDetailPage: React.FC = () => {
             </div>
 
             {/* AI Chat Section */}
-            <Card className="bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200">
+            <Card className="bg-gradient-to-r from-blue-900/20 to-blue-900/10 border-blue-700/40">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-emerald-500" />
+                  <Sparkles className="h-5 w-5 text-blue-400" />
                   AI Cost Analysis
                 </CardTitle>
                 <CardDescription>Ask AI to analyze costs, suggest optimizations, or generate reports</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <textarea
-                  className="w-full border border-emerald-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-400 focus:border-transparent min-h-[100px] bg-[#152238]"
+                  className="w-full border border-blue-700/40 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:border-transparent min-h-[100px] bg-[#152238]"
                   placeholder="Ask AI to analyze your project costs, suggest budget optimizations, or generate a cost breakdown report..."
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                 />
                 <div className="flex gap-2">
-                  <Button onClick={() => handleGenerate()} disabled={isGenerating || status === 'locked'} className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600">
+                  <Button onClick={() => handleGenerate()} disabled={isGenerating || status === 'locked'} className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600">
                     {isGenerating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analyzing...</> : <><Sparkles className="mr-2 h-4 w-4" /> Analyze Costs</>}
                   </Button>
                   <Button variant="outline" onClick={handleDownload} disabled={!phaseMarkdown}>
@@ -3789,7 +3862,7 @@ export const PhaseDetailPage: React.FC = () => {
                   </Button>
                 </div>
                 {phaseMarkdown && (
-                  <div className="border border-emerald-200 rounded-lg bg-[#152238] p-4 mt-4">
+                  <div className="border border-blue-700/40 rounded-lg bg-[#152238] p-4 mt-4">
                     <div className="prose prose-sm max-w-none">
                       <ReactMarkdown>{phaseMarkdown}</ReactMarkdown>
                       <RawMarkdownDisclosure />
@@ -3857,11 +3930,11 @@ export const PhaseDetailPage: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-gradient-to-br from-emerald-50 to-white border-emerald-100">
+            <Card className="bg-gradient-to-br from-blue-900/20 to-white border-blue-700/30">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-emerald-100 rounded-lg">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                  <div className="p-2 bg-blue-900/30 rounded-lg">
+                    <CheckCircle2 className="h-5 w-5 text-blue-400" />
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-white">{requirements.filter(r => r.status === 'approved').length}</p>
@@ -3910,7 +3983,7 @@ export const PhaseDetailPage: React.FC = () => {
               </CardHeader>
               <CardContent className="max-h-[500px] overflow-y-auto space-y-3">
                 {requirements.length > 0 ? requirements.map((req) => (
-                  <div key={req.requirement_id} className={`p-4 rounded-lg border-l-4 ${req.status === 'approved' ? 'border-l-emerald-500 bg-emerald-50' : req.status === 'rejected' ? 'border-l-red-500 bg-red-50' : 'border-l-amber-500 bg-amber-50'}`}>
+                  <div key={req.requirement_id} className={`p-4 rounded-lg border-l-4 ${req.status === 'approved' ? 'border-l-blue-500 bg-blue-900/20' : req.status === 'rejected' ? 'border-l-red-500 bg-red-50' : 'border-l-amber-500 bg-amber-50'}`}>
                     <div className="flex items-start justify-between">
                       <div>
                         <p className="font-medium text-white">{req.title}</p>
@@ -3944,7 +4017,7 @@ export const PhaseDetailPage: React.FC = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 {validationTechniques.map((technique) => (
-                  <div key={technique.id} className="p-4 rounded-xl border border-[#3d2412] hover:border-blue-300 hover:shadow-md transition-all cursor-pointer bg-[#152238]">
+                  <div key={technique.id} className="p-4 rounded-xl border border-[var(--brand-700)] hover:border-blue-300 hover:shadow-md transition-all cursor-pointer bg-[#152238]">
                     <div className="flex items-start gap-3">
                       <div className="p-2 bg-blue-100 rounded-lg">
                         <technique.icon className="h-5 w-5 text-blue-600" />
@@ -4045,7 +4118,7 @@ export const PhaseDetailPage: React.FC = () => {
           )}
 
           {latestArtifact && (
-            <Card className="border border-dashed border-[#3d2412]">
+            <Card className="border border-dashed border-[var(--brand-700)]">
               <CardContent className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <p className="text-xs uppercase text-gray-500">Last generated</p>
@@ -4064,7 +4137,7 @@ export const PhaseDetailPage: React.FC = () => {
             </Card>
           )}
 
-          <Card className="bg-[#3d2412]/50 border border-[#3d2412]">
+          <Card className="bg-[var(--brand-700)]/50 border border-[var(--brand-700)]">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-gray-600" />
@@ -4075,7 +4148,7 @@ export const PhaseDetailPage: React.FC = () => {
             <CardContent className="space-y-3">
               <textarea
                 ref={unifiedPromptRef}
-                className="w-full border border-[#3d2412] rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                className="w-full border border-[var(--brand-700)] rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:border-transparent"
                 rows={3}
                 placeholder="E.g., 'Generate the validation checklist with stakeholder signoff steps'"
               />
@@ -4115,12 +4188,12 @@ export const PhaseDetailPage: React.FC = () => {
                 {diagramTypes.map((diagram) => {
                   const artifact = artifacts.find(a => a.type?.toLowerCase().includes(diagram.id));
                   return (
-                    <div key={diagram.id} className={`p-4 rounded-xl border-2 transition-all cursor-pointer ${artifact ? 'border-violet-300 bg-violet-50' : 'border-dashed border-gray-300 bg-[#3d2412]/50 hover:border-violet-300'}`} onClick={() => navigate(`/projects/${id}/uml/${diagram.id}`)}>
+                    <div key={diagram.id} className={`p-4 rounded-xl border-2 transition-all cursor-pointer ${artifact ? 'border-violet-300 bg-violet-50' : 'border-dashed border-gray-300 bg-[var(--brand-700)]/50 hover:border-violet-300'}`} onClick={() => navigate(`/projects/${id}/uml/${diagram.id}`)}>
                       <div className="flex items-center gap-3 mb-3">
                         <div className={`p-2 rounded-lg ${artifact ? 'bg-violet-200' : 'bg-gray-200'}`}>
                           <diagram.icon className={`h-5 w-5 ${artifact ? 'text-violet-600' : 'text-gray-500'}`} />
                         </div>
-                        {artifact && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+                        {artifact && <CheckCircle2 className="h-4 w-4 text-blue-400" />}
                       </div>
                       <p className="font-medium text-white">{diagram.name}</p>
                       <p className="text-xs text-gray-500 mt-1">{diagram.description}</p>
@@ -4228,7 +4301,7 @@ export const PhaseDetailPage: React.FC = () => {
                 </p>
               </div>
               <textarea
-                className="w-full border border-[#3d2412] rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent min-h-[150px] resize-none"
+                className="w-full border border-[var(--brand-700)] rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent min-h-[150px] resize-none"
                 placeholder={`What would you like to accomplish in the ${phaseConfig.title} phase?`}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -4243,9 +4316,9 @@ export const PhaseDetailPage: React.FC = () => {
               </div>
 
               {/* Document Preview */}
-              <div className="border-t border-[#3d2412] pt-4 mt-4">
+              <div className="border-t border-[var(--brand-700)] pt-4 mt-4">
                 <p className="text-sm font-medium text-gray-300 mb-3">Phase Document</p>
-                <div className="border border-[#3d2412] rounded-lg bg-[#152238] p-4 min-h-[300px] max-h-[500px] overflow-y-auto">
+                <div className="border border-[var(--brand-700)] rounded-lg bg-[#152238] p-4 min-h-[300px] max-h-[500px] overflow-y-auto">
                   {phaseMarkdown ? (
                     <div className="prose prose-sm max-w-none">
                       <ReactMarkdown>{phaseMarkdown}</ReactMarkdown>
@@ -4322,6 +4395,62 @@ export const PhaseDetailPage: React.FC = () => {
               </CardContent>
             </Card>
           </div>
+        </div>
+      </div>
+      {/* Phase Bottom Tabs: History | Traceability | Discussion */}
+      <div className="mt-6 rounded-2xl overflow-hidden" style={{ background: 'var(--brand-850)', border: '1px solid rgba(26,46,69,0.5)' }}>
+        <div className="flex border-b" style={{ borderColor: 'rgba(26,46,69,0.5)' }}>
+          {(['history', 'traceability', 'discussion'] as const).map((tab) => {
+            const labels: Record<string, string> = { history: 'History', traceability: 'Traceability', discussion: 'Discussion' };
+            const isActive = phaseBottomTab === tab;
+            if (tab === 'traceability' && phaseId !== 'requirements_gathering') return null;
+            return (
+              <button
+                key={tab}
+                onClick={() => setPhaseBottomTab(tab)}
+                className={`flex-1 px-4 py-3 text-sm font-semibold transition-all ${
+                  isActive
+                    ? 'text-[var(--blue-400)] border-b-2 border-[var(--blue-400)] bg-[var(--brand-800)]'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-muted)] hover:bg-[var(--brand-800)]/50'
+                }`}
+              >
+                {labels[tab]}
+              </button>
+            );
+          })}
+        </div>
+        <div className="p-4">
+          {phaseBottomTab === 'history' && (
+            <VersionHistory
+              versions={versionEntries}
+              onCompare={handleCompareVersions}
+              onRestore={handleRestoreVersion}
+            />
+          )}
+          {phaseBottomTab === 'traceability' && phaseId === 'requirements_gathering' && (
+            <TraceabilityMatrix
+              requirements={(traceabilityMatrix?.requirements || requirements).map((r: any) => ({ id: r.id || r.requirement_id || '', title: r.title || '', type: r.type || '' }))}
+              tasks={(traceabilityMatrix?.tasks || tasks).map((t: any) => ({ id: t.id || t.task_id || '', title: t.title || '', status: t.status || '' }))}
+              links={(traceabilityMatrix?.links || []).map(link => ({
+                source_id: link.source_id,
+                target_id: link.target_id,
+                link_type: link.link_type,
+              }))}
+              coveragePercentage={traceabilityMatrix?.coverage_percentage || 0}
+              onCreateLink={handleCreateTraceabilityLink}
+            />
+          )}
+          {phaseBottomTab === 'discussion' && (
+            <NegotiationThread
+              threadId={discussionThread?.id || `${id}-${phaseId}`}
+              title={discussionThread?.title || `${phaseConfig?.title || 'Phase'} Discussion`}
+              description={discussionThread?.description || 'Discuss requirements, changes, and decisions for this phase.'}
+              status={discussionThread?.status || 'open'}
+              comments={nestedDiscussionComments}
+              onAddComment={handleAddDiscussionComment}
+              onResolve={handleResolveDiscussion}
+            />
+          )}
         </div>
       </div>
     </Layout>

@@ -143,7 +143,7 @@ export const GanttChartPhase: React.FC<GanttChartPhaseProps> = ({
   };
 
   const statusIcons: Record<string, React.ReactNode> = {
-    completed: <CheckCircle2 className="h-4 w-4 text-emerald-500" />,
+    completed: <CheckCircle2 className="h-4 w-4 text-blue-400" />,
     in_progress: <Play className="h-4 w-4 text-blue-500" />,
     upcoming: <Circle className="h-4 w-4 text-gray-400" />,
     blocked: <AlertTriangle className="h-4 w-4 text-red-500" />,
@@ -214,11 +214,11 @@ export const GanttChartPhase: React.FC<GanttChartPhaseProps> = ({
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-emerald-50 to-white border-emerald-100">
+        <Card className="bg-gradient-to-br from-blue-900/20 to-white border-blue-700/30">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-emerald-100 rounded-lg">
-                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+              <div className="p-2 bg-blue-900/30 rounded-lg">
+                <CheckCircle2 className="h-5 w-5 text-blue-400" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900">{stats.completed}</p>
@@ -289,13 +289,13 @@ export const GanttChartPhase: React.FC<GanttChartPhaseProps> = ({
                       key={task.task_id}
                       className={`flex items-start gap-2 p-2 rounded-lg border text-xs sm:text-sm ${
                         done
-                          ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                          : 'bg-white border-gray-200 hover:border-emerald-300'
+                          ? 'bg-blue-900/20 border-blue-700/40 text-blue-200'
+                          : 'bg-white border-gray-200 hover:border-blue-600/50'
                       }`}
                     >
                       <input
                         type="checkbox"
-                        className="mt-0.5 h-3.5 w-3.5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                        className="mt-0.5 h-3.5 w-3.5 rounded border-gray-300 text-blue-400 focus:ring-blue-500"
                         checked={done}
                         onChange={() => handleToggleTaskDone(task)}
                       />
@@ -673,7 +673,7 @@ export const GanttChartPhase: React.FC<GanttChartPhaseProps> = ({
                 </div>
                 <div className="flex justify-between">
                   <span>On Track</span>
-                  <span className="font-medium text-emerald-600">Yes ✓</span>
+                  <span className="font-medium text-blue-400">Yes ✓</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Risk Level</span>

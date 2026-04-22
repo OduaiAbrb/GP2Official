@@ -10,11 +10,9 @@ from typing import Literal, Optional
 import httpx
 
 try:
-    from google import genai as _google_genai
-    from google.genai import types as _genai_types
+    import google.generativeai as genai
 except ImportError:  # pragma: no cover - optional dependency
-    _google_genai = None
-    _genai_types = None
+    genai = None
 
 logger = logging.getLogger(__name__)
 
@@ -67,13 +65,19 @@ class LlmChat:
 
     async def send_message(self, message: UserMessage) -> str:
         """Dispatch the prompt to the configured provider."""
-        prompt = self._compose_prompt(message.text if isinstance(message, UserMessage) else str(message))
+        user_text = message.text if isinstance(message, UserMessage) else str(message)
+
+        if self.provider in {"openai"}:
+            return await self._send_via_openai(user_text)
+
+        prompt = self._compose_prompt(user_text)
         if self.provider in {"gemini", "google", "google_gemini"}:
             return await self._send_via_gemini(prompt)
         if self.provider in {"huggingface", "hf"}:
             return await self._send_via_huggingface(prompt)
-        if self.provider in {"openai", "mock", "stub"}:
+        if self.provider in {"mock", "stub"}:
             return await self._send_via_mock(prompt)
+
         logger.warning("Unknown LLM provider '%s', using mock response", self.provider)
         return await self._send_via_mock(prompt)
 
@@ -82,29 +86,54 @@ class LlmChat:
             return f"{self.system_message.strip()}\n\n{user_text.strip()}"
         return user_text
 
+    async def _send_via_openai(self, user_text: str) -> str:
+        if not self.api_key:
+            logger.warning("OpenAI provider selected but API key missing, falling back to mock")
+            return await self._send_via_mock(self._compose_prompt(user_text))
+        try:
+            from services.openai_client import call_openai
+            return await call_openai(user_text, system=self.system_message or "", model=self.model)
+        except Exception as exc:  # pragma: no cover - network call
+            logger.error("OpenAI request failed: %s", exc)
+            return await self._send_via_mock(self._compose_prompt(user_text))
+
     async def _send_via_mock(self, prompt: str) -> str:
         """Return a deterministic mock response for local development."""
         logger.debug("Using mock LLM response for provider=%s", self.provider)
         return f"[Mock {self.provider}:{self.model}] {prompt}"
 
     async def _send_via_gemini(self, prompt: str) -> str:
-        if not self.api_key or _google_genai is None:
+        if not self.api_key or genai is None:
             logger.warning("Gemini provider selected but API key or dependency missing, falling back to mock")
             return await self._send_via_mock(prompt)
 
-        try:
-            client = _google_genai.Client(api_key=self.api_key)
-            model_name = self.model or "gemini-2.0-flash"
-            response = await client.aio.models.generate_content(
-                model=model_name,
-                contents=prompt,
-            )
-            if hasattr(response, "text") and response.text:
-                return response.text
-            return ""
-        except Exception as exc:  # pragma: no cover - network call
-            logger.error("Gemini request failed: %s", exc)
+        def _run_request() -> str:
+            try:
+                genai.configure(api_key=self.api_key)
+                model_name = self.model or "gemini-1.5-flash"
+                model = genai.GenerativeModel(model_name)
+                response = model.generate_content(prompt)
+                if hasattr(response, "text") and response.text:
+                    return response.text
+                # Fallback through candidates/parts
+                for candidate in getattr(response, "candidates", []) or []:
+                    content = getattr(candidate, "content", None)
+                    if not content:
+                        continue
+                    parts = getattr(content, "parts", None)
+                    if not parts:
+                        continue
+                    texts = [getattr(part, "text", "") for part in parts if getattr(part, "text", "")]
+                    if texts:
+                        return "\n".join(texts)
+                return ""
+            except Exception as exc:  # pragma: no cover - network call
+                logger.error("Gemini request failed: %s", exc)
+                return ""
 
+        text = await asyncio.to_thread(_run_request)
+        if text:
+            return text
         return await self._send_via_mock(prompt)
 
     async def _send_via_huggingface(self, prompt: str) -> str:

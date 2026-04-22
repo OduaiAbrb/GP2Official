@@ -86,9 +86,11 @@ export default defineConfig({
   },
   // Development server optimization
   server: {
+    // Enable HMR
     hmr: {
       overlay: true
     },
+    // Optimize dev build
     fs: {
       strict: false
     },

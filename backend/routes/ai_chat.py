@@ -3,14 +3,23 @@
 import logging
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from routes.auth import get_current_user
 from models.user import User
 from services.gemini_orchestrator import gemini_orchestrator
+from services.openai_client import call_openai
 from repositories.artifact_repository import ArtifactRepository
+
+try:
+    from slowapi import Limiter
+    from slowapi.util import get_remote_address
+    limiter = Limiter(key_func=get_remote_address)
+    RATE_LIMIT_AVAILABLE = True
+except ImportError:
+    RATE_LIMIT_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -62,6 +71,7 @@ async def _get_phase_content(project_id: str, phase: str) -> str:
 @router.post("/chat")
 async def chat_with_phase_ai(
     request: ChatRequest,
+    req: Request = None,
     current_user: User = Depends(get_current_user),
 ):
     """Send a message to the AI Chat Assistant for a specific phase."""
@@ -69,24 +79,26 @@ async def chat_with_phase_ai(
         # Get the current phase content for context
         phase_content = await _get_phase_content(request.project_id, request.phase)
 
-        context = {
-            "project_name": request.project_name,
-            "phase": request.phase,
-            "phase_content": phase_content,
-            "user_message": request.message,
-            "chat_history": [m.dict() for m in (request.chat_history or [])],
-        }
+        history_text = ""
+        for m in (request.chat_history or []):
+            role = "User" if m.role == "user" else "Athena"
+            history_text += f"{role}: {m.content}\n"
 
-        result = await gemini_orchestrator.run("ai_chat", context)
+        system_prompt = f"""You are Athena, an expert AI assistant for software development projects.
+You are helping with the {request.phase} phase of the project "{request.project_name}".
+Be concise, actionable, and specific. Format responses in markdown when helpful.
 
-        if not result["success"]:
-            raise HTTPException(status_code=500, detail=result.get("error", "AI chat failed"))
+{f'Current phase content:{chr(10)}{phase_content[:2000]}' if phase_content else ''}"""
+
+        user_prompt = f"""{f'Conversation so far:{chr(10)}{history_text}{chr(10)}' if history_text else ''}User: {request.message}"""
+
+        response_text = await call_openai(user_prompt, system=system_prompt)
 
         return {
             "success": True,
-            "response": result["content"],
-            "agent": result["agent"],
-            "model": result["model"],
+            "response": response_text,
+            "agent": "AIChatAgent",
+            "model": "gpt-4o-mini",
         }
 
     except HTTPException:
@@ -99,6 +111,7 @@ async def chat_with_phase_ai(
 @router.post("/agent-task")
 async def run_agent_task(
     request: AgentTaskRequest,
+    req: Request = None,
     current_user: User = Depends(get_current_user),
 ):
     """Run a specialized AI agent task (conflict detection, tech stack, security audit, etc.)."""
@@ -129,7 +142,10 @@ async def run_agent_task(
         result = await gemini_orchestrator.run(request.task_type, context)
 
         if not result["success"]:
-            raise HTTPException(status_code=500, detail=result.get("error", "Agent task failed"))
+            err = result.get("error", "Agent task failed")
+            if "429" in str(err) or "quota" in str(err).lower():
+                raise HTTPException(status_code=429, detail="Gemini API daily quota reached. Your quota resets at midnight Pacific time. Check https://ai.dev/rate-limit for details.")
+            raise HTTPException(status_code=500, detail=err)
 
         return {
             "success": True,
@@ -142,8 +158,11 @@ async def run_agent_task(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Agent task error ({request.task_type}): {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        err_str = str(e)
+        logger.error(f"Agent task error ({request.task_type}): {err_str}")
+        if "429" in err_str or "quota" in err_str.lower():
+            raise HTTPException(status_code=429, detail="Gemini API daily quota reached. Your quota resets at midnight Pacific time.")
+        raise HTTPException(status_code=500, detail=err_str)
 
 
 @router.get("/supported-tasks")

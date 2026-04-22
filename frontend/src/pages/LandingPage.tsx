@@ -1,728 +1,577 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Volume2, VolumeX, X } from 'lucide-react';
+import {
+  ArrowRight, Sparkles, Zap, Shield, BarChart3, Users, FileText,
+  CheckCircle2, Star, Rocket, TrendingUp, Clock, Award, Cpu, Layers,
+  GitBranch, ChevronDown, MessageSquare, DollarSign, AlertTriangle,
+  ClipboardList, Search, FlaskConical, Code2, LayoutDashboard,
+} from 'lucide-react';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-type Stage = 'falling' | 'cracking' | 'welcome' | 'growing' | 'forest';
-
-interface PhaseNode {
-  id: string; label: string; x: number; y: number;
-  fill: string; stemFrom: [number, number];
-}
-
-// ─── Phase nodes hanging from branches ───────────────────────────────────────
-const PHASES: PhaseNode[] = [
-  { id: 'planning',               label: 'Planning',       x: 162, y: 285, fill: '#D4A017', stemFrom: [205, 262] },
-  { id: 'feasibility_study',      label: 'Feasibility',    x: 255, y: 238, fill: '#c8870f', stemFrom: [278, 222] },
-  { id: 'requirements_gathering', label: 'Requirements',   x: 342, y: 210, fill: '#b87e0e', stemFrom: [358, 198] },
-  { id: 'validation',             label: 'Validation',     x: 400, y: 180, fill: '#8B5E3C', stemFrom: [412, 170] },
-  { id: 'design',                 label: 'Design',         x: 715, y: 268, fill: '#6B4C8A', stemFrom: [688, 252] },
-  { id: 'development',            label: 'Development',    x: 628, y: 230, fill: '#8B5E3C', stemFrom: [618, 218] },
-  { id: 'tasks',                  label: 'Tasks',          x: 556, y: 210, fill: '#2A9D8F', stemFrom: [548, 200] },
-  { id: 'cost_benefit',           label: 'Cost & Benefit', x: 510, y: 175, fill: '#b87e0e', stemFrom: [504, 165] },
-  { id: 'risks',                  label: 'Risks',          x: 450, y: 148, fill: '#C1440E', stemFrom: [450, 138] },
-  { id: 'summary',                label: 'Summary',        x: 450, y: 112, fill: '#D4A017', stemFrom: [450, 102] },
+// ─── Phase data ──────────────────────────────────────────────────────────────
+const PHASES = [
+  { id: 'planning',      label: 'Planning',        icon: ClipboardList,  color: '#1A6FD4' },
+  { id: 'feasibility',   label: 'Feasibility',     icon: Search,         color: '#2d88e8' },
+  { id: 'requirements',  label: 'Requirements',    icon: FileText,       color: '#3d8fe0' },
+  { id: 'validation',    label: 'Validation',      icon: CheckCircle2,   color: '#1A6FD4' },
+  { id: 'design',        label: 'System Design',   icon: Layers,         color: '#2d88e8' },
+  { id: 'development',   label: 'Development',     icon: Code2,          color: '#F97316' },
+  { id: 'tasks',         label: 'Tasks',           icon: GitBranch,      color: '#fb9042' },
+  { id: 'cost',          label: 'Cost & Benefit',  icon: DollarSign,     color: '#F97316' },
+  { id: 'risks',         label: 'Risks',           icon: AlertTriangle,  color: '#fb9042' },
+  { id: 'testing',       label: 'Testing',         icon: FlaskConical,   color: '#2A9D8F' },
+  { id: 'summary',       label: 'Summary',         icon: LayoutDashboard,color: '#F97316' },
 ];
 
-// ─── Info panels for clicking nodes ──────────────────────────────────────────
-const PANELS: Record<string, { title: string; body: string }> = {
-  planning:               { title: 'Planning',       body: 'Define your vision, goals, stakeholders, and success metrics. The seed of every great project.' },
-  feasibility_study:      { title: 'Feasibility',    body: 'Analyse market, technical, economic and operational viability. Get a go/no-go recommendation.' },
-  requirements_gathering: { title: 'Requirements',   body: 'Personas, user stories, functional and non-functional requirements with acceptance criteria.' },
-  validation:             { title: 'Validation',     body: 'Stakeholder sign-off criteria, prototype validation and traceability matrix.' },
-  design:                 { title: 'Design',         body: 'System architecture, component diagrams, data models, API specifications, and UX flows.' },
-  development:            { title: 'Development',    body: 'Tech stack, folder structure, dev flow, and component breakdown for your build.' },
-  tasks:                  { title: 'Tasks',          body: 'Epics, stories, estimates, dependencies, milestones, and Gantt visualisation.' },
-  cost_benefit:           { title: 'Cost & Benefit', body: 'Cost drivers, estimated benefits, ROI, budget hotspots, and high-ROI opportunities.' },
-  risks:                  { title: 'Risks',          body: 'Risk register with impact, likelihood, mitigation strategies and owner assignments.' },
-  summary:                { title: 'Summary',        body: 'The golden acorn — a complete executive summary of your entire project plan, ready to share.' },
-};
+// Row 1: indices 0-4 left→right  (y ≈ 80)
+// Row 2: indices 5-9 right→left  (y ≈ 200)
+const NODE_W = 100;
+const NODE_H = 56;
+const GAP_X  = 32;
+const ROW1_Y = 60;
+const ROW2_Y = 188;
+const ROW1_COUNT = 6;
+const ROW2_COUNT = 5;
 
-// ─── Web Audio breeze generator ───────────────────────────────────────────────
-function startBreeze(): () => void {
-  try {
-    const ctx = new AudioContext();
-    const buf = ctx.createBuffer(1, ctx.sampleRate * 3, ctx.sampleRate);
-    const d = buf.getChannelData(0);
-    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-
-    const src = ctx.createBufferSource();
-    src.buffer = buf; src.loop = true;
-
-    const lp1 = ctx.createBiquadFilter();
-    lp1.type = 'lowpass'; lp1.frequency.value = 500; lp1.Q.value = 0.5;
-
-    const lp2 = ctx.createBiquadFilter();
-    lp2.type = 'lowpass'; lp2.frequency.value = 250; lp2.Q.value = 0.3;
-
-    // Slow LFO for wind gusts
-    const lfo = ctx.createOscillator();
-    lfo.type = 'sine'; lfo.frequency.value = 0.08;
-    const lfoGain = ctx.createGain();
-    lfoGain.gain.value = 0.015;
-    lfo.connect(lfoGain);
-    lfoGain.connect(ctx.destination);
-    lfo.start();
-
-    const gain = ctx.createGain();
-    gain.gain.value = 0;
-    gain.gain.linearRampToValueAtTime(0.028, ctx.currentTime + 2);
-
-    src.connect(lp1); lp1.connect(lp2); lp2.connect(gain);
-    gain.connect(ctx.destination); src.start();
-
-    return () => { try { src.stop(); lfo.stop(); ctx.close(); } catch {} };
-  } catch { return () => {}; }
+function nodeX(i: number): number {
+  if (i < ROW1_COUNT) return 20 + i * (NODE_W + GAP_X);
+  const j = i - ROW1_COUNT;
+  return 20 + (ROW2_COUNT - 1 - j) * (NODE_W + GAP_X);
+}
+function nodeY(i: number): number {
+  return i < ROW1_COUNT ? ROW1_Y : ROW2_Y;
 }
 
-// ─── Acorn node (hanging from branch) ────────────────────────────────────────
-const HangingAcorn: React.FC<{
-  x: number; y: number; r?: number; fill?: string; active?: boolean;
-  label: string; delay?: number; visible?: boolean;
-  onClick?: () => void;
-}> = ({ x, y, r = 20, fill = '#D4A017', active = false, label, delay = 0, visible = true, onClick }) => {
-  return (
-    <g onClick={onClick} style={{ cursor: 'pointer', opacity: visible ? 1 : 0,
-      transition: `opacity 0.4s ease ${delay}s, transform 0.4s ease ${delay}s`,
-      transformBox: 'fill-box', transformOrigin: `${x}px ${y - r * 1.8}px`,
-      transform: visible ? 'scaleY(1)' : 'scaleY(0)',
-    }}>
-      {/* Glow */}
-      {active && <circle cx={x} cy={y + r * 0.3} r={r + 12} fill={fill} fillOpacity="0.18" />}
-      {/* Hover target */}
-      <circle cx={x} cy={y + r * 0.15} r={r + 8} fill="transparent" />
-      {/* Stem */}
-      <path d={`M ${x} ${y - r * 1.85} Q ${x + 3} ${y - r * 1.3} ${x} ${y - r * 0.95}`}
-        stroke="#3d2412" strokeWidth="1.8" fill="none" strokeLinecap="round" />
-      {/* Cap (acorn hat) */}
-      <ellipse cx={x} cy={y - r * 0.25} rx={r * 0.88} ry={r * 0.38} fill="#2c1b0e" />
-      <ellipse cx={x} cy={y - r * 0.32} rx={r * 0.72} ry={r * 0.25} fill="#1a1008" />
-      {/* Small crosshatch on cap */}
-      {[-r*0.4,-r*0.15,r*0.1,r*0.35].map((dx,i) => (
-        <line key={i} x1={x+dx} y1={y-r*0.52} x2={x+dx} y2={y-r*0.02}
-          stroke="#3d2412" strokeWidth="0.8" opacity="0.6" />
-      ))}
-      {/* Body */}
-      <ellipse cx={x} cy={y + r * 0.38} rx={r * 0.8} ry={r * 0.75}
-        fill={fill}
-        style={{ filter: active ? `drop-shadow(0 0 10px ${fill}aa)` : 'none', transition: 'filter 0.3s' }}
-      />
-      {/* Highlight */}
-      <ellipse cx={x - r * 0.25} cy={y + r * 0.1} rx={r * 0.2} ry={r * 0.3}
-        fill="rgba(255,255,255,0.14)" />
-      {/* Stem nub */}
-      <rect x={x - r * 0.1} y={y - r * 0.85} width={r * 0.2} height={r * 0.55}
-        rx={r * 0.08} fill="#1a1008" />
-      {/* Label */}
-      <text x={x} y={y + r * 1.5} textAnchor="middle"
-        fill={active ? '#f0e4c8' : '#c8b090'} fontSize="9.5" fontWeight="700"
-        fontFamily="Inter,sans-serif" style={{ pointerEvents: 'none', transition: 'fill 0.2s' }}>
-        {label}
-      </text>
-    </g>
-  );
-};
+const SVG_W = 20 + ROW1_COUNT * (NODE_W + GAP_X) - GAP_X + 20;
+const SVG_H = ROW2_Y + NODE_H + 40;
 
-// ─── Cracked acorn for intro ──────────────────────────────────────────────────
-const CrackedAcorn: React.FC<{ cracked: boolean; size?: number }> = ({ cracked, size = 100 }) => (
-  <svg width={size} height={size * 1.2} viewBox="0 0 100 120" fill="none">
-    {!cracked ? (
-      <>
-        {/* Whole acorn */}
-        <ellipse cx="50" cy="48" rx="33" ry="20" fill="#3d2412" />
-        <ellipse cx="50" cy="48" rx="26" ry="13" fill="#221508" />
-        <rect x="46" y="28" width="8" height="22" rx="4" fill="#221508" />
-        <ellipse cx="50" cy="86" rx="30" ry="36" fill="#8B5E3C" />
-        <ellipse cx="50" cy="78" rx="26" ry="30" fill="#c8895a" />
-        <ellipse cx="40" cy="68" rx="8" ry="12" fill="rgba(255,255,255,0.1)" />
-      </>
-    ) : (
-      <>
-        {/* Left half falling left */}
-        <g style={{ transformBox: 'fill-box', transform: 'rotate(-22deg) translate(-8px, 4px)', transformOrigin: '50px 90px' }}>
-          <ellipse cx="40" cy="88" rx="22" ry="28" fill="#8B5E3C" />
-          <ellipse cx="40" cy="50" rx="24" ry="14" fill="#3d2412" />
-          <ellipse cx="40" cy="50" rx="18" ry="9" fill="#221508" />
-          <rect x="38" y="36" width="6" height="16" rx="3" fill="#221508" />
-        </g>
-        {/* Right half falling right */}
-        <g style={{ transformBox: 'fill-box', transform: 'rotate(22deg) translate(8px, 4px)', transformOrigin: '50px 90px' }}>
-          <ellipse cx="62" cy="88" rx="22" ry="28" fill="#c8895a" />
-          <ellipse cx="62" cy="50" rx="24" ry="14" fill="#5c3820" />
-          <ellipse cx="62" cy="50" rx="18" ry="9" fill="#3d2412" />
-          <rect x="59" y="36" width="6" height="16" rx="3" fill="#3d2412" />
-        </g>
-        {/* Golden spark rays */}
-        {[0, 40, 80, 120, 160, 200, 240, 280, 320].map((deg, i) => (
-          <line key={i}
-            x1="50" y1="92"
-            x2={50 + Math.cos((deg - 90) * Math.PI / 180) * (30 + i % 3 * 8)}
-            y2={92 + Math.sin((deg - 90) * Math.PI / 180) * (30 + i % 3 * 8)}
-            stroke="#D4A017" strokeWidth="2.5" strokeLinecap="round"
-            opacity={0.5 + i * 0.04}
-          />
-        ))}
-        <circle cx="50" cy="92" r="10" fill="#D4A017" fillOpacity="0.35" />
-        <circle cx="50" cy="92" r="5" fill="#e8bf40" fillOpacity="0.6" />
-      </>
-    )}
-  </svg>
-);
+// ─── SDLC Flowchart SVG ───────────────────────────────────────────────────────
+interface SDLCFlowchartProps {
+  visibleCount: number; // 0 = nothing, 11 = all
+  compact?: boolean;
+}
 
-// ─── The Real Oak Tree SVG ────────────────────────────────────────────────────
-const OakTree: React.FC<{
-  growing: boolean;
-  activePhase: string | null;
-  onPhaseClick: (id: string) => void;
-}> = ({ growing, activePhase, onPhaseClick }) => {
-
-  // All trunk + branch paths defined as [d, strokeWidth, color, animDelay]
-  // The trunk uses multiple overlapping strokes for bark texture
-  const trunkPaths: [string, number, string, number][] = [
-    // Base trunk — very thick
-    ['M 450 582 C 446 560 454 538 448 512 C 442 486 456 462 450 438', 52, '#1a0f05', 0],
-    ['M 450 582 C 446 560 454 538 448 512 C 442 486 456 462 450 438', 44, '#2c1b0e', 0],
-    ['M 450 582 C 446 560 454 538 448 512 C 442 486 456 462 450 438', 34, '#3d2412', 0],
-    // Mid trunk
-    ['M 450 438 C 444 414 458 392 450 368', 30, '#2c1b0e', 0.1],
-    ['M 450 438 C 444 414 458 392 450 368', 22, '#3d2412', 0.1],
-    // Upper trunk  
-    ['M 450 368 C 444 348 456 330 450 312', 18, '#2c1b0e', 0.18],
-    ['M 450 368 C 444 348 456 330 450 312', 12, '#3d2412', 0.18],
-    // Top of trunk → crown
-    ['M 450 312 C 447 298 453 285 450 270', 10, '#2c1b0e', 0.25],
-    ['M 450 312 C 447 298 453 285 450 270', 6, '#5c3820', 0.25],
-    // Bark highlight (light streak)
-    ['M 455 560 C 456 530 454 500 455 470 C 456 445 454 420 456 395', 2, '#5c3820', 0],
-  ];
-
-  // Main branches: [d, strokeWidth, color, delay]
-  const branchPaths: [string, number, string, number][] = [
-    // Left main branch (from trunk at ~y=400)
-    ['M 447 410 C 410 395 360 370 310 352 C 270 338 230 320 205 308', 14, '#2c1b0e', 0.35],
-    ['M 447 410 C 410 395 360 370 310 352 C 270 338 230 320 205 308', 8, '#3d2412', 0.35],
-    // Left sub-branch to planning
-    ['M 205 308 C 195 298 182 290 168 282', 7, '#2c1b0e', 0.55],
-    ['M 205 308 C 195 298 182 290 168 282', 4, '#3d2412', 0.55],
-    // Left sub-branch up to feasibility
-    ['M 205 308 C 212 292 240 268 258 244', 7, '#2c1b0e', 0.6],
-    ['M 205 308 C 212 292 240 268 258 244', 4, '#3d2412', 0.6],
-    // Left mid branch (y=360)
-    ['M 449 372 C 428 358 400 342 378 328 C 360 318 348 310 342 302', 9, '#2c1b0e', 0.45],
-    ['M 449 372 C 428 358 400 342 378 328 C 360 318 348 310 342 302', 5, '#3d2412', 0.45],
-    // left mid to requirements
-    ['M 342 302 C 342 278 342 252 344 215', 5, '#2c1b0e', 0.65],
-    ['M 342 302 C 342 278 342 252 344 215', 3, '#3d2412', 0.65],
-    // Left high branch (y=332)
-    ['M 449 335 C 438 322 425 312 415 298 C 408 288 404 280 402 270', 7, '#2c1b0e', 0.55],
-    ['M 449 335 C 438 322 425 312 415 298 C 408 288 404 280 402 270', 3.5, '#3d2412', 0.55],
-    // Left high → validation
-    ['M 402 270 C 401 258 401 242 402 185', 4, '#2c1b0e', 0.7],
-    ['M 402 270 C 401 258 401 242 402 185', 2, '#3d2412', 0.7],
-    // Right main branch (from trunk at ~y=395)
-    ['M 453 405 C 490 390 540 368 590 350 C 630 336 668 322 692 308', 14, '#2c1b0e', 0.38],
-    ['M 453 405 C 490 390 540 368 590 350 C 630 336 668 322 692 308', 8, '#3d2412', 0.38],
-    // Right sub to design
-    ['M 692 308 C 700 295 706 282 716 268', 7, '#2c1b0e', 0.58],
-    ['M 692 308 C 700 295 706 282 716 268', 4, '#3d2412', 0.58],
-    // Right sub to development
-    ['M 692 308 C 680 295 658 270 630 236', 7, '#2c1b0e', 0.63],
-    ['M 692 308 C 680 295 658 270 630 236', 4, '#3d2412', 0.63],
-    // Right mid branch (y=358)
-    ['M 451 368 C 470 354 500 338 522 322 C 540 310 550 305 556 300', 9, '#2c1b0e', 0.48],
-    ['M 451 368 C 470 354 500 338 522 322 C 540 310 550 305 556 300', 5, '#3d2412', 0.48],
-    // right mid → tasks
-    ['M 556 300 C 556 278 556 252 558 215', 5, '#2c1b0e', 0.67],
-    ['M 556 300 C 556 278 556 252 558 215', 3, '#3d2412', 0.67],
-    // Right high branch (y=330)
-    ['M 451 332 C 462 318 474 308 484 296 C 492 286 498 278 500 268', 7, '#2c1b0e', 0.57],
-    ['M 451 332 C 462 318 474 308 484 296 C 492 286 498 278 500 268', 3.5, '#3d2412', 0.57],
-    // right high → cost_benefit
-    ['M 500 268 C 500 252 506 232 512 180', 4, '#2c1b0e', 0.72],
-    ['M 500 268 C 500 252 506 232 512 180', 2, '#3d2412', 0.72],
-    // Top center → risks
-    ['M 450 270 C 450 255 450 220 450 152', 6, '#2c1b0e', 0.78],
-    ['M 450 270 C 450 255 450 220 450 152', 3, '#3d2412', 0.78],
-    // top → summary
-    ['M 450 152 C 450 142 450 132 450 116', 4, '#2c1b0e', 0.88],
-    ['M 450 152 C 450 142 450 132 450 116', 2, '#3d2412', 0.88],
-  ];
-
-  // Roots
-  const roots = [
-    'M 450 578 C 430 582 400 585 375 585',
-    'M 450 578 C 470 582 500 585 525 585',
-    'M 450 578 C 425 585 390 586 360 586',
-    'M 450 578 C 475 585 510 586 540 586',
-    'M 450 578 C 418 586 380 588 345 588',
-    'M 450 578 C 482 586 520 588 555 588',
-  ];
-
-  // Small leaf clusters in the canopy (decorative)
-  const leafClusters = [
-    { cx: 185, cy: 255, r: 42, color: '#3d7a4a', delay: 1.2 },
-    { cx: 260, cy: 212, r: 36, color: '#5a9e6a', delay: 1.3 },
-    { cx: 345, cy: 188, r: 32, color: '#4a8a58', delay: 1.35 },
-    { cx: 402, cy: 158, r: 28, color: '#3d7a4a', delay: 1.4 },
-    { cx: 718, cy: 248, r: 40, color: '#3d7a4a', delay: 1.25 },
-    { cx: 630, cy: 208, r: 34, color: '#5a9e6a', delay: 1.32 },
-    { cx: 558, cy: 190, r: 30, color: '#4a8a58', delay: 1.38 },
-    { cx: 512, cy: 155, r: 26, color: '#3d7a4a', delay: 1.42 },
-    { cx: 450, cy: 128, r: 24, color: '#5a9e6a', delay: 1.5 },
-  ];
+const SDLCFlowchart: React.FC<SDLCFlowchartProps> = ({ visibleCount, compact = false }) => {
+  const scale = compact ? 0.72 : 1;
 
   return (
-    <svg width="100%" height="100%" viewBox="0 0 900 600"
-      preserveAspectRatio="xMidYMid meet"
-      style={{ maxWidth: 900, display: 'block', margin: '0 auto' }}>
-
+    <svg
+      width={SVG_W * scale}
+      height={SVG_H * scale}
+      viewBox={`0 0 ${SVG_W} ${SVG_H}`}
+      style={{ overflow: 'visible', display: 'block' }}
+    >
       <defs>
-        <radialGradient id="groundGlow" cx="50%" cy="100%" r="40%">
-          <stop offset="0%" stopColor="#3d2412" stopOpacity="0.4" />
-          <stop offset="100%" stopColor="#0c0702" stopOpacity="0" />
-        </radialGradient>
-        <filter id="glow">
-          <feGaussianBlur stdDeviation="4" result="coloredBlur" />
-          <feMerge><feMergeNode in="coloredBlur" /><feMergeNode in="SourceGraphic" /></feMerge>
+        <filter id="glow-node">
+          <feGaussianBlur stdDeviation="3" result="blur" />
+          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
         </filter>
+        <filter id="glow-line">
+          <feGaussianBlur stdDeviation="2" result="blur" />
+          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
+        <marker id="arrow-blue" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#1A6FD4" />
+        </marker>
+        <marker id="arrow-orange" markerWidth="8" markerHeight="8" refX="1" refY="3" orient="auto">
+          <path d="M8,0 L8,6 L0,3 z" fill="#F97316" />
+        </marker>
+        <marker id="arrow-down" markerWidth="8" markerHeight="8" refX="3" refY="7" orient="auto">
+          <path d="M0,0 L6,0 L3,8 z" fill="#F97316" />
+        </marker>
       </defs>
 
-      {/* Ground glow */}
-      <ellipse cx="450" cy="588" rx="200" ry="18" fill="url(#groundGlow)" />
+      {/* ── Connector lines ── */}
+      {PHASES.map((phase, i) => {
+        if (i >= visibleCount - 1) return null;
 
-      {/* Roots */}
-      {roots.map((d, i) => (
-        <g key={i}>
-          <path d={d} stroke="#1a0f05" strokeWidth={10 - i} fill="none" strokeLinecap="round"
-            style={{ opacity: growing ? 1 : 0, transition: `opacity 0.5s ease 0.1s` }} />
-          <path d={d} stroke="#2c1b0e" strokeWidth={6 - i * 0.5} fill="none" strokeLinecap="round"
-            style={{ opacity: growing ? 1 : 0, transition: `opacity 0.5s ease 0.1s` }} />
-        </g>
-      ))}
+        // Row 1 horizontal connectors (0→1, 1→2, 2→3, 3→4)
+        if (i < ROW1_COUNT - 1) {
+          const x1 = nodeX(i) + NODE_W;
+          const y  = nodeY(i) + NODE_H / 2;
+          const x2 = nodeX(i + 1);
+          return (
+            <line key={`conn-${i}`}
+              x1={x1} y1={y} x2={x2 - 2} y2={y}
+              stroke="#1A6FD4" strokeWidth="2"
+              markerEnd="url(#arrow-blue)"
+              filter="url(#glow-line)"
+              style={{ animation: `fadeIn 0.3s ease forwards` }}
+            />
+          );
+        }
 
-      {/* Trunk paths */}
-      {trunkPaths.map(([d, sw, color, delay], i) => (
-        <path key={i} d={d} stroke={color} strokeWidth={sw} fill="none" strokeLinecap="round"
-          strokeLinejoin="round"
-          style={{
-            strokeDasharray: 800,
-            strokeDashoffset: growing ? 0 : 800,
-            transition: `stroke-dashoffset 1s cubic-bezier(0.4,0,0.2,1) ${delay}s`,
-          }} />
-      ))}
+        // U-turn connector: row1 node 4 → row2 node 5
+        if (i === ROW1_COUNT - 1) {
+          const x  = nodeX(4) + NODE_W / 2;
+          const y1 = nodeY(4) + NODE_H;
+          const y2 = nodeY(5);
+          return (
+            <line key="conn-uturn"
+              x1={x} y1={y1} x2={x} y2={y2 - 2}
+              stroke="#F97316" strokeWidth="2"
+              markerEnd="url(#arrow-down)"
+              filter="url(#glow-line)"
+              style={{ animation: 'fadeIn 0.3s ease forwards' }}
+            />
+          );
+        }
 
-      {/* Branch paths */}
-      {branchPaths.map(([d, sw, color, delay], i) => (
-        <path key={i} d={d} stroke={color} strokeWidth={sw} fill="none" strokeLinecap="round"
-          strokeLinejoin="round"
-          style={{
-            strokeDasharray: 500,
-            strokeDashoffset: growing ? 0 : 500,
-            transition: `stroke-dashoffset 0.8s cubic-bezier(0.4,0,0.2,1) ${delay}s`,
-          }} />
-      ))}
+        // Row 2 horizontal connectors (5→6, 6→7, 7→8, 8→9)
+        // nodeX(5) is rightmost, nodeX(9) is leftmost — so connect right-edge of next to left-edge of current
+        if (i >= ROW1_COUNT && i < ROW1_COUNT + ROW2_COUNT - 1) {
+          const x1 = nodeX(i);              // left edge of current (further left = higher index)
+          const x2 = nodeX(i + 1) + NODE_W; // right edge of next node (further right)
+          const y  = nodeY(i) + NODE_H / 2;
+          // Draw from right (x2) to left (x1), arrow points left
+          return (
+            <line key={`conn-${i}`}
+              x1={x2} y1={y} x2={x1 + 2} y2={y}
+              stroke="#F97316" strokeWidth="2"
+              markerEnd="url(#arrow-orange)"
+              filter="url(#glow-line)"
+              style={{ animation: 'fadeIn 0.3s ease forwards' }}
+            />
+          );
+        }
 
-      {/* Leaf canopy clusters (behind acorns) */}
-      {leafClusters.map((lc, i) => (
-        <g key={i} style={{
-          opacity: growing ? 0.75 : 0,
-          transition: `opacity 0.6s ease ${lc.delay}s`,
-          transformBox: 'fill-box', transformOrigin: `${lc.cx}px ${lc.cy}px`,
-          animation: growing ? `leafSway ${4 + i * 0.3}s ease-in-out ${i * 0.5}s infinite alternate` : 'none',
-        }}>
-          {/* Multiple overlapping leaf shapes for a cluster effect */}
-          {[0,1,2,3,4,5].map(j => {
-            const angle = (j / 6) * Math.PI * 2;
-            const spread = lc.r * 0.6;
-            const lx = lc.cx + Math.cos(angle) * spread * 0.7;
-            const ly = lc.cy + Math.sin(angle) * spread * 0.5;
-            const lr = lc.r * (0.5 + j * 0.08);
-            const rot = angle * (180 / Math.PI) - 90;
-            return (
-              <path key={j}
-                d={`M ${lx} ${ly - lr} C ${lx + lr*0.7} ${ly - lr*0.4}, ${lx + lr*0.7} ${ly + lr*0.2}, ${lx} ${ly + lr*0.45} C ${lx - lr*0.7} ${ly + lr*0.2}, ${lx - lr*0.7} ${ly - lr*0.4}, ${lx} ${ly - lr}`}
-                fill={lc.color}
-                opacity={0.55 + j * 0.05}
-                transform={`rotate(${rot} ${lx} ${ly})`}
-              />
-            );
-          })}
-        </g>
-      ))}
+        return null;
+      })}
 
-      {/* Hanging acorn nodes */}
-      {PHASES.map((phase, i) => (
-        <HangingAcorn
-          key={phase.id}
-          x={phase.x} y={phase.y} r={18}
-          fill={phase.fill}
-          active={activePhase === phase.id}
-          label={phase.label}
-          delay={1.1 + i * 0.07}
-          visible={growing}
-          onClick={() => onPhaseClick(phase.id)}
-        />
-      ))}
+      {/* ── Phase nodes ── */}
+      {PHASES.map((phase, i) => {
+        if (i >= visibleCount) return null;
+        const x = nodeX(i);
+        const y = nodeY(i);
+        const Icon = phase.icon;
+        const isOrange = i >= 5;
 
-      {/* Gentle bark texture lines on trunk */}
-      {[0,1,2,3,4].map(i => (
-        <path key={i}
-          d={`M ${448 + i * 3} ${560 - i * 15} C ${449 + i * 2} ${540 - i * 12} ${447 + i * 3} ${520 - i * 10} ${448 + i * 2} ${500 - i * 8}`}
-          stroke="#1a0f05" strokeWidth="1.5" fill="none" strokeLinecap="round"
-          opacity={0.3 - i * 0.04}
-          style={{ opacity: growing ? (0.3 - i * 0.04) : 0, transition: `opacity 0.5s ease 0.5s` }}
-        />
-      ))}
+        return (
+          <g key={phase.id} style={{ animation: 'nodeAppear 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards' }}>
+            {/* Node background */}
+            <rect
+              x={x} y={y} width={NODE_W} height={NODE_H} rx={10}
+              fill={isOrange ? 'rgba(249,115,22,0.15)' : 'rgba(26,111,212,0.18)'}
+              stroke={isOrange ? '#F97316' : '#1A6FD4'}
+              strokeWidth="1.5"
+              filter="url(#glow-node)"
+            />
+
+            {/* Step badge */}
+            <circle cx={x + 14} cy={y + 14} r={10}
+              fill={isOrange ? '#F97316' : '#1A6FD4'}
+              opacity={0.9}
+            />
+            <text x={x + 14} y={y + 18} textAnchor="middle"
+              fill="#fff" fontSize="9" fontFamily="DM Sans, sans-serif" fontWeight="700">
+              {i + 1}
+            </text>
+
+            {/* Label */}
+            <text x={x + NODE_W / 2} y={y + NODE_H / 2 + 5}
+              textAnchor="middle"
+              fill="#E8EDF5" fontSize="11" fontFamily="DM Sans, sans-serif" fontWeight="600">
+              {phase.label}
+            </text>
+          </g>
+        );
+      })}
 
       <style>{`
-        @keyframes leafSway {
-          0% { transform: rotate(-3deg); }
-          100% { transform: rotate(3deg); }
+        @keyframes nodeAppear {
+          from { opacity: 0; transform: scale(0.6); }
+          to   { opacity: 1; transform: scale(1); }
         }
-        @keyframes acornSway {
-          0%, 100% { transform: rotate(-2deg); }
-          50% { transform: rotate(2deg); }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to   { opacity: 1; }
         }
       `}</style>
     </svg>
   );
 };
 
-// ─── Floating leaf particles ──────────────────────────────────────────────────
-const FloatingLeaf: React.FC<{ x: number; delay: number; duration: number; size: number }> =
-  ({ x, delay, duration, size }) => (
+// ─── Splash Screen ───────────────────────────────────────────────────────────
+interface SplashProps { onEnter: () => void; onViewDocs: () => void; }
+
+const SPLASH_STATS = [
+  { value: '10x', label: 'Faster planning' },
+  { value: '100%', label: 'SDLC coverage' },
+  { value: '< 5 min', label: 'From idea to SRS' },
+];
+
+const SplashScreen: React.FC<SplashProps> = ({ onEnter, onViewDocs }) => {
+  const [visible, setVisible] = useState(0);
+  const [showCTA, setShowCTA] = useState(false);
+  const [showStats, setShowStats] = useState(false);
+
+  useEffect(() => {
+    if (visible < PHASES.length) {
+      const t = setTimeout(() => setVisible(v => v + 1), 280);
+      return () => clearTimeout(t);
+    } else {
+      const t = setTimeout(() => { setShowCTA(true); setShowStats(true); }, 350);
+      return () => clearTimeout(t);
+    }
+  }, [visible]);
+
+  return (
     <div style={{
-      position: 'absolute',
-      left: `${x}%`,
-      top: '-5%',
-      width: size,
-      height: size * 1.4,
-      opacity: 0,
-      animation: `leafFall ${duration}s ease-in ${delay}s infinite`,
-      pointerEvents: 'none',
+      minHeight: '100vh', display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      background: 'linear-gradient(160deg, #0a1f3d 0%, #0D1B2A 55%, #0d1520 100%)',
+      position: 'relative', overflow: 'hidden',
     }}>
-      <svg width={size} height={size * 1.4} viewBox="0 0 20 28">
-        <path d="M 10 0 C 17 5, 18 15, 10 24 C 2 15, 3 5, 10 0 Z"
-          fill="#5a9e6a" opacity="0.6" />
-        <line x1="10" y1="2" x2="10" y2="22" stroke="rgba(0,0,0,0.2)" strokeWidth="0.8" />
-      </svg>
+      <div className="bg-grid" style={{ position: 'absolute', inset: 0, opacity: 0.25 }} />
+      <div className="glow-orb glow-orb-forest" style={{ width: '700px', height: '700px', top: '-25%', left: '-20%', opacity: 0.35 }} />
+      <div style={{ position: 'absolute', bottom: '-10%', right: '-10%', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(249,115,22,0.08), transparent 70%)' }} />
+
+      {/* Logo + wordmark */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '32px', position: 'relative', zIndex: 1 }}>
+        <div style={{
+          width: '48px', height: '48px', borderRadius: '13px',
+          background: 'linear-gradient(135deg, #1A6FD4, #0d2b52)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: '0 0 30px rgba(26,111,212,0.55)',
+        }}>
+          <Zap size={24} color="#fff" />
+        </div>
+        <div>
+          <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '30px', color: '#E8EDF5', letterSpacing: '-0.03em', display: 'block', lineHeight: 1 }}>Acorn</span>
+          <span style={{ fontSize: '11px', color: '#4a6070', fontFamily: "'DM Sans', sans-serif", letterSpacing: '0.12em', textTransform: 'uppercase' }}>Project Intelligence Platform</span>
+        </div>
+      </div>
+
+      {/* Headline */}
+      <div style={{ textAlign: 'center', marginBottom: '40px', position: 'relative', zIndex: 1, padding: '0 24px' }}>
+        <h1 style={{
+          fontFamily: "'Syne', sans-serif", fontWeight: 800,
+          fontSize: 'clamp(24px, 4vw, 42px)', color: '#E8EDF5',
+          lineHeight: 1.15, letterSpacing: '-0.03em', marginBottom: '12px',
+        }}>
+          Your entire SDLC,<br />
+          <span style={{ background: 'linear-gradient(135deg, #1A6FD4, #F97316)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            generated in minutes.
+          </span>
+        </h1>
+        <p style={{ color: '#8899AA', fontSize: '15px', fontFamily: "'DM Sans', sans-serif", maxWidth: '480px', margin: '0 auto', lineHeight: 1.6 }}>
+          Describe any software project. Acorn builds every phase — requirements, architecture, tasks, costs, and risk analysis — automatically.
+        </p>
+      </div>
+
+      {/* Flowchart */}
+      <div style={{ position: 'relative', zIndex: 1, overflowX: 'auto', maxWidth: '100vw', padding: '0 16px' }}>
+        <SDLCFlowchart visibleCount={visible} />
+      </div>
+
+      {/* Progress label */}
+      <p style={{
+        marginTop: '16px', fontSize: '12px', color: 'rgba(136,153,170,0.7)',
+        fontFamily: "'DM Sans', sans-serif", letterSpacing: '0.1em', textTransform: 'uppercase',
+        position: 'relative', zIndex: 1,
+        opacity: visible > 0 ? 1 : 0, transition: 'opacity 0.4s',
+      }}>
+        {visible < PHASES.length ? `Building pipeline · phase ${visible} of ${PHASES.length}` : 'All 11 phases ready'}
+      </p>
+
+      {/* Stats row */}
+      {showStats && (
+        <div style={{
+          display: 'flex', gap: '32px', marginTop: '28px', position: 'relative', zIndex: 1,
+          animation: 'nodeAppear 0.5s ease forwards',
+        }}>
+          {SPLASH_STATS.map(({ value, label }) => (
+            <div key={label} style={{ textAlign: 'center' }}>
+              <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '22px', color: '#F97316' }}>{value}</div>
+              <div style={{ fontSize: '11px', color: '#4a6070', fontFamily: "'DM Sans', sans-serif", letterSpacing: '0.05em' }}>{label}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* CTA */}
+      {showCTA && (
+        <div style={{ display: 'flex', gap: '12px', marginTop: '32px', position: 'relative', zIndex: 1, animation: 'nodeAppear 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <button
+            onClick={onEnter}
+            style={{
+              padding: '14px 36px',
+              background: 'linear-gradient(135deg, #F97316, #cc4900)',
+              border: 'none', borderRadius: '12px', cursor: 'pointer',
+              color: '#fff', fontFamily: "'Syne', sans-serif", fontWeight: 700,
+              fontSize: '16px', display: 'flex', alignItems: 'center', gap: '10px',
+              boxShadow: '0 4px 28px rgba(249,115,22,0.45)',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 10px 36px rgba(249,115,22,0.55)'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 28px rgba(249,115,22,0.45)'; }}
+          >
+            <ArrowRight size={18} /> Start Building Free
+          </button>
+          <button
+            onClick={onViewDocs}
+            style={{
+              padding: '14px 28px',
+              background: 'rgba(26,111,212,0.12)',
+              border: '1px solid rgba(26,111,212,0.4)', borderRadius: '12px', cursor: 'pointer',
+              color: '#3d8fe0', fontFamily: "'DM Sans', sans-serif", fontWeight: 600,
+              fontSize: '15px', transition: 'all 0.2s',
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(26,111,212,0.2)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(26,111,212,0.12)'; }}
+          >
+            View SDLC Guide
+          </button>
+        </div>
+      )}
+
+      {/* Bottom tagline */}
+      {showCTA && (
+        <p style={{ marginTop: '24px', fontSize: '12px', color: '#4a6070', fontFamily: "'DM Sans', sans-serif", position: 'relative', zIndex: 1, animation: 'nodeAppear 0.5s ease 0.2s forwards', opacity: 0 }}>
+          No credit card required · Full SDLC automation · Export to PDF, Confluence & Jira
+        </p>
+      )}
     </div>
   );
+};
 
 // ─── Main Landing Page ────────────────────────────────────────────────────────
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
-  const [stage, setStage] = useState<Stage>(
-    sessionStorage.getItem('acorn_intro_done') === '1' ? 'growing' : 'falling'
-  );
-  const [growing, setGrowing] = useState(stage === 'growing' || stage === 'forest');
-  const [activePhase, setActivePhase] = useState<string | null>(null);
-  const [soundOn, setSoundOn] = useState(false);
-  const stopSoundRef = useRef<(() => void) | null>(null);
+  const [showSplash, setShowSplash] = useState(true);
 
-  // ── Intro sequence ─────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (stage === 'growing' || stage === 'forest') return;
-    const t1 = setTimeout(() => setStage('cracking'), 2200);
-    const t2 = setTimeout(() => setStage('welcome'), 3000);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, []);
-
-  const handleEnter = useCallback(() => {
-    sessionStorage.setItem('acorn_intro_done', '1');
-    setStage('growing');
-    setTimeout(() => {
-      setGrowing(true);
-      setTimeout(() => setStage('forest'), 2500);
-    }, 50);
-  }, []);
-
-  const handlePhaseClick = useCallback((id: string) => {
-    setActivePhase(prev => prev === id ? null : id);
-  }, []);
-
-  const toggleSound = useCallback(() => {
-    if (soundOn) {
-      stopSoundRef.current?.();
-      stopSoundRef.current = null;
-      setSoundOn(false);
-    } else {
-      stopSoundRef.current = startBreeze();
-      setSoundOn(true);
-    }
-  }, [soundOn]);
-
-  // cleanup sound on unmount
-  useEffect(() => () => { stopSoundRef.current?.(); }, []);
-
-  // ── Intro stages ───────────────────────────────────────────────────────────
-  if (stage === 'falling' || stage === 'cracking' || stage === 'welcome') {
-    return (
-      <div className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden"
-        style={{ background: 'radial-gradient(ellipse at 50% 90%, #1a1008 0%, #0c0702 60%, #050301 100%)' }}>
-
-        {/* Stars */}
-        {[...Array(30)].map((_, i) => (
-          <div key={i} className="absolute rounded-full"
-            style={{
-              width: `${1 + i % 3}px`, height: `${1 + i % 3}px`,
-              left: `${(i * 7.3 + 3) % 96}%`, top: `${(i * 11.7 + 2) % 80}%`,
-              background: i % 4 === 0 ? '#D4A017' : i % 4 === 1 ? '#c8895a' : i % 4 === 2 ? '#f0e4c8' : '#8a7055',
-              opacity: 0.08 + (i % 6) * 0.03,
-              animation: `starTwinkle ${3 + i % 5}s ease-in-out ${i * 0.4}s infinite`,
-            }} />
-        ))}
-
-        {/* Ground glow */}
-        <div className="absolute bottom-0 left-0 right-0 h-32"
-          style={{ background: 'linear-gradient(to top, rgba(61,36,18,0.3) 0%, transparent 100%)' }} />
-
-        {/* Ground line */}
-        <div className="absolute bottom-[28%] left-[10%] right-[10%] h-px"
-          style={{ background: 'linear-gradient(to right, transparent, rgba(61,36,18,0.6), transparent)' }} />
-
-        {/* Falling/cracking acorn */}
-        <div style={{
-          animation: stage === 'falling'
-            ? 'acornFall 2s cubic-bezier(0.25,0.46,0.45,0.94) forwards'
-            : stage === 'cracking' ? 'acornCrack 0.6s ease-in-out forwards'
-            : 'none',
-          marginBottom: stage === 'welcome' ? '0' : '0',
-        }}>
-          <CrackedAcorn cracked={stage === 'cracking' || stage === 'welcome'} size={110} />
-        </div>
-
-        {/* Impact flash */}
-        {stage === 'cracking' && (
-          <div className="absolute" style={{
-            width: 200, height: 200, borderRadius: '50%',
-            background: 'radial-gradient(ellipse, rgba(212,160,23,0.8) 0%, transparent 65%)',
-            animation: 'impactFlash 0.6s ease-out forwards',
-            bottom: '27%', left: '50%', transform: 'translateX(-50%)',
-          }} />
-        )}
-
-        {/* Golden light rays */}
-        {stage === 'cracking' && (
-          <div className="absolute" style={{ bottom: '28%', left: '50%', transform: 'translateX(-50%)' }}>
-            {[0,30,60,90,120,150,180,210,240,270,300,330].map((deg, i) => (
-              <div key={i} style={{
-                position: 'absolute',
-                width: 2, height: 60 + i % 3 * 15,
-                background: 'linear-gradient(to top, #D4A017, transparent)',
-                transform: `rotate(${deg}deg)`,
-                transformOrigin: '1px 0px',
-                opacity: 0,
-                animation: `rayFlash 0.6s ease-out forwards`,
-              }} />
-            ))}
-          </div>
-        )}
-
-        {/* Welcome text */}
-        {stage === 'welcome' && (
-          <div className="mt-10 text-center" style={{ animation: 'welcomeIn 0.9s ease-out forwards' }}>
-            <p className="text-xs font-bold tracking-[0.3em] mb-4"
-              style={{ color: '#8a7055', letterSpacing: '0.3em' }}>
-              AN ACORN FALLS. A FOREST GROWS.
-            </p>
-            <h1 className="text-5xl sm:text-6xl font-bold mb-4 leading-tight"
-              style={{
-                background: 'linear-gradient(135deg, #D4A017 0%, #e8bf40 40%, #c8895a 100%)',
-                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
-              }}>
-              Welcome to Acorn
-            </h1>
-            <p className="text-xl mb-10" style={{ color: '#8a7055' }}>
-              Grow your project from a seed of an idea
-            </p>
-            <button onClick={handleEnter}
-              className="group inline-flex items-center gap-3 px-12 py-5 rounded-2xl text-lg font-bold transition-all duration-300 hover:scale-105"
-              style={{
-                background: 'linear-gradient(135deg, #D4A017, #c8870f)',
-                color: '#0c0702',
-                boxShadow: '0 0 60px rgba(212,160,23,0.4), 0 20px 40px rgba(0,0,0,0.3)',
-              }}>
-              🌳 Enter the Forest
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </button>
-          </div>
-        )}
-
-        <style>{`
-          @keyframes acornFall {
-            0%   { transform: translateY(-300px) rotate(-25deg) scale(0.7); opacity: 0; }
-            60%  { transform: translateY(0px) rotate(6deg) scale(1); opacity: 1; }
-            75%  { transform: translateY(-35px) rotate(-4deg) scale(1.05); }
-            88%  { transform: translateY(4px) rotate(2deg) scale(1); }
-            94%  { transform: translateY(-10px) rotate(-1deg); }
-            100% { transform: translateY(0px) rotate(0deg) scale(1); opacity: 1; }
-          }
-          @keyframes acornCrack {
-            0%   { transform: scale(1); }
-            20%  { transform: scale(1.15) rotate(-3deg); }
-            40%  { transform: scale(0.9) rotate(3deg); }
-            60%  { transform: scale(1.08) rotate(-2deg); }
-            80%  { transform: scale(0.97) rotate(1deg); }
-            100% { transform: scale(1) rotate(0deg); }
-          }
-          @keyframes impactFlash {
-            0%   { opacity: 1; transform: translateX(-50%) scale(0.3); }
-            50%  { opacity: 0.8; }
-            100% { opacity: 0; transform: translateX(-50%) scale(3); }
-          }
-          @keyframes rayFlash {
-            0%   { opacity: 0; transform: rotate(var(--deg)) scaleY(0); }
-            30%  { opacity: 0.9; transform: rotate(var(--deg)) scaleY(1); }
-            100% { opacity: 0; transform: rotate(var(--deg)) scaleY(1.5); }
-          }
-          @keyframes welcomeIn {
-            0%   { opacity: 0; transform: translateY(30px) scale(0.95); }
-            100% { opacity: 1; transform: translateY(0) scale(1); }
-          }
-          @keyframes starTwinkle {
-            0%, 100% { opacity: var(--base-op); transform: scale(1); }
-            50% { opacity: calc(var(--base-op) * 2.5); transform: scale(1.5); }
-          }
-        `}</style>
-      </div>
-    );
+  if (showSplash) {
+    return <SplashScreen onEnter={() => setShowSplash(false)} onViewDocs={() => navigate('/sdlc-guide')} />;
   }
 
-  // ── Tree stage ─────────────────────────────────────────────────────────────
-  const activePanel = activePhase ? PANELS[activePhase] : null;
+  const card = (style?: React.CSSProperties): React.CSSProperties => ({
+    background: 'rgba(26,46,69,0.6)',
+    border: '1px solid rgba(26,111,212,0.2)',
+    borderRadius: '16px',
+    backdropFilter: 'blur(12px)',
+    ...style,
+  });
 
   return (
-    <div className="fixed inset-0 overflow-hidden flex flex-col"
-      style={{ background: 'radial-gradient(ellipse at 50% 100%, #1a0f05 0%, #0c0702 55%, #050301 100%)' }}>
+    <div style={{ minHeight: '100vh', background: '#0D1B2A', color: '#E8EDF5' }}>
 
-      {/* Stars */}
-      {[...Array(20)].map((_, i) => (
-        <div key={i} className="absolute rounded-full pointer-events-none"
-          style={{
-            width: `${1 + i % 2}px`, height: `${1 + i % 2}px`,
-            left: `${(i * 5.7 + 2) % 95}%`, top: `${(i * 9.3 + 2) % 55}%`,
-            background: i % 3 === 0 ? '#D4A017' : '#f0e4c8',
-            opacity: 0.06 + (i % 5) * 0.02,
-          }} />
-      ))}
-
-      {/* Ground strip */}
-      <div className="absolute bottom-0 left-0 right-0 h-20 pointer-events-none"
-        style={{ background: 'linear-gradient(to top, rgba(26,15,5,0.8) 0%, transparent 100%)' }} />
-
-      {/* Floating leaves */}
-      {stage === 'forest' && [8,18,30,45,60,72,85,92].map((x, i) => (
-        <FloatingLeaf key={i} x={x} delay={i * 3} duration={12 + i * 2} size={10 + i % 4 * 4} />
-      ))}
-
-      {/* NAV */}
-      <nav className="relative z-20 flex items-center justify-between px-6 py-4 flex-shrink-0"
-        style={{ borderBottom: '1px solid rgba(61,36,18,0.3)' }}>
-        <button
-          className="flex items-center gap-3 transition-opacity hover:opacity-80"
-          onClick={() => { sessionStorage.removeItem('acorn_intro_done'); setStage('falling'); setGrowing(false); setActivePhase(null); }}>
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg"
-            style={{ background: 'linear-gradient(135deg, #2c1b0e, #3d2412)' }}>🌰</div>
-          <span className="text-lg font-bold" style={{
-            background: 'linear-gradient(to right, #D4A017, #e8bf40)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'
-          }}>Acorn</span>
-        </button>
-
-        <div className="flex items-center gap-2 sm:gap-3">
-          {/* Sound toggle */}
-          <button onClick={toggleSound}
-            className="w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:scale-110"
-            style={{ background: 'rgba(61,36,18,0.5)', border: '1px solid rgba(212,160,23,0.2)' }}
-            title={soundOn ? 'Mute breeze' : 'Play breeze'}>
-            {soundOn
-              ? <Volume2 className="w-4 h-4" style={{ color: '#D4A017' }} />
-              : <VolumeX className="w-4 h-4" style={{ color: '#8a7055' }} />}
-          </button>
+      {/* ── NAV ── */}
+      <nav style={{
+        position: 'sticky', top: 0, zIndex: 100,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 40px', height: '64px',
+        background: 'rgba(13,27,42,0.85)', backdropFilter: 'blur(12px)',
+        borderBottom: '1px solid rgba(26,111,212,0.15)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: 'linear-gradient(135deg, #1A6FD4, #0d2b52)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 16px rgba(26,111,212,0.4)' }}>
+            <Zap size={16} color="#fff" />
+          </div>
+          <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '20px' }}>Acorn</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button onClick={() => navigate('/sdlc-guide')} style={{ padding: '8px 16px', background: 'none', border: 'none', color: '#8899AA', fontFamily: "'DM Sans', sans-serif", fontSize: '14px', cursor: 'pointer' }}>SDLC Guide</button>
           <button onClick={() => navigate('/login')}
-            className="px-3 py-2 text-sm font-medium transition-colors hidden sm:block"
-            style={{ color: '#8a7055' }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#f0e4c8')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#8a7055')}>
+            style={{ padding: '8px 20px', background: 'none', border: '1px solid rgba(26,111,212,0.4)', borderRadius: '8px', color: '#8899AA', fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}>
             Sign In
           </button>
           <button onClick={() => navigate('/register')}
-            className="px-4 py-2 rounded-xl text-sm font-bold transition-all hover:scale-105"
-            style={{ background: 'linear-gradient(135deg, #D4A017, #b8860b)', color: '#0c0702', boxShadow: '0 0 20px rgba(212,160,23,0.3)' }}>
-            Start Free →
+            style={{ padding: '8px 20px', background: 'linear-gradient(135deg, #F97316, #cc4900)', border: 'none', borderRadius: '8px', color: '#fff', fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: '14px', cursor: 'pointer', boxShadow: '0 4px 16px rgba(249,115,22,0.35)' }}>
+            Get Started Free
           </button>
         </div>
       </nav>
 
-      {/* Tree area */}
-      <div className="relative flex-1 flex items-end justify-center min-h-0">
-        {/* Headline overlay */}
-        <div className="absolute top-2 left-0 right-0 text-center z-10 pointer-events-none"
-          style={{ opacity: growing ? 1 : 0, transition: 'opacity 1s ease 0.5s' }}>
-          <p className="text-xs font-bold tracking-[0.25em] mb-1" style={{ color: '#5c3820' }}>
-            AI-POWERED PROJECT PLANNING
+      {/* ── HERO ── */}
+      <section style={{ padding: '80px 40px 60px', maxWidth: '1200px', margin: '0 auto' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '24px' }}>
+
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 16px', background: 'rgba(26,111,212,0.12)', border: '1px solid rgba(26,111,212,0.35)', borderRadius: '999px' }}>
+            <Sparkles size={14} color="#1A6FD4" />
+            <span style={{ fontSize: '13px', color: '#3d8fe0', fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>AI-Powered Platform</span>
+          </div>
+
+          <h1 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 'clamp(36px, 6vw, 68px)', lineHeight: 1.1, maxWidth: '800px' }}>
+            AI-Powered<br />
+            <span style={{ background: 'linear-gradient(135deg, #1A6FD4, #F97316)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              Project Planning
+            </span>
+          </h1>
+
+          <p style={{ color: '#8899AA', fontSize: '18px', fontFamily: "'DM Sans', sans-serif", maxWidth: '600px', lineHeight: 1.7 }}>
+            Describe your project — Acorn generates a complete SDLC plan with requirements, SRS, designs, tasks, risk analysis, and cost estimates in minutes.
           </p>
-          <h2 className="text-2xl sm:text-3xl font-bold"
-            style={{ background: 'linear-gradient(135deg, #D4A017, #e8bf40)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            Click an acorn to explore your phases
-          </h2>
-        </div>
 
-        {/* SVG tree — fills available height */}
-        <div className="w-full h-full relative" style={{ maxHeight: 540 }}>
-          <OakTree growing={growing} activePhase={activePhase} onPhaseClick={handlePhaseClick} />
-        </div>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <button onClick={() => navigate('/register')}
+              style={{ padding: '14px 32px', background: 'linear-gradient(135deg, #F97316, #cc4900)', border: 'none', borderRadius: '10px', color: '#fff', fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 24px rgba(249,115,22,0.4)' }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
+            >
+              <ArrowRight size={18} /> Start Building Free
+            </button>
+            <button onClick={() => navigate('/sdlc-guide')} style={{ padding: '8px 16px', background: 'none', border: 'none', color: '#8899AA', fontFamily: "'DM Sans', sans-serif", fontSize: '14px', cursor: 'pointer' }}>SDLC Guide</button>
+          <button onClick={() => navigate('/login')}
+              style={{ padding: '14px 32px', background: 'rgba(26,111,212,0.1)', border: '1px solid rgba(26,111,212,0.4)', borderRadius: '10px', color: '#3d8fe0', fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: '16px', cursor: 'pointer' }}>
+              Sign In
+            </button>
+          </div>
 
-        {/* Phase info panel */}
-        {activePanel && (
-          <div className="absolute right-4 top-12 z-30 rounded-2xl p-5 max-w-[260px]"
-            style={{
-              background: '#1a1008',
-              border: `1px solid ${PHASES.find(p => p.id === activePhase)?.fill ?? '#D4A017'}44`,
-              boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
-              animation: 'panelIn 0.25s ease-out',
-            }}>
-            <div className="flex items-start justify-between gap-2 mb-3">
-              <h3 className="font-bold text-base text-[#f0e4c8]">{activePanel.title}</h3>
-              <button onClick={() => setActivePhase(null)}
-                className="text-xl leading-none flex-shrink-0 transition-colors"
-                style={{ color: '#5c3820' }}
-                onMouseEnter={e => (e.currentTarget.style.color = '#f0e4c8')}
-                onMouseLeave={e => (e.currentTarget.style.color = '#5c3820')}>×</button>
-            </div>
-            <p className="text-sm leading-relaxed" style={{ color: '#c8b090' }}>{activePanel.body}</p>
-            <div className="mt-4 pt-3" style={{ borderTop: '1px solid rgba(61,36,18,0.5)' }}>
-              <button onClick={() => navigate('/register')}
-                className="w-full py-2.5 rounded-xl text-xs font-bold transition-all hover:scale-[1.03]"
-                style={{ background: 'linear-gradient(135deg, #D4A017, #b8860b)', color: '#0c0702' }}>
-                Start planning with AI →
-              </button>
+          {/* Flowchart preview — all phases visible */}
+          <div style={{ marginTop: '48px', padding: '32px', ...card(), overflowX: 'auto', width: '100%' }}>
+            <p style={{ fontSize: '11px', color: '#4a6070', fontFamily: "'DM Sans', sans-serif", letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '24px', textAlign: 'left' }}>
+              Complete SDLC Pipeline · 11 Phases
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <SDLCFlowchart visibleCount={11} compact />
             </div>
           </div>
-        )}
-
-        {/* Legend */}
-        <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-4 text-xs z-10 pointer-events-none"
-          style={{ color: '#5c3820', opacity: growing ? 1 : 0, transition: 'opacity 1s ease 2s' }}>
-          <span>🌰 Click any acorn to explore</span>
-          <span>·</span>
-          <span>🔊 Toggle breeze sound above</span>
         </div>
-      </div>
+      </section>
 
-      <style>{`
-        @keyframes leafFall {
-          0%   { transform: translateY(-10px) rotate(0deg); opacity: 0; }
-          10%  { opacity: 0.7; }
-          90%  { opacity: 0.5; }
-          100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
-        }
-        @keyframes panelIn {
-          from { opacity: 0; transform: translateY(-8px) scale(0.97); }
-          to   { opacity: 1; transform: translateY(0) scale(1); }
-        }
-      `}</style>
+      {/* ── HOW IT WORKS ── */}
+      <section style={{ padding: '80px 40px', maxWidth: '1200px', margin: '0 auto' }}>
+        <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '36px', textAlign: 'center', marginBottom: '12px' }}>
+          How It Works
+        </h2>
+        <p style={{ color: '#8899AA', textAlign: 'center', fontFamily: "'DM Sans', sans-serif", fontSize: '16px', marginBottom: '48px' }}>
+          Three steps from idea to a complete project plan.
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
+          {[
+            { step: '01', icon: MessageSquare, title: 'Describe Your Project', desc: 'Write a brief description of what you want to build — a sentence or a paragraph.', color: '#1A6FD4' },
+            { step: '02', icon: Cpu,           title: 'AI Generates the Plan', desc: 'Our AI creates SRS, personas, architecture, tasks, cost estimates, and risk analysis.', color: '#F97316' },
+            { step: '03', icon: Rocket,        title: 'Refine & Export',        desc: 'Edit any section, chat with your AI advisor, and export to PDF, Confluence, or Jira.', color: '#1A6FD4' },
+          ].map(({ step, icon: Icon, title, desc, color }) => (
+            <div key={step} style={{ padding: '28px', ...card(), position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: '-12px', right: '-8px', fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '72px', color: 'rgba(255,255,255,0.03)', lineHeight: 1 }}>{step}</div>
+              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: `rgba(${color === '#1A6FD4' ? '26,111,212' : '249,115,22'},0.15)`, border: `1px solid ${color}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+                <Icon size={22} color={color} />
+              </div>
+              <h3 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: '18px', marginBottom: '10px' }}>{title}</h3>
+              <p style={{ color: '#8899AA', fontSize: '14px', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.7 }}>{desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── PHASES GRID ── */}
+      <section style={{ padding: '80px 40px', background: 'rgba(26,111,212,0.04)', borderTop: '1px solid rgba(26,111,212,0.1)', borderBottom: '1px solid rgba(26,111,212,0.1)' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '36px', textAlign: 'center', marginBottom: '12px' }}>
+            Every Phase, Covered
+          </h2>
+          <p style={{ color: '#8899AA', textAlign: 'center', fontFamily: "'DM Sans', sans-serif", fontSize: '16px', marginBottom: '48px' }}>
+            From initial planning to deployment — all 10 SDLC phases automated.
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
+            {PHASES.map((phase, i) => {
+              const Icon = phase.icon;
+              const isOrange = i >= 5;
+              return (
+                <div key={phase.id} style={{ padding: '20px', ...card({ border: `1px solid ${isOrange ? 'rgba(249,115,22,0.2)' : 'rgba(26,111,212,0.2)'}` }), display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: `rgba(${isOrange ? '249,115,22' : '26,111,212'},0.15)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Icon size={16} color={isOrange ? '#F97316' : '#1A6FD4'} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '10px', color: isOrange ? '#F97316' : '#1A6FD4', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, marginBottom: '2px' }}>Phase {i + 1}</div>
+                    <div style={{ fontSize: '13px', fontFamily: "'DM Sans', sans-serif", fontWeight: 600, color: '#E8EDF5' }}>{phase.label}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ── AI FEATURES ── */}
+      <section style={{ padding: '80px 40px', maxWidth: '1200px', margin: '0 auto' }}>
+        <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '36px', textAlign: 'center', marginBottom: '12px' }}>
+          Intelligent AI Agents
+        </h2>
+        <p style={{ color: '#8899AA', textAlign: 'center', fontFamily: "'DM Sans', sans-serif", fontSize: '16px', marginBottom: '48px' }}>
+          Specialized agents work together to deliver comprehensive project intelligence.
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
+          {[
+            { icon: FileText,    title: 'SRS Generator',       desc: 'Full software requirements specification with functional + non-functional reqs.', color: '#1A6FD4' },
+            { icon: Users,       title: 'Persona Builder',      desc: 'AI-generated user personas with pain points, goals, and user stories.', color: '#F97316' },
+            { icon: Shield,      title: 'Risk Analyzer',        desc: 'Proactively identifies project risks with mitigation strategies.', color: '#1A6FD4' },
+            { icon: BarChart3,   title: 'Cost Estimator',       desc: 'Detailed budget breakdowns with ROI forecasting and resource planning.', color: '#F97316' },
+            { icon: GitBranch,   title: 'Task Planner',         desc: 'Sprint-ready task breakdown with priorities, estimates, and dependencies.', color: '#1A6FD4' },
+            { icon: TrendingUp,  title: 'AI Explainability',    desc: 'Confidence scores and reasoning trails for every AI-generated output.', color: '#F97316' },
+          ].map(({ icon: Icon, title, desc, color }) => (
+            <div key={title} style={{ padding: '24px', ...card(), transition: 'border-color 0.2s, transform 0.2s' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = `${color}60`; (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(26,111,212,0.2)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; }}
+            >
+              <Icon size={24} color={color} style={{ marginBottom: '16px' }} />
+              <h3 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: '16px', marginBottom: '8px' }}>{title}</h3>
+              <p style={{ color: '#8899AA', fontSize: '13px', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6 }}>{desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── TESTIMONIALS ── */}
+      <section style={{ padding: '80px 40px', background: 'rgba(26,111,212,0.04)', borderTop: '1px solid rgba(26,111,212,0.1)' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '36px', textAlign: 'center', marginBottom: '48px' }}>
+            Trusted by Product Teams
+          </h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
+            {[
+              { quote: 'Acorn cut our pre-dev planning phase from 3 weeks to 2 days. The SRS output is genuinely production-quality.', name: 'Sarah M.', role: 'VP Engineering', stars: 5 },
+              { quote: 'The AI personas feature alone is worth it. No more guessing who our users are — we have data-backed profiles from day one.', name: 'James K.', role: 'Product Manager', stars: 5 },
+              { quote: 'Risk analysis caught three architectural issues we would have missed. Saved us from a very painful sprint 4.', name: 'Priya L.', role: 'Tech Lead', stars: 5 },
+            ].map(({ quote, name, role, stars }) => (
+              <div key={name} style={{ padding: '24px', ...card() }}>
+                <div style={{ display: 'flex', gap: '2px', marginBottom: '16px' }}>
+                  {Array.from({ length: stars }).map((_, i) => <Star key={i} size={14} color="#F97316" fill="#F97316" />)}
+                </div>
+                <p style={{ color: '#C8D5E5', fontSize: '14px', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.7, marginBottom: '20px', fontStyle: 'italic' }}>"{quote}"</p>
+                <div>
+                  <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: '14px' }}>{name}</div>
+                  <div style={{ color: '#8899AA', fontSize: '12px', fontFamily: "'DM Sans', sans-serif" }}>{role}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA ── */}
+      <section style={{ padding: '100px 40px', textAlign: 'center', background: 'linear-gradient(180deg, transparent, rgba(26,111,212,0.08))' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 16px', background: 'rgba(249,115,22,0.12)', border: '1px solid rgba(249,115,22,0.35)', borderRadius: '999px', marginBottom: '24px' }}>
+          <Award size={14} color="#F97316" />
+          <span style={{ fontSize: '13px', color: '#fb9042', fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>Free to get started</span>
+        </div>
+        <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 'clamp(28px, 5vw, 52px)', marginBottom: '16px', lineHeight: 1.1 }}>
+          Ready to build smarter?
+        </h2>
+        <p style={{ color: '#8899AA', fontSize: '18px', fontFamily: "'DM Sans', sans-serif", marginBottom: '40px', maxWidth: '480px', margin: '0 auto 40px' }}>
+          Join thousands of product teams shipping better software faster.
+        </p>
+        <button onClick={() => navigate('/register')}
+          style={{ padding: '16px 48px', background: 'linear-gradient(135deg, #F97316, #cc4900)', border: 'none', borderRadius: '12px', color: '#fff', fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: '18px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '10px', boxShadow: '0 6px 32px rgba(249,115,22,0.45)' }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(249,115,22,0.5)'; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 32px rgba(249,115,22,0.45)'; }}
+        >
+          <Rocket size={20} /> Start Building Free
+        </button>
+      </section>
+
+      {/* ── FOOTER ── */}
+      <footer style={{ padding: '32px 40px', borderTop: '1px solid rgba(26,111,212,0.15)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'linear-gradient(135deg, #1A6FD4, #0d2b52)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Zap size={13} color="#fff" />
+          </div>
+          <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '16px' }}>Acorn</span>
+        </div>
+        <p style={{ color: '#4a6070', fontSize: '13px', fontFamily: "'DM Sans', sans-serif" }}>
+          © 2025 Acorn · AI-Powered Project Planning · Project Intelligence Platform
+        </p>
+      </footer>
     </div>
   );
 };

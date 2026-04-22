@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/Button';
 import { ExportButtons } from '@/components/ExportButtons';
 import { api } from '@/lib/api';
 import type { Artifact, Project, Requirement, Task } from '@/types';
-import { phaseConfigs } from '@/constants/phases';
-import { AlertCircle, ArrowLeft, Loader2 } from 'lucide-react';
+import { phaseConfigs, phaseHexColors } from '@/constants/phases';
+import { AlertCircle, ArrowLeft, Loader2, CheckCircle2, Circle, ChevronRight } from 'lucide-react';
 import Joyride, { STATUS as JoyrideStatus, Step } from 'react-joyride';
 import { formatDate } from '@/lib/utils';
 import { workspacePresets } from '@/constants/workspacePresets';
@@ -15,289 +15,116 @@ import { AIAgentsPanel } from '@/components/AIAgentsPanel';
 type DraftSectionKey = 'overview';
 
 /* =========================================================
-   PHASE TREE COMPONENT
-   Renders an SVG tree with phases as interactive leaves
+   PHASE KANBAN BOARD
+   Sequential phase cards — click to navigate into any phase
    ========================================================= */
-const PhaseTree: React.FC<{
+const PhaseKanban: React.FC<{
   phases: typeof phaseConfigs;
   phaseStatus: Record<string, string>;
   phaseOutputs: Record<string, string>;
   onPhaseClick: (phaseId: string) => void;
-  projectId: string;
 }> = ({ phases, phaseStatus, phaseOutputs, onPhaseClick }) => {
-  const [hoveredPhase, setHoveredPhase] = useState<string | null>(null);
+  const [hovered, setHovered] = useState<string | null>(null);
 
-  // Tree layout: trunk center-bottom, branches spreading up
-  // All 10 phases with correct backend IDs
-  const treeNodes = [
-    { id: 'planning',               x: 400, y: 490, label: 'Planning',      level: 1 },
-    { id: 'feasibility_study',      x: 240, y: 395, label: 'Feasibility',   level: 2 },
-    { id: 'validation',             x: 560, y: 395, label: 'Validation',    level: 2 },
-    { id: 'requirements_gathering', x: 130, y: 295, label: 'Requirements',  level: 3 },
-    { id: 'design',                 x: 395, y: 290, label: 'Design',        level: 3 },
-    { id: 'development',            x: 650, y: 295, label: 'Development',   level: 3 },
-    { id: 'tasks',                  x: 195, y: 190, label: 'Tasks',         level: 4 },
-    { id: 'cost_benefit',           x: 400, y: 185, label: 'Cost/Benefit',  level: 4 },
-    { id: 'risks',                  x: 610, y: 190, label: 'Risks',         level: 4 },
-    { id: 'summary',                x: 400, y: 80,  label: 'Summary',       level: 5 },
-  ];
-
-  // Branch connections (parent → child)
-  const branches = [
-    ['planning',               'feasibility_study'],
-    ['planning',               'validation'],
-    ['feasibility_study',      'requirements_gathering'],
-    ['feasibility_study',      'design'],
-    ['validation',             'development'],
-    ['requirements_gathering', 'tasks'],
-    ['design',                 'cost_benefit'],
-    ['development',            'risks'],
-    ['tasks',                  'summary'],
-    ['cost_benefit',           'summary'],
-    ['risks',                  'summary'],
-  ];
-
-  const getNodeColor = (phaseId: string) => {
-    const status = (phaseStatus[phaseId] || 'locked').toLowerCase();
-    if (status === 'completed')                          return '#D4A017'; // acorn gold
-    if (status === 'active' || status === 'in_progress') return '#3d7a4a'; // leaf green
-    if (status === 'ready' || status === 'planning')     return '#5a9e6a'; // fresh leaf
-    return '#2c1b0e'; // bark/locked
+  const getStatusInfo = (phaseId: string) => {
+    const s = (phaseStatus[phaseId] || 'locked').toLowerCase();
+    if (s === 'completed')   return { label: 'Completed',   color: '#1A6FD4', bg: 'rgba(26,111,212,0.15)', border: 'rgba(26,111,212,0.4)' };
+    if (s === 'in_progress') return { label: 'In Progress', color: '#F97316', bg: 'rgba(249,115,22,0.12)', border: 'rgba(249,115,22,0.4)' };
+    if (s === 'active')      return { label: 'Active',      color: '#F97316', bg: 'rgba(249,115,22,0.12)', border: 'rgba(249,115,22,0.4)' };
+    if (s === 'ready')       return { label: 'Ready',       color: '#3d8fe0', bg: 'rgba(61,143,224,0.12)', border: 'rgba(61,143,224,0.3)' };
+    return { label: 'Locked', color: '#4a6070', bg: 'rgba(26,46,69,0.4)', border: 'rgba(30,53,82,0.5)' };
   };
 
-  const getTextColor = (phaseId: string) => {
-    const status = (phaseStatus[phaseId] || 'locked').toLowerCase();
-    if (status === 'completed')                          return '#130c07';
-    if (status === 'active' || status === 'in_progress') return '#f0e4c8';
-    if (status === 'ready' || status === 'planning')     return '#0c0702';
-    return '#8a7055';
-  };
+  // Split into 2 rows of 5
+  const row1 = phases.slice(0, 6);
+  const row2 = phases.slice(6);
 
-  const nodeMap = Object.fromEntries(treeNodes.map(n => [n.id, n]));
+  const PhaseCard = ({ phase, idx }: { phase: typeof phases[0]; idx: number }) => {
+    const info    = getStatusInfo(phase.id);
+    const isHov   = hovered === phase.id;
+    const hasOut  = Boolean(phaseOutputs[phase.id]);
+    const isDone  = (phaseStatus[phase.id] || '').toLowerCase() === 'completed';
+
+    return (
+      <div
+        onClick={() => onPhaseClick(phase.id)}
+        onMouseEnter={() => setHovered(phase.id)}
+        onMouseLeave={() => setHovered(null)}
+        style={{
+          background: isHov ? info.bg : 'var(--brand-800)',
+          border: `1px solid ${isHov ? info.border : 'rgba(30,53,82,0.6)'}`,
+          borderRadius: '14px',
+          padding: '16px',
+          cursor: 'pointer',
+          transition: 'all 0.2s ease',
+          transform: isHov ? 'translateY(-2px)' : 'none',
+          boxShadow: isHov ? `0 8px 24px ${info.color}20` : '0 2px 8px rgba(0,0,0,0.2)',
+          position: 'relative',
+          flex: '1 1 0',
+          minWidth: 0,
+        }}
+      >
+        {/* Step badge */}
+        <div style={{
+          position: 'absolute', top: '12px', right: '12px',
+          width: '22px', height: '22px', borderRadius: '50%',
+          background: isDone ? '#1A6FD4' : 'var(--brand-700)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          {isDone
+            ? <CheckCircle2 size={12} color="#fff" />
+            : <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-faint)' }}>{phase.stepNumber}</span>
+          }
+        </div>
+
+        {/* Output dot */}
+        {hasOut && !isDone && (
+          <div style={{
+            position: 'absolute', top: '10px', right: '38px',
+            width: '8px', height: '8px', borderRadius: '50%',
+            background: '#F97316',
+          }} />
+        )}
+
+        <p style={{ fontSize: '11px', color: info.color, fontWeight: 700, marginBottom: '6px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+          Phase {phase.stepNumber}
+        </p>
+        <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px', lineHeight: 1.3 }}>
+          {phase.title}
+        </p>
+        <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: '12px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+          {phase.description}
+        </p>
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{
+            padding: '3px 8px', borderRadius: '999px', fontSize: '11px', fontWeight: 600,
+            background: info.bg, color: info.color, border: `1px solid ${info.border}`,
+          }}>
+            {info.label}
+          </span>
+          <ChevronRight size={14} color="var(--text-faint)" />
+        </div>
+      </div>
+    );
+  };
 
   return (
-    <div className="relative w-full" style={{ height: '560px' }}>
-      <svg width="100%" height="100%" viewBox="0 0 800 560" preserveAspectRatio="xMidYMid meet">
-        {/* Deep root glow */}
-        <ellipse cx="400" cy="555" rx="80" ry="10" fill="#0c0702" fillOpacity="0.7" />
-
-        {/* Roots */}
-        <line x1="400" y1="555" x2="340" y2="558" stroke="#2c1b0e" strokeWidth="10" strokeLinecap="round" />
-        <line x1="400" y1="555" x2="460" y2="558" stroke="#2c1b0e" strokeWidth="10" strokeLinecap="round" />
-        <line x1="400" y1="555" x2="300" y2="558" stroke="#2c1b0e" strokeWidth="7" strokeLinecap="round" opacity="0.7" />
-        <line x1="400" y1="555" x2="500" y2="558" stroke="#2c1b0e" strokeWidth="7" strokeLinecap="round" opacity="0.7" />
-
-        {/* Tree trunk - bark brown */}
-        <line x1="400" y1="558" x2="400" y2="480"
-          stroke="#3d2412" strokeWidth="18" strokeLinecap="round" />
-        <line x1="400" y1="558" x2="400" y2="490"
-          stroke="#5c3820" strokeWidth="10" strokeLinecap="round" opacity="0.5" />
-
-        {/* Ground shadow */}
-        <ellipse cx="400" cy="558" rx="90" ry="6" fill="#130c07" fillOpacity="0.6" />
-
-        {/* Branches */}
-        {branches.map(([from, to], i) => {
-          const fromNode = nodeMap[from];
-          const toNode   = nodeMap[to];
-          if (!fromNode || !toNode) return null;
-          const isHighlighted = hoveredPhase === to || hoveredPhase === from;
-          const midY = (fromNode.y + toNode.y) / 2;
-
-          return (
-            <path
-              key={i}
-              d={`M ${fromNode.x} ${fromNode.y} C ${fromNode.x} ${midY}, ${toNode.x} ${midY}, ${toNode.x} ${toNode.y}`}
-              stroke={isHighlighted ? '#c8895a' : '#3d2412'}
-              strokeWidth={isHighlighted ? 4.5 : 3}
-              fill="none"
-              strokeLinecap="round"
-              style={{ transition: 'stroke 0.35s ease, stroke-width 0.35s ease' }}
-            />
-          );
-        })}
-
-        {/* Floating ambient particles */}
-        {[0,1,2,3,4].map(i => {
-          const px = 120 + i * 130;
-          const py = 30 + (i % 3) * 20;
-          return (
-            <ellipse key={i} cx={px} cy={py} rx="3" ry="3"
-              fill={i % 2 === 0 ? '#D4A017' : '#8B5E3C'} fillOpacity={0.15 + i * 0.05}
-              style={{ animation: `float ${3 + i * 0.6}s ease-in-out ${i * 0.4}s infinite` }}
-            />
-          );
-        })}
-
-        {/* Phase leaf nodes */}
-        {treeNodes.map((node) => {
-          const phaseConfig = phases.find(p => p.id === node.id);
-          const nodeColor   = getNodeColor(node.id);
-          const textColor   = getTextColor(node.id);
-          const isHovered   = hoveredPhase === node.id;
-          const hasOutput   = Boolean(phaseOutputs[node.id]);
-          const status      = (phaseStatus[node.id] || 'locked').toLowerCase();
-          const isCompleted = status === 'completed';
-          const isActive    = status === 'active' || status === 'in_progress';
-          const isReady     = status === 'ready' || status === 'planning';
-
-          const rx = isHovered ? 50 : 44;
-          const ry = isHovered ? 58 : 52;
-
-          const leafP = (cx: number, cy: number, lrx: number, lry: number) => {
-            const t = cy - lry;
-            const b = cy + lry * 0.55;
-            const ml = cx - lrx * 0.92;
-            const mr = cx + lrx * 0.92;
-            return `M ${cx} ${t} C ${mr} ${t + lry*0.35}, ${mr} ${b - lry*0.2}, ${cx} ${b} C ${ml} ${b - lry*0.2}, ${ml} ${t + lry*0.35}, ${cx} ${t} Z`;
-          };
-
-          return (
-            <g
-              key={node.id}
-              onClick={() => onPhaseClick(node.id)}
-              onMouseEnter={() => setHoveredPhase(node.id)}
-              onMouseLeave={() => setHoveredPhase(null)}
-              style={{ cursor: 'pointer' }}
-              className="tree-node"
-            >
-              {/* Glow halo */}
-              <ellipse cx={node.x} cy={node.y} rx={rx + 16} ry={ry + 16}
-                fill={nodeColor} fillOpacity={isHovered ? 0.18 : 0.06}
-                style={{ transition: 'all 0.35s ease' }}
-              />
-
-              {isCompleted ? (
-                /* Completed → acorn shape */
-                <g style={{
-                  transition: 'all 0.35s cubic-bezier(0.34,1.56,0.64,1)',
-                  filter: isHovered ? 'drop-shadow(0 0 14px rgba(212,160,23,0.65))' : 'none',
-                }}>
-                  <ellipse cx={node.x} cy={node.y + ry * 0.22} rx={rx * 0.84} ry={ry * 0.76}
-                    fill="#D4A017"
-                    stroke={isHovered ? '#f5df90' : 'rgba(212,160,23,0.4)'}
-                    strokeWidth={isHovered ? 2.5 : 1.5}
-                  />
-                  <ellipse cx={node.x} cy={node.y + ry * 0.22} rx={rx * 0.67} ry={ry * 0.62}
-                    fill="#e8bf40" fillOpacity="0.5"
-                  />
-                  <ellipse cx={node.x} cy={node.y - ry * 0.42} rx={rx * 0.9} ry={ry * 0.35}
-                    fill="#3d2412"
-                  />
-                  <ellipse cx={node.x} cy={node.y - ry * 0.42} rx={rx * 0.72} ry={ry * 0.25}
-                    fill="#221508"
-                  />
-                  <rect x={node.x - rx * 0.1} y={node.y - ry * 0.85} width={rx * 0.2} height={ry * 0.46}
-                    rx={rx * 0.08} fill="#221508"
-                  />
-                  <ellipse cx={node.x - rx * 0.24} cy={node.y + ry * 0.05} rx={rx * 0.14} ry={ry * 0.2}
-                    fill="rgba(255,255,255,0.12)"
-                  />
-                </g>
-              ) : (isActive || isReady) ? (
-                /* Active/ready → filled leaf shape */
-                <g style={{
-                  transition: 'all 0.35s cubic-bezier(0.34,1.56,0.64,1)',
-                  filter: isHovered ? `drop-shadow(0 0 14px ${nodeColor}99)` : 'none',
-                }}>
-                  <path
-                    d={leafP(node.x, node.y, rx, ry)}
-                    fill={nodeColor}
-                    stroke={isHovered ? '#5a9e6a' : 'rgba(255,255,255,0.1)'}
-                    strokeWidth={isHovered ? 2.5 : 1.5}
-                  />
-                  <line x1={node.x} y1={node.y - ry * 0.8} x2={node.x} y2={node.y + ry * 0.4}
-                    stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" strokeLinecap="round" />
-                  <line x1={node.x} y1={node.y - ry * 0.25} x2={node.x - rx * 0.52} y2={node.y + ry * 0.1}
-                    stroke="rgba(255,255,255,0.1)" strokeWidth="1" strokeLinecap="round" />
-                  <line x1={node.x} y1={node.y - ry * 0.25} x2={node.x + rx * 0.52} y2={node.y + ry * 0.1}
-                    stroke="rgba(255,255,255,0.1)" strokeWidth="1" strokeLinecap="round" />
-                </g>
-              ) : (
-                /* Locked → bare/outlined leaf */
-                <g style={{
-                  transition: 'all 0.35s cubic-bezier(0.34,1.56,0.64,1)',
-                  filter: isHovered ? 'drop-shadow(0 0 10px rgba(44,27,14,0.5))' : 'none',
-                }}>
-                  <path
-                    d={leafP(node.x, node.y, rx, ry)}
-                    fill="#2c1b0e"
-                    stroke={isHovered ? '#5c3820' : 'rgba(92,56,32,0.45)'}
-                    strokeWidth={isHovered ? 2.5 : 1.5}
-                    strokeDasharray="4 3"
-                  />
-                  <line x1={node.x} y1={node.y - ry * 0.8} x2={node.x} y2={node.y + ry * 0.4}
-                    stroke="rgba(139,94,60,0.25)" strokeWidth="1.5" strokeLinecap="round" />
-                </g>
-              )}
-
-              {/* Step number */}
-              <text x={node.x} y={node.y - (isCompleted ? ry * 0.05 : 8)} textAnchor="middle"
-                fill={textColor} fontSize="10" fontWeight="700" fontFamily="Inter, sans-serif"
-                style={{ pointerEvents: 'none' }}>
-                {phaseConfig?.stepNumber || ''}
-              </text>
-
-              {/* Phase label */}
-              <text x={node.x} y={node.y + (isCompleted ? ry * 0.38 : 8)} textAnchor="middle"
-                fill={textColor} fontSize="9.5" fontWeight="700" fontFamily="Inter, sans-serif"
-                style={{ pointerEvents: 'none' }}>
-                {node.label}
-              </text>
-
-              {/* Has-output badge for non-completed */}
-              {hasOutput && !isCompleted && (
-                <g>
-                  <ellipse cx={node.x + rx - 6} cy={node.y - ry + 8} rx={9} ry={9} fill="#D4A017" />
-                  <text x={node.x + rx - 6} y={node.y - ry + 12}
-                    textAnchor="middle" fill="#130c07" fontSize="9" fontWeight="800"
-                    style={{ pointerEvents: 'none' }}>
-                    ✓
-                  </text>
-                </g>
-              )}
-            </g>
-          );
-        })}
-      </svg>
-
-      {/* Hover tooltip */}
-      {hoveredPhase && (() => {
-        const phase  = phases.find(p => p.id === hoveredPhase);
-        const status = (phaseStatus[hoveredPhase] || 'locked').toLowerCase();
-        if (!phase) return null;
-        return (
-          <div
-            className="absolute bottom-4 left-1/2 transform -translate-x-1/2 rounded-xl px-5 py-3 text-center pointer-events-none z-10"
-            style={{
-              minWidth: '220px',
-              background: '#1a1008',
-              border: '1px solid rgba(212,160,23,0.25)',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-            }}
-          >
-            <p className="text-sm font-semibold" style={{ color: '#f0e4c8' }}>{phase.title}</p>
-            {phase.description && (
-              <p className="text-xs mt-0.5 line-clamp-2" style={{ color: '#8a7055' }}>{phase.description.slice(0, 70)}...</p>
-            )}
-            <span className="inline-block mt-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold"
-              style={{
-                background: status === 'completed'
-                  ? 'rgba(212,160,23,0.15)'
-                  : status === 'active' || status === 'in_progress'
-                  ? 'rgba(90,158,106,0.15)'
-                  : 'rgba(61,36,18,0.4)',
-                color: status === 'completed'
-                  ? '#D4A017'
-                  : status === 'active' || status === 'in_progress'
-                  ? '#5a9e6a'
-                  : '#8a7055',
-              }}>
-              {status}
-            </span>
-          </div>
-        );
-      })()}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      {/* Row 1: phases 1-5 */}
+      <div style={{ display: 'flex', gap: '10px' }}>
+        {row1.map((phase, i) => <PhaseCard key={phase.id} phase={phase} idx={i} />)}
+      </div>
+      {/* Connector arrow row */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', padding: '4px 0' }}>
+        <div style={{ flex: 1, height: '1px', background: 'linear-gradient(to right, transparent, rgba(26,111,212,0.3))' }} />
+        <ChevronRight size={14} color="rgba(249,115,22,0.6)" style={{ transform: 'rotate(90deg)' }} />
+        <div style={{ flex: 1, height: '1px', background: 'linear-gradient(to left, transparent, rgba(249,115,22,0.3))' }} />
+      </div>
+      {/* Row 2: phases 6-10 (reversed to show flow) */}
+      <div style={{ display: 'flex', gap: '10px', flexDirection: 'row-reverse' }}>
+        {row2.map((phase, i) => <PhaseCard key={phase.id} phase={phase} idx={i + 5} />)}
+      </div>
     </div>
   );
 };
@@ -502,10 +329,10 @@ export const ProjectDetailPage: React.FC = () => {
   };
 
   const statusPillStyles: Record<string, string> = {
-    completed:   'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
-    ready:       'bg-[#D4A017]/20 text-[#D4A017] border border-[#D4A017]/30',
-    in_progress: 'bg-[#fbbf24]/20 text-[#fbbf24] border border-[#fbbf24]/30',
-    locked:      'bg-[#3d2412]/30 text-[#8a7055] border border-[#3d2412]',
+    completed:   'bg-blue-900/200/20 text-blue-400 border border-blue-500/30',
+    ready:       'bg-[var(--blue-400)]/20 text-[var(--blue-400)] border border-[var(--blue-400)]/30',
+    in_progress: 'bg-[var(--orange-400)]/20 text-[var(--orange-400)] border border-[var(--orange-400)]/30',
+    locked:      'bg-[var(--brand-700)]/30 text-[var(--text-muted)] border border-[var(--brand-700)]',
   };
 
   const statusLabels: Record<string, string> = {
@@ -520,8 +347,13 @@ export const ProjectDetailPage: React.FC = () => {
       <Layout>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="text-5xl mb-4 animate-bounce">🌰</div>
-            <p style={{ color: '#8a7055' }}>Loading project…</p>
+            <div className="relative">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--blue-400)] to-[var(--blue-500)] flex items-center justify-center mx-auto mb-4 animate-pulse">
+                <Loader2 className="h-8 w-8 animate-spin text-[var(--brand-900)]" />
+              </div>
+              <div className="absolute inset-0 w-16 h-16 mx-auto rounded-2xl bg-[var(--blue-400)]/20 blur-xl animate-pulse" />
+            </div>
+            <p className="text-[var(--text-muted)]">Loading project...</p>
           </div>
         </div>
       </Layout>
@@ -532,8 +364,8 @@ export const ProjectDetailPage: React.FC = () => {
     return (
       <Layout>
         <div className="text-center py-16">
-          <h2 className="text-2xl font-bold text-[#f0e4c8] mb-4">Project not found</h2>
-          <Button onClick={() => navigate('/projects')} className="bg-gradient-to-r from-[#D4A017] to-[#c8870f] text-[#130c07]">Back to Projects</Button>
+          <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-4">Project not found</h2>
+          <Button onClick={() => navigate('/projects')} className="bg-gradient-to-r from-[var(--blue-400)] to-[var(--blue-500)] text-[var(--brand-900)]">Back to Projects</Button>
         </div>
       </Layout>
     );
@@ -549,7 +381,7 @@ export const ProjectDetailPage: React.FC = () => {
         callback={handleTourCallback}
         styles={{
           options: {
-            primaryColor: '#D4A017',
+            primaryColor: 'var(--blue-400)',
           },
         }}
       />
@@ -562,65 +394,74 @@ export const ProjectDetailPage: React.FC = () => {
         )}
 
         {/* Project Header Card */}
-        <div className="rounded-2xl shadow-lg overflow-hidden"
-          style={{ background: '#1a1008', border: '1px solid #3d2412' }}>
-          {/* Header gradient bar - amber */}
-          <div className="h-1.5" style={{ background: 'linear-gradient(90deg, #D4A017, #c8870f, #8B5E3C)' }} />
+        <div className="bg-[var(--brand-850)] border border-[var(--brand-700)]/50 rounded-2xl shadow-lg overflow-hidden">
+          {/* Header gradient bar - forest green */}
+          <div className="h-1.5 bg-gradient-to-r from-[var(--blue-400)] to-[var(--blue-500)]" />
 
           <div className="p-4 sm:p-6 space-y-4 sm:space-y-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <button
                 onClick={() => navigate('/projects')}
-                className="inline-flex items-center text-sm font-medium transition-colors"
-                style={{ color: '#8a7055' }}
-                onMouseEnter={e => (e.currentTarget.style.color = '#D4A017')}
-                onMouseLeave={e => (e.currentTarget.style.color = '#8a7055')}
+                className="inline-flex items-center text-sm font-medium text-[var(--text-muted)] hover:text-[var(--blue-400)] transition-colors"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Grove
+                Back to Projects
               </button>
               <div className="flex items-center gap-2 sm:gap-3">
-                <Button variant="outline" onClick={() => goToDraft('overview')}
-                  className="text-xs sm:text-sm px-2 sm:px-4"
-                  style={{ borderColor: '#3d2412', color: '#8a7055' }}>
+                <Button variant="outline" onClick={() => goToDraft('overview')} className="text-xs sm:text-sm px-2 sm:px-4 border-[var(--brand-700)] text-[var(--text-muted)] hover:border-[var(--blue-400)]/50 hover:text-[var(--blue-400)]">
                   <span className="hidden sm:inline">Open </span>Draft
                 </Button>
                 <Button
-                  className="text-xs sm:text-sm px-2 sm:px-4 font-semibold shadow-lg"
-                  style={{ background: 'linear-gradient(135deg, #D4A017, #c8870f)', color: '#130c07', boxShadow: '0 4px 14px rgba(212,160,23,0.3)' }}
+                  className="bg-gradient-to-r from-[var(--blue-400)] to-[var(--blue-500)] hover:from-[var(--blue-300)] hover:to-[var(--blue-400)] text-[var(--brand-900)] font-semibold shadow-lg shadow-[var(--blue-400)]/20 text-xs sm:text-sm px-2 sm:px-4"
                   onClick={() => navigate(`/projects/${project.project_id || project.id}/phases/${phaseConfigs[0]?.id}`)}
                 >
-                  <span className="hidden sm:inline">Continue </span>Planning 🌱
+                  <span className="hidden sm:inline">Continue </span>Planning
                 </Button>
               </div>
             </div>
 
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="space-y-2">
-                <h1 className="text-xl sm:text-2xl font-bold" style={{ color: '#f0e4c8' }}>{project.name}</h1>
+                <h1 className="text-xl sm:text-2xl font-bold text-[var(--text-primary)]">{project.name}</h1>
                 {project.description && (
-                  <p className="max-w-2xl" style={{ color: '#8a7055' }}>{project.description}</p>
+                  <p className="text-[var(--text-muted)] max-w-2xl">{project.description}</p>
                 )}
               </div>
-              <div className="flex flex-wrap gap-2">
-                <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide"
-                  style={{ background: 'rgba(212,160,23,0.12)', color: '#D4A017', border: '1px solid rgba(212,160,23,0.3)' }}>
+              <div className="flex flex-wrap gap-2 items-center">
+                {/* Health Score Badge */}
+                {(() => {
+                  const phaseKeys = ['planning','feasibility_study','requirements_gathering','validation','design','development','tasks','cost_benefit','risks','summary'];
+                  const done = phaseKeys.filter(k => (phaseStatus[k] || '').toLowerCase() === 'completed').length;
+                  const score = Math.round((done / phaseKeys.length) * 100);
+                  const scoreColor = score >= 70 ? '#1A6FD4' : score >= 40 ? '#F97316' : '#4a6070';
+                  const scoreBg = score >= 70 ? 'rgba(26,111,212,0.15)' : score >= 40 ? 'rgba(249,115,22,0.12)' : 'rgba(74,96,112,0.15)';
+                  return (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: '999px', background: scoreBg, border: `1px solid ${scoreColor}44` }}>
+                      <div style={{ width: '28px', height: '28px', borderRadius: '50%', border: `2px solid ${scoreColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <span style={{ fontSize: '9px', fontWeight: 800, color: scoreColor, fontFamily: 'Syne, sans-serif' }}>{score}%</span>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '11px', fontWeight: 700, color: scoreColor, fontFamily: 'Syne, sans-serif', lineHeight: 1 }}>Health Score</div>
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>{done}/10 phases</div>
+                      </div>
+                    </div>
+                  );
+                })()}
+                <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-[var(--blue-400)]/20 text-[var(--blue-400)] border border-[var(--blue-400)]/30 text-xs font-semibold uppercase tracking-wide">
                   {project.status}
                 </span>
-                <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium"
-                  style={{ background: 'rgba(61,36,18,0.5)', color: '#c8b090', border: '1px solid #3d2412' }}>
+                <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-[var(--brand-700)]/50 text-[var(--text-muted)] border border-[var(--brand-700)] text-xs font-medium">
                   {project.template_type.replace('_', ' ')}
                 </span>
-                <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium"
-                  style={{ background: 'rgba(90,158,106,0.1)', color: '#5a9e6a', border: '1px solid rgba(90,158,106,0.25)' }}>
+                <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-[var(--blue-300)]/10 text-[var(--blue-300)] border border-[var(--blue-300)]/30 text-xs font-medium">
                   {project.owner_name || 'Unassigned'}
                 </span>
               </div>
             </div>
 
             {/* Workspace Preset Switcher */}
-            <div className="pt-4" style={{ borderTop: '1px solid #3d2412' }}>
-              <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: '#5c3820' }}>Workspace Mode</p>
+            <div className="pt-4 border-t border-[var(--brand-700)]/50">
+              <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-3">Workspace Mode</p>
               <div className="flex flex-wrap items-center gap-2">
                 {workspacePresets.map((preset) => {
                   const isActive = preset.id === activePreset;
@@ -630,19 +471,17 @@ export const ProjectDetailPage: React.FC = () => {
                       onClick={() => handlePresetChange(preset.id)}
                       disabled={updatingPreset}
                       className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                        updatingPreset ? 'opacity-50 cursor-not-allowed' : ''
-                      }`}
-                      style={isActive
-                        ? { background: '#D4A017', color: '#130c07', boxShadow: '0 4px 12px rgba(212,160,23,0.3)' }
-                        : { background: '#221508', color: '#8a7055', border: '1px solid #3d2412' }
-                      }
+                        isActive
+                          ? 'bg-[var(--blue-400)] text-[var(--brand-900)] shadow-lg shadow-[var(--blue-400)]/20'
+                          : 'bg-[var(--brand-750)] text-[var(--text-muted)] hover:bg-[var(--brand-700)] hover:text-[var(--text-primary)] border border-[var(--brand-700)]'
+                      } ${updatingPreset ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       {preset.label}
                     </button>
                   );
                 })}
               </div>
-              <p className="text-xs mt-2" style={{ color: '#5c3820' }}>{presetConfig.description}</p>
+              <p className="text-xs text-[var(--text-muted)] mt-2">{presetConfig.description}</p>
             </div>
           </div>
         </div>
@@ -651,34 +490,34 @@ export const ProjectDetailPage: React.FC = () => {
         <div className={`grid gap-4 sm:gap-6 ${showSummaryPanel ? 'lg:grid-cols-[280px_minmax(0,1fr)]' : ''}`}>
           {showSummaryPanel && (
             <aside className="space-y-6 side-summary">
-              <div className="bg-[#1a1008] border border-[#3d2412]/50 rounded-2xl p-4 sm:p-6 shadow-lg space-y-4 sm:space-y-6">
+              <div className="bg-[var(--brand-850)] border border-[var(--brand-700)]/50 rounded-2xl p-4 sm:p-6 shadow-lg space-y-4 sm:space-y-6">
                 <div>
-                  <h2 className="text-lg font-bold text-[#f0e4c8]">Project Summary</h2>
-                  <dl className="mt-4 space-y-3 text-sm text-[#8a7055]">
+                  <h2 className="text-lg font-bold text-[var(--text-primary)]">Project Summary</h2>
+                  <dl className="mt-4 space-y-3 text-sm text-[var(--text-muted)]">
                     <div className="flex justify-between">
                       <span>Status</span>
-                      <span className="font-medium text-[#D4A017]">{project.status}</span>
+                      <span className="font-medium text-[var(--blue-400)]">{project.status}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Type</span>
-                      <span className="font-medium text-[#f0e4c8]">{project.template_type.replace('_', ' ')}</span>
+                      <span className="font-medium text-[var(--text-primary)]">{project.template_type.replace('_', ' ')}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Owner</span>
-                      <span className="font-medium text-[#f0e4c8]">{project.owner_name || 'Unassigned'}</span>
+                      <span className="font-medium text-[var(--text-primary)]">{project.owner_name || 'Unassigned'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Created</span>
-                      <span className="font-medium text-[#f0e4c8]">{formatDate(project.created_at)}</span>
+                      <span className="font-medium text-[var(--text-primary)]">{formatDate(project.created_at)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Updated</span>
-                      <span className="font-medium text-[#f0e4c8]">{formatDate(project.updated_at)}</span>
+                      <span className="font-medium text-[var(--text-primary)]">{formatDate(project.updated_at)}</span>
                     </div>
                   </dl>
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-[#8a7055] mb-3">Key Metrics</h3>
+                  <h3 className="text-sm font-semibold text-[var(--text-muted)] mb-3">Key Metrics</h3>
                   <div className="grid grid-cols-2 gap-3">
                     {[
                       { label: 'Requirements', value: requirements.length, phase: 'requirements_gathering' },
@@ -689,15 +528,15 @@ export const ProjectDetailPage: React.FC = () => {
                       <button
                         key={metric.label}
                         onClick={() => navigate(`/projects/${project.project_id || project.id}/phases/${metric.phase}`)}
-                        className="rounded-xl border border-[#3d2412] px-3 py-4 bg-[#221508] text-center hover:border-[#D4A017]/50 hover:bg-[#2c1b0e] transition-all cursor-pointer group"
+                        className="rounded-xl border border-[var(--brand-700)] px-3 py-4 bg-[var(--brand-800)] text-center hover:border-[var(--blue-400)]/50 hover:bg-[var(--brand-750)] transition-all cursor-pointer group"
                       >
-                        <div className="text-2xl font-semibold text-[#f0e4c8] group-hover:text-[#D4A017] transition-colors">{metric.value}</div>
-                        <div className="text-xs text-[#8a7055] group-hover:text-[#D4A017]/80 transition-colors">{metric.label}</div>
+                        <div className="text-2xl font-semibold text-[var(--text-primary)] group-hover:text-[var(--blue-400)] transition-colors">{metric.value}</div>
+                        <div className="text-xs text-[var(--text-muted)] group-hover:text-[var(--blue-400)]/80 transition-colors">{metric.label}</div>
                       </button>
                     ))}
                   </div>
                 </div>
-                <div className="text-sm text-[#8a7055]">
+                <div className="text-sm text-[var(--text-muted)]">
                   <p className="mb-2">Need to unlock future workstream?</p>
                   <span
                     role="button"
@@ -709,33 +548,33 @@ export const ProjectDetailPage: React.FC = () => {
                         handleUnlockPhases();
                       }
                     }}
-                    className="text-[#D4A017] font-medium hover:text-[#e8bf40] cursor-pointer"
+                    className="text-[var(--blue-400)] font-medium hover:text-[var(--blue-300)] cursor-pointer"
                   >
                     Unlock all phases
                   </span>
                 </div>
               </div>
 
-              <div className="bg-[#1a1008] border border-[#3d2412]/50 rounded-2xl p-6 shadow-lg space-y-3">
+              <div className="bg-[var(--brand-850)] border border-[var(--brand-700)]/50 rounded-2xl p-6 shadow-lg space-y-3">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-base font-semibold text-[#f0e4c8]">Project Brief</h2>
-                  <Button variant="outline" size="sm" onClick={() => goToDraft('overview')} className="border-[#3d2412] text-[#8a7055] hover:border-[#D4A017]/50 hover:text-[#D4A017]">
+                  <h2 className="text-base font-semibold text-[var(--text-primary)]">Project Brief</h2>
+                  <Button variant="outline" size="sm" onClick={() => goToDraft('overview')} className="border-[var(--brand-700)] text-[var(--text-muted)] hover:border-[var(--blue-400)]/50 hover:text-[var(--blue-400)]">
                     Open Draft
                   </Button>
                 </div>
-                <p className="text-sm text-[#8a7055] whitespace-pre-wrap">
+                <p className="text-sm text-[var(--text-muted)] whitespace-pre-wrap">
                   {project.brief_text || 'No brief provided.'}
                 </p>
               </div>
 
-              <div className="bg-[#1a1008] border border-[#3d2412]/50 rounded-2xl p-6 shadow-lg space-y-4">
-                <h2 className="text-base font-semibold text-[#f0e4c8]">Governance &amp; Updates</h2>
-                <p className="text-sm text-[#8a7055]">Manage membership, branching, and development logs.</p>
+              <div className="bg-[var(--brand-850)] border border-[var(--brand-700)]/50 rounded-2xl p-6 shadow-lg space-y-4">
+                <h2 className="text-base font-semibold text-[var(--text-primary)]">Governance &amp; Updates</h2>
+                <p className="text-sm text-[var(--text-muted)]">Manage membership, branching, and development logs.</p>
                 <div className="flex flex-col gap-2">
-                  <Button variant="outline" onClick={() => navigate(`/projects/${project.project_id || project.id}/governance`)} className="border-[#3d2412] text-[#8a7055] hover:border-[#D4A017]/50 hover:text-[#D4A017]">
+                  <Button variant="outline" onClick={() => navigate(`/projects/${project.project_id || project.id}/governance`)} className="border-[var(--brand-700)] text-[var(--text-muted)] hover:border-[var(--blue-400)]/50 hover:text-[var(--blue-400)]">
                     Governance hub
                   </Button>
-                  <Button onClick={() => navigate(`/projects/${project.project_id || project.id}/updates`)} className="bg-gradient-to-r from-[#D4A017] to-[#c8870f] text-[#130c07] font-semibold">
+                  <Button onClick={() => navigate(`/projects/${project.project_id || project.id}/updates`)} className="bg-gradient-to-r from-[var(--blue-400)] to-[var(--blue-500)] text-[var(--brand-900)] font-semibold">
                     Development updates
                   </Button>
                 </div>
@@ -744,166 +583,66 @@ export const ProjectDetailPage: React.FC = () => {
           )}
 
           <div className="space-y-4 sm:space-y-6">
-            {/* Phases Section */}
-            <div className="bg-[#1a1008] border border-[#3d2412]/50 rounded-2xl p-4 sm:p-6 shadow-lg phase-board">
+            {/* Phases Section — Kanban Board */}
+            <div className="bg-[var(--brand-850)] border border-[var(--brand-700)]/50 rounded-2xl p-4 sm:p-6 shadow-lg phase-board">
               <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
                 <div>
-                  <h2 className="text-lg sm:text-xl font-semibold text-[#f0e4c8]">Project Phases</h2>
-                  <p className="text-xs sm:text-sm text-[#8a7055] hidden sm:block">
-                    Click any leaf to work on that phase. Green = complete, amber = in progress.
+                  <h2 className="text-lg sm:text-xl font-semibold text-[var(--text-primary)]">Project Phases</h2>
+                  <p className="text-xs sm:text-sm text-[var(--text-muted)]">
+                    Select a phase to continue — complete them in order for best results.
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  {/* View toggle */}
-                  <div className="flex items-center bg-[#221508] rounded-xl p-1 border border-[#3d2412]/50">
-                    <button
-                      onClick={() => setTreeView(true)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                        treeView ? 'bg-[#D4A017] text-[#130c07]' : 'text-[#8a7055] hover:text-[#f0e4c8]'
-                      }`}
-                    >
-                      Tree
-                    </button>
-                    <button
-                      onClick={() => setTreeView(false)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                        !treeView ? 'bg-[#D4A017] text-[#130c07]' : 'text-[#8a7055] hover:text-[#f0e4c8]'
-                      }`}
-                    >
-                      List
-                    </button>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={handleExportAllPhases} disabled={!Object.keys(phaseOutputs).length} className="border-[#3d2412] text-[#8a7055] hover:border-[#D4A017]/50 hover:text-[#D4A017]">
-                    Export All
-                  </Button>
-                </div>
+                <Button variant="outline" size="sm" onClick={handleExportAllPhases} disabled={!Object.keys(phaseOutputs).length} className="border-[var(--brand-700)] text-[var(--text-muted)] hover:border-[var(--blue-400)]/50 hover:text-[var(--blue-400)]">
+                  Export All
+                </Button>
               </div>
 
-              {/* Tree View */}
-              {treeView ? (
-                <div className="relative">
-                  <PhaseTree
-                    phases={phaseConfigs}
-                    phaseStatus={phaseStatus}
-                    phaseOutputs={phaseOutputs}
-                    onPhaseClick={handlePhaseClick}
-                    projectId={project.project_id || project.id || ''}
-                  />
+              <PhaseKanban
+                phases={phaseConfigs}
+                phaseStatus={phaseStatus}
+                phaseOutputs={phaseOutputs}
+                onPhaseClick={handlePhaseClick}
+              />
 
-                  {/* Phase color legend */}
-                  <div className="flex flex-wrap items-center gap-4 mt-4 pt-4 border-t border-[#3d2412]/30">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3.5 h-3.5 rounded-full bg-[#D4A017]" />
-                      <span className="text-xs text-[#8a7055]">Completed</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3.5 h-3.5 rounded-full bg-[#fbbf24]" />
-                      <span className="text-xs text-[#8a7055]">In Progress</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3.5 h-3.5 rounded-full bg-[#5a9e6a]" />
-                      <span className="text-xs text-[#8a7055]">Ready</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3.5 h-3.5 rounded-full bg-[#3d2412] border border-[#8a7055]" />
-                      <span className="text-xs text-[#8a7055]">Locked</span>
-                    </div>
-                    <div className="flex items-center gap-2 ml-auto">
-                      <div className="w-3.5 h-3.5 rounded-full bg-[#fbbf24]" />
-                      <span className="text-xs text-[#8a7055]">dot = output available</span>
-                    </div>
+              {/* Legend */}
+              <div className="flex flex-wrap items-center gap-4 mt-5 pt-4 border-t border-[var(--brand-700)]/30">
+                {[
+                  { color: '#1A6FD4', label: 'Completed' },
+                  { color: '#F97316', label: 'In Progress' },
+                  { color: '#3d8fe0', label: 'Ready' },
+                  { color: '#4a6070', label: 'Locked' },
+                  { color: '#F97316', label: '● output ready', dot: true },
+                ].map(({ color, label, dot }) => (
+                  <div key={label} className="flex items-center gap-1.5">
+                    {dot
+                      ? <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: color }} />
+                      : <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: color, opacity: 0.7 }} />
+                    }
+                    <span className="text-xs text-[var(--text-muted)]">{label}</span>
                   </div>
-                </div>
-              ) : (
-                /* List View */
-                <div className="divide-y divide-[#1e4a28]/30">
-                  {phaseConfigs.map((phase) => {
-                    const status = (phaseStatus[phase.id] || 'locked').toLowerCase();
-                    const pillClass =
-                      status === 'completed'
-                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                        : status === 'active' || status === 'planning'
-                        ? 'bg-[#fbbf24]/20 text-[#fbbf24] border border-[#fbbf24]/30'
-                        : 'bg-[#3d2412]/30 text-[#8a7055] border border-[#3d2412]';
-                    const pillLabel = statusLabels[status] || status;
-                    const hasOutput = Boolean(phaseOutputs[phase.id]);
-
-                    return (
-                      <div
-                        key={phase.id}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => navigate(`/projects/${project.project_id || project.id}/phases/${phase.id}`)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            navigate(`/projects/${project.project_id || project.id}/phases/${phase.id}`);
-                          }
-                        }}
-                        className={`w-full text-left ${phaseRowPadding} hover:bg-[#2c1b0e] transition cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D4A017] rounded-xl`}
-                      >
-                        <div className="flex items-start gap-3 sm:gap-4">
-                          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#D4A017]/20 text-[#D4A017] border border-[#D4A017]/30 flex items-center justify-center text-xs sm:text-sm font-semibold flex-shrink-0">
-                            {phase.stepNumber}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex flex-wrap items-center justify-between gap-3">
-                              <p className={`font-semibold text-[#f0e4c8] ${condensePhases ? 'text-sm' : 'text-base'}`}>{phase.title}</p>
-                              <div className="flex items-center gap-2">
-                                <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${pillClass}`}>
-                                  {pillLabel}
-                                </span>
-                                {hasOutput && (
-                                  <span
-                                    role="button"
-                                    tabIndex={0}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleExportPhase(phase.id);
-                                    }}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter' || e.key === ' ') {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        handleExportPhase(phase.id);
-                                      }
-                                    }}
-                                    className="text-xs font-semibold text-[#D4A017] hover:text-[#e8bf40]"
-                                  >
-                                    Export
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <p className={`mt-1 text-[#8a7055] line-clamp-2 ${condensePhases ? 'text-xs' : 'text-sm'}`}>{phase.description}</p>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                ))}
+              </div>
             </div>
 
             <div className="grid gap-4">
-              <div className="bg-[#1a1008] border border-[#3d2412]/50 rounded-2xl p-6 shadow-lg">
-                <h2 className="text-base font-semibold text-[#f0e4c8] mb-4">Project Details</h2>
-                <dl className="space-y-3 text-sm text-[#8a7055]">
+              <div className="bg-[var(--brand-850)] border border-[var(--brand-700)]/50 rounded-2xl p-6 shadow-lg">
+                <h2 className="text-base font-semibold text-[var(--text-primary)] mb-4">Project Details</h2>
+                <dl className="space-y-3 text-sm text-[var(--text-muted)]">
                   <div className="flex justify-between">
                     <span>Type</span>
-                    <span className="font-medium text-[#f0e4c8]">{project.template_type.replace('_', ' ')}</span>
+                    <span className="font-medium text-[var(--text-primary)]">{project.template_type.replace('_', ' ')}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Owner</span>
-                    <span className="font-medium text-[#f0e4c8]">{project.owner_name || 'Unassigned'}</span>
+                    <span className="font-medium text-[var(--text-primary)]">{project.owner_name || 'Unassigned'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Created</span>
-                    <span className="font-medium text-[#f0e4c8]">{formatDate(project.created_at)}</span>
+                    <span className="font-medium text-[var(--text-primary)]">{formatDate(project.created_at)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Last Updated</span>
-                    <span className="font-medium text-[#f0e4c8]">{formatDate(project.updated_at)}</span>
+                    <span className="font-medium text-[var(--text-primary)]">{formatDate(project.updated_at)}</span>
                   </div>
                 </dl>
               </div>
@@ -918,7 +657,14 @@ export const ProjectDetailPage: React.FC = () => {
           projectId={(project.project_id || project.id) ?? ''}
           projectName={project.name}
           description={project.description}
-          requirements={[]}
+          requirements={requirements.map(r => ({
+            id: r.requirement_id || '',
+            title: r.title || '',
+            description: r.description || '',
+            type: r.type || '',
+            priority: r.priority || '',
+            status: r.status || '',
+          }))}
         />
       )}
     </Layout>

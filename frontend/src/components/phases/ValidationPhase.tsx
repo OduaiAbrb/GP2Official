@@ -113,7 +113,7 @@ export const ValidationPhase: React.FC<ValidationPhaseProps> = ({
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-emerald-600">{overallStats.approved}</div>
+            <div className="text-2xl font-bold text-blue-400">{overallStats.approved}</div>
             <div className="text-sm text-gray-500">Approved</div>
           </CardContent>
         </Card>
@@ -156,7 +156,7 @@ export const ValidationPhase: React.FC<ValidationPhaseProps> = ({
               return (
                 <div
                   key={item.id}
-                  className={`border rounded-lg transition-all ${liveItem.status === 'approved' ? 'border-emerald-200 bg-emerald-50/50' :
+                  className={`border rounded-lg transition-all ${liveItem.status === 'approved' ? 'border-blue-700/40 bg-blue-900/20/50' :
                       liveItem.status === 'pending' ? 'border-amber-200 bg-amber-50/50' :
                         liveItem.status === 'rejected' ? 'border-red-200 bg-red-50/50' :
                           'border-gray-200 bg-white'
@@ -168,7 +168,7 @@ export const ValidationPhase: React.FC<ValidationPhaseProps> = ({
                   >
                     <div className="flex items-center gap-3">
                       {liveItem.status === 'approved' ? (
-                        <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                        <CheckCircle2 className="h-5 w-5 text-blue-400" />
                       ) : liveItem.status === 'pending' ? (
                         <Clock className="h-5 w-5 text-amber-500" />
                       ) : liveItem.status === 'rejected' ? (

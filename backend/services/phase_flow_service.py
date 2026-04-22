@@ -3,22 +3,19 @@
 from typing import Dict, Tuple, Optional
 import logging
 import time
-from google import genai
-from google.genai import types as genai_types
 
 from config import settings
 from repositories.project_repository import ProjectRepository
 from models.project import default_phase_status
 from repositories.artifact_repository import ArtifactRepository
 from repositories.ai_run_repository import AiRunRepository
+from repositories.activity_repository import ActivityRepository
 from services.markdown_formatter import MarkdownFormatter
+from services.openai_client import call_openai
+from services.version_service import VersionService
+from models.version import VersionCreate
 
 logger = logging.getLogger(__name__)
-
-# Configure Gemini client once at module level
-_genai_client = None
-if settings.gemini_api_key:
-    _genai_client = genai.Client(api_key=settings.gemini_api_key)
 
 PHASE_ORDER = [
     "planning",
@@ -30,6 +27,7 @@ PHASE_ORDER = [
     "tasks",
     "cost_benefit",
     "risks",
+    "testing",
     "summary",
 ]
 
@@ -43,6 +41,7 @@ PHASE_TITLES = {
     "tasks": "Tasks",
     "cost_benefit": "Costs & Benefits",
     "risks": "Risks & Mitigations",
+    "testing": "Testing",
     "summary": "Summary",
 }
 
@@ -51,14 +50,14 @@ class PhaseFlowService:
     """Manage sequential phase generation and storage."""
 
     def __init__(self):
-        self.api_key = settings.gemini_api_key
-        self.model_name = settings.gemini_pro_model  # gemini-2.5-pro-latest for phase generation
         self.project_repo = ProjectRepository()
         self.artifact_repo = ArtifactRepository()
         self.ai_run_repo = AiRunRepository()
+        self.activity_repo = ActivityRepository()
+        self.version_service = VersionService()
         self.markdown_formatter = MarkdownFormatter()
-        logger.info(f"PhaseFlowService initialized - Provider: Gemini, Model: {self.model_name}")
-        logger.info(f"Gemini API key configured: {'Yes' if self.api_key else 'No'}")
+        logger.info(f"PhaseFlowService initialized - Provider: OpenAI, Model: {settings.openai_model}")
+        logger.info(f"OpenAI API key configured: {'Yes' if settings.openai_api_key else 'No'}")
 
     async def get_status(self, project_id: str, organization: str) -> Dict[str, str]:
         project = await self.project_repo.get_by_id(project_id, organization)
@@ -131,8 +130,11 @@ class PhaseFlowService:
         status[phase] = "in_progress"
         await self.project_repo.update_phase_status(project_id, organization, status)
 
+        # Build prior context from completed phases
+        prior_context = await self._build_prior_context(project_id, phase)
+
         logger.info(f"Starting content generation for phase {phase}, project {project_id}")
-        raw_content = await self._run_phase_prompt(project.id, project.name, phase, prompt, user_id)
+        raw_content = await self._run_phase_prompt(project.id, project.name, phase, prompt, user_id, prior_context)
         
         # Debug logging to track content generation
         logger.info(f"Generated content for phase {phase}: {len(raw_content)} characters")
@@ -166,6 +168,30 @@ class PhaseFlowService:
         
         logger.info(f"Created artifact with ID: {artifact.id}")
         logger.info(f"Artifact content_json keys: {list(artifact.content_json.keys()) if artifact.content_json else 'None'}")
+        if user_id:
+            await self.version_service.create_version(
+                VersionCreate(
+                    project_id=project_id,
+                    entity_type="artifact",
+                    entity_id=artifact.id,
+                    version_number=artifact.version,
+                    changes=payload,
+                    change_summary=f"Generated {PHASE_TITLES[phase]} phase output",
+                    changed_by=user_id,
+                ),
+                changed_by_name=user_id,
+            )
+            await self.activity_repo.record(
+                project_id=project_id,
+                user_id=user_id,
+                event_type="phase_generated",
+                details_json={
+                    "phase": phase,
+                    "artifact_id": artifact.id,
+                    "artifact_type": artifact_type,
+                    "version": artifact.version,
+                },
+            )
 
         status[phase] = "completed"
         next_index = PHASE_ORDER.index(phase) + 1
@@ -183,6 +209,43 @@ class PhaseFlowService:
             "metadata": artifact.metadata,
         }
 
+    async def _build_prior_context(self, project_id: str, current_phase: str) -> str:
+        """Fetch previously completed phase artifacts and build a context string."""
+        try:
+            current_index = PHASE_ORDER.index(current_phase)
+        except ValueError:
+            return ""
+
+        context_parts = []
+        for phase_id in PHASE_ORDER[:current_index]:
+            artifact_type = f"PHASE_{phase_id.upper()}"
+            try:
+                artifact = await self.artifact_repo.get_latest_by_type(project_id, artifact_type)
+                if artifact and artifact.content_json:
+                    markdown = (
+                        artifact.content_json.get("markdown")
+                        or artifact.content_json.get("raw_markdown")
+                        or ""
+                    )
+                    if markdown:
+                        title = PHASE_TITLES.get(phase_id, phase_id)
+                        # Limit each phase to 2000 chars to avoid token limits
+                        snippet = markdown[:2000]
+                        if len(markdown) > 2000:
+                            snippet += "\n...[truncated]"
+                        context_parts.append(f"[{title.upper()}]:\n{snippet}")
+            except Exception as exc:
+                logger.warning(f"Could not fetch prior context for phase {phase_id}: {exc}")
+
+        if not context_parts:
+            return ""
+
+        return (
+            "=== PREVIOUS PHASE OUTPUTS (for context) ===\n"
+            + "\n\n".join(context_parts)
+            + "\n=== END CONTEXT ===\n\n"
+        )
+
     async def _run_phase_prompt(
         self,
         project_id: str,
@@ -190,10 +253,11 @@ class PhaseFlowService:
         phase: str,
         user_prompt: str,
         user_id: Optional[str] = None,
+        prior_context: str = "",
     ) -> str:
-        # Use placeholder content if no Gemini API key is configured
-        if not self.api_key:
-            logger.info(f"No Gemini API key configured, using placeholder content for phase {phase}")
+        # Use placeholder content if no OpenAI API key is configured
+        if not settings.openai_api_key:
+            logger.info(f"No OpenAI API key configured, using placeholder content for phase {phase}")
             return await self._generate_placeholder_content(phase, user_prompt)
             
         system_message = (
@@ -219,24 +283,8 @@ class PhaseFlowService:
                 "acceptance criteria verification, and traceability matrix for requirements."
             ),
             "design": (
-                "Deliver the Design Document. Begin with a ## System Architecture section that includes a JSON block "
-                "for visualization in this exact format:\n"
-                "```json\n"
-                "{\n"
-                "  \"components\": [\n"
-                "    {\"id\": \"web\", \"name\": \"React Frontend\", \"type\": \"frontend\", \"description\": \"UI layer\"},\n"
-                "    {\"id\": \"api\", \"name\": \"FastAPI Backend\", \"type\": \"backend\", \"description\": \"REST API\"},\n"
-                "    {\"id\": \"db\", \"name\": \"PostgreSQL\", \"type\": \"database\", \"description\": \"Primary DB\"}\n"
-                "  ],\n"
-                "  \"connections\": [\n"
-                "    {\"from\": \"web\", \"to\": \"api\", \"label\": \"HTTPS\"},\n"
-                "    {\"from\": \"api\", \"to\": \"db\", \"label\": \"SQL\"}\n"
-                "  ]\n"
-                "}\n"
-                "```\n"
-                "Use component types: frontend, backend, database, external, cache, queue. "
-                "Include 4-8 components and 4-8 connections relevant to this specific project. "
-                "Then continue with: data models, API specifications, UX wireframe descriptions, and integration touchpoints."
+                "Deliver the Design Document: system architecture overview, component diagrams, data models, "
+                "API specifications, UX wireframe descriptions, and integration touchpoints."
             ),
             "development": (
                 "Regenerate a complete Development Plan using all available project context (planning, feasibility, "
@@ -285,6 +333,12 @@ class PhaseFlowService:
                 "List 5–10 concrete next actions as a Markdown checklist (using - [ ]), each referencing one or more risks and owners.\n"
                 "Keep the entire response in clean Markdown so the UI can render tables and sections side-by-side."
             ),
+            "testing": (
+                "Produce a Testing Plan for the project: identify key test categories (unit, integration, "
+                "end-to-end, performance), list critical test scenarios for the functional requirements, "
+                "highlight edge cases and boundary conditions, and recommend a test data strategy. "
+                "Include a coverage checklist mapping requirements to test scenarios."
+            ),
             "summary": (
                 "Compile the Project Summary: key achievements, final metrics, lessons learned, "
                 "outstanding risks, recommendations for future work, and stakeholder acknowledgments."
@@ -293,6 +347,7 @@ class PhaseFlowService:
         user_prompt = user_prompt.strip() or "Use available project context."
         phase_text = phase_instructions.get(phase, "")
         prompt = (
+            f"{prior_context}"
             f"Project: {project_name}\n"
             f"Phase: {PHASE_TITLES[phase]}\n"
             f"System expectations: {phase_text}\n"
@@ -305,29 +360,20 @@ class PhaseFlowService:
             user_id=user_id,
             job_type="phase",
             phase=phase,
-            provider="gemini",
-            model=self.model_name,
+            provider="openai",
+            model=settings.openai_model,
             prompt=prompt,
             metadata={"phase_title": PHASE_TITLES.get(phase)},
         )
 
-        # Call Gemini API
+        # Call OpenAI API
         started_at = time.perf_counter()
         try:
-            logger.info(f"Calling Gemini API with model: {self.model_name} for phase: {phase}")
+            logger.info(f"Calling OpenAI API with model: {settings.openai_model} for phase: {phase}")
             full_prompt = f"{prompt}\n\nProduce a structured Markdown response with clear headings, bullet lists, and actionable items."
-            response_obj = await _genai_client.aio.models.generate_content(
-                model=self.model_name,
-                contents=full_prompt,
-                config=genai_types.GenerateContentConfig(
-                    system_instruction=system_message,
-                    max_output_tokens=4000,
-                    temperature=0.7,
-                ),
-            )
-            response = response_obj.text
+            response = await call_openai(full_prompt, system=system_message, max_tokens=4000)
             duration = int((time.perf_counter() - started_at) * 1000)
-            logger.info(f"Gemini response received: {len(response)} characters in {duration}ms")
+            logger.info(f"OpenAI response received: {len(response)} characters in {duration}ms")
             await self.ai_run_repo.complete_run(
                 run_entry.id,
                 status="completed",

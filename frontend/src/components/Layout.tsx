@@ -2,321 +2,358 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import {
-  LogOut,
-  MessageCircle,
-  FolderKanban,
-  Bell,
-  Menu,
-  X,
-  ChevronRight,
-  ChevronLeft,
-  Plus,
-  User,
-  BarChart3,
+  LogOut, MessageCircle, FolderKanban, Settings, Bell, Search,
+  Menu, X, ChevronRight, ChevronLeft, Plus, Sparkles, User,
+  HelpCircle, BarChart3, Kanban, FileText, Users, CreditCard,
+  Zap, BookOpen,
 } from 'lucide-react';
 import { ConversationalDock } from '@/components/ConversationalDock';
+import { AIDebatePanel } from '@/components/AIDebatePanel';
 
-interface LayoutProps {
-  children: React.ReactNode;
-}
-
-const AcornLogoSVG: React.FC<{ size?: number }> = ({ size = 36 }) => (
-  <svg width={size} height={size} viewBox="0 0 40 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <ellipse cx="20" cy="16" rx="16" ry="9" fill="#3d2412" />
-    <ellipse cx="20" cy="16" rx="12" ry="6" fill="#221508" />
-    <rect x="18" y="7" width="4" height="10" rx="2" fill="#221508" />
-    <ellipse cx="20" cy="32" rx="14" ry="16" fill="#8B5E3C" />
-    <ellipse cx="20" cy="28" rx="12" ry="14" fill="#c8895a" />
-    <ellipse cx="15" cy="24" rx="4" ry="6" fill="rgba(255,255,255,0.1)" />
-  </svg>
-);
+interface LayoutProps { children: React.ReactNode; }
 
 const navItems = [
   { id: 'projects',  icon: FolderKanban, label: 'Projects',  path: '/projects' },
   { id: 'analytics', icon: BarChart3,    label: 'Analytics', path: '/analytics' },
+  { id: 'docs',      icon: BookOpen,     label: 'Docs',      path: '/docs' },
   { id: 'profile',   icon: User,         label: 'Profile',   path: '/profile' },
 ];
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const { user, logout }         = useAuthStore();
-  const navigate                 = useNavigate();
-  const location                 = useLocation();
-  const [assistantOpen, setAssistantOpen]     = useState(false);
+  const { user, logout }          = useAuthStore();
+  const navigate                  = useNavigate();
+  const location                  = useLocation();
+  const [assistantOpen, setAssistantOpen]       = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen]   = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen]     = useState(false);
 
   useEffect(() => {
-    const savedState = localStorage.getItem('sidebar_collapsed');
-    if (savedState !== null) setSidebarCollapsed(savedState === 'true');
+    const saved = localStorage.getItem('sidebar_collapsed');
+    if (saved !== null) setSidebarCollapsed(saved === 'true');
   }, []);
 
   useEffect(() => {
     localStorage.setItem('sidebar_collapsed', String(sidebarCollapsed));
   }, [sidebarCollapsed]);
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
-  };
+  const handleLogout = async () => { await logout(); navigate('/login'); };
 
-  const projectMatch  = useMemo(() => location.pathname.match(/\/projects\/([^/]+)/), [location.pathname]);
+  const projectMatch    = useMemo(() => location.pathname.match(/\/projects\/([^/]+)/), [location.pathname]);
   const activeProjectId = projectMatch && projectMatch[1]?.length > 6 ? projectMatch[1] : null;
+  // AIChatAssistant (Athena) handles chat on phase pages — don't show ConversationalDock there
+  const onPhasePage = location.pathname.includes('/phases/');
 
+  useEffect(() => { if (!activeProjectId) setAssistantOpen(false); }, [activeProjectId]);
+
+  // Ctrl+K opens AI chat on any project page
   useEffect(() => {
-    if (!activeProjectId) setAssistantOpen(false);
-  }, [activeProjectId]);
+    const handleKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k' && activeProjectId && !onPhasePage) {
+        e.preventDefault();
+        setAssistantOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [activeProjectId, onPhasePage]);
 
   const isActive = (path: string) => {
-    if (path === '/projects') {
-      return location.pathname === path || location.pathname.startsWith('/projects/');
-    }
+    if (path === '/projects') return location.pathname === path || location.pathname.startsWith('/projects/');
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
 
-  return (
-    <div className="min-h-screen flex" style={{ background: '#130c07' }}>
-      {/* Background texture */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute inset-0 bg-grid opacity-10" />
-        <div className="absolute top-1/4 right-1/4 w-[500px] h-[500px] rounded-full pointer-events-none"
-          style={{ background: 'radial-gradient(circle, rgba(212,160,23,0.04) 0%, transparent 70%)', filter: 'blur(80px)' }}
-        />
-        <div className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] rounded-full pointer-events-none"
-          style={{ background: 'radial-gradient(circle, rgba(139,94,60,0.06) 0%, transparent 70%)', filter: 'blur(80px)' }}
-        />
-      </div>
+  const sidebarW = sidebarCollapsed ? '72px' : '240px';
 
-      {/* Sidebar - Desktop */}
-      <aside
-        className={`hidden lg:flex flex-col fixed left-0 top-0 h-screen transition-all duration-300 z-40 ${
-          sidebarCollapsed ? 'w-20' : 'w-64'
-        }`}
-        style={{ background: '#1a1008', borderRight: '1px solid #3d2412' }}
+  return (
+    <div style={{ minHeight: '100vh', background: 'var(--brand-900)', display: 'flex', fontFamily: "'DM Sans', sans-serif" }}>
+
+      {/* Background grid */}
+      <div className="bg-grid" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', opacity: 0.6 }} />
+      <div className="glow-orb glow-orb-forest" style={{ width: '500px', height: '500px', top: '10%', left: '5%', opacity: 0.4 }} />
+
+      {/* ── Sidebar Desktop ── */}
+      <aside style={{
+        display: 'none',
+        position: 'fixed', left: 0, top: 0, height: '100vh', width: sidebarW,
+        background: 'var(--brand-850)',
+        borderRight: '1px solid rgba(26,111,212,0.18)',
+        flexDirection: 'column',
+        zIndex: 40,
+        transition: 'width 0.3s var(--ease-out-expo)',
+      }}
+        className="lg:flex flex-col"
       >
         {/* Logo */}
-        <div className="h-16 flex items-center justify-between px-4" style={{ borderBottom: '1px solid #3d2412' }}>
-          <Link to="/projects" className="flex items-center gap-3 group">
-            <div className="relative flex-shrink-0">
-              <div className="absolute inset-0 rounded-xl blur-md opacity-40 group-hover:opacity-70 transition-opacity"
-                style={{ background: 'linear-gradient(135deg, #D4A017, #8B5E3C)' }} />
-              <div className="relative rounded-xl flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform"
-                style={{ width: 40, height: 40, background: 'linear-gradient(135deg, #2c1b0e, #3d2412)' }}>
-                <AcornLogoSVG size={32} />
+        <div style={{
+          height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '0 16px', borderBottom: '1px solid rgba(26,111,212,0.18)',
+          flexShrink: 0,
+        }}>
+          <Link to="/projects" style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none' }}>
+            <div style={{ position: 'relative', flexShrink: 0 }}>
+              <div style={{
+                position: 'absolute', inset: 0,
+                background: 'linear-gradient(135deg, #1A6FD4, #0d2b52)',
+                borderRadius: '10px', filter: 'blur(6px)', opacity: 0.5,
+              }} />
+              <div style={{
+                position: 'relative', width: '38px', height: '38px',
+                background: 'linear-gradient(135deg, #1A6FD4, #0d2b52)',
+                borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Zap size={18} color="#fff" />
               </div>
             </div>
             {!sidebarCollapsed && (
-              <span className="text-xl font-bold text-gradient-forest">Acorn</span>
+              <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '18px', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+                Acorn
+              </span>
             )}
           </Link>
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="p-2 rounded-lg transition-all"
-            style={{ color: '#8a7055' }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#f0e4c8')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#8a7055')}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '6px', borderRadius: '8px' }}
           >
-            {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            {sidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
           </button>
         </div>
 
-        {/* Quick Action */}
-        <div className="p-3">
+        {/* New Project button */}
+        <div style={{ padding: '12px' }}>
           <button
             onClick={() => navigate('/projects/new')}
-            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl font-semibold shadow-lg transition-all hover:opacity-90 hover:scale-[1.02] ${
-              sidebarCollapsed ? 'justify-center' : ''
-            }`}
             style={{
-              background: 'linear-gradient(135deg, #D4A017, #a86d0e)',
-              color: '#130c07',
-              boxShadow: '0 4px 16px rgba(212,160,23,0.3)',
+              width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+              padding: sidebarCollapsed ? '10px' : '10px 16px',
+              justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
+              background: 'linear-gradient(135deg, #F97316, #cc4900)',
+              border: 'none', borderRadius: '10px', cursor: 'pointer',
+              color: '#fff', fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: '14px',
+              boxShadow: '0 4px 16px rgba(249,115,22,0.35)',
+              transition: 'all 0.2s',
             }}
+            onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-1px)')}
+            onMouseLeave={e => (e.currentTarget.style.transform = 'translateY(0)')}
           >
-            <Plus className="w-5 h-5 flex-shrink-0" />
+            <Plus size={16} />
             {!sidebarCollapsed && <span>New Project</span>}
           </button>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
+        {/* Nav items */}
+        <nav style={{ flex: 1, padding: '4px 8px', overflowY: 'auto' }}>
           {!sidebarCollapsed && (
-            <div className="px-3 py-2">
-              <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#5c3820' }}>
-                Navigation
-              </span>
-            </div>
+            <p style={{ fontSize: '10px', color: 'var(--text-faint)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', padding: '8px 8px 4px' }}>
+              Navigation
+            </p>
           )}
-
-          {navItems.map((item) => {
+          {navItems.map(item => {
             const Icon   = item.icon;
             const active = isActive(item.path);
-
             return (
               <button
                 key={item.id}
                 onClick={() => navigate(item.path)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
-                  sidebarCollapsed ? 'justify-center' : ''
-                }`}
-                style={{
-                  background: active ? 'rgba(212,160,23,0.12)' : 'transparent',
-                  color: active ? '#D4A017' : '#8a7055',
-                  border: active ? '1px solid rgba(212,160,23,0.3)' : '1px solid transparent',
-                }}
-                onMouseEnter={e => { if (!active) { e.currentTarget.style.color = '#f0e4c8'; e.currentTarget.style.background = 'rgba(61,36,18,0.5)'; }}}
-                onMouseLeave={e => { if (!active) { e.currentTarget.style.color = '#8a7055'; e.currentTarget.style.background = 'transparent'; }}}
                 title={sidebarCollapsed ? item.label : undefined}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center',
+                  gap: '12px', padding: '10px 12px',
+                  justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
+                  borderRadius: '10px', border: 'none', cursor: 'pointer',
+                  background: active ? 'rgba(26,111,212,0.15)' : 'transparent',
+                  borderLeft: active ? '3px solid #1A6FD4' : '3px solid transparent',
+                  color: active ? 'var(--blue-300)' : 'var(--text-muted)',
+                  fontFamily: active ? "'Syne', sans-serif" : "'DM Sans', sans-serif",
+                  fontWeight: active ? 600 : 400, fontSize: '14px',
+                  marginBottom: '2px',
+                  transition: 'all 0.15s',
+                }}
+                onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'rgba(26,111,212,0.08)'; e.currentTarget.style.color = 'var(--text-primary)'; } }}
+                onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)'; } }}
               >
-                <Icon className="w-5 h-5 flex-shrink-0" />
-                {!sidebarCollapsed && (
-                  <span className="font-medium">{item.label}</span>
-                )}
+                <Icon size={17} />
+                {!sidebarCollapsed && <span>{item.label}</span>}
                 {active && !sidebarCollapsed && (
-                  <div className="ml-auto w-1.5 h-1.5 rounded-full" style={{ background: '#D4A017' }} />
+                  <div style={{ marginLeft: 'auto', width: '6px', height: '6px', borderRadius: '50%', background: '#1A6FD4' }} />
                 )}
               </button>
             );
           })}
         </nav>
 
-        {/* User Section */}
-        <div className="p-3" style={{ borderTop: '1px solid #3d2412' }}>
-          {user && (
-            <div className={`flex items-center gap-3 p-3 rounded-xl mb-3 ${sidebarCollapsed ? 'justify-center' : ''}`}
-              style={{ background: 'rgba(44,27,14,0.5)' }}>
-              <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(212,160,23,0.2), rgba(139,94,60,0.2))',
-                  color: '#D4A017',
-                  border: '1px solid rgba(212,160,23,0.3)',
-                }}>
+        {/* User section */}
+        <div style={{ borderTop: '1px solid rgba(26,111,212,0.15)', padding: '12px', flexShrink: 0 }}>
+          {user && !sidebarCollapsed && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '10px',
+              padding: '10px 12px', borderRadius: '10px',
+              background: 'rgba(26,111,212,0.08)',
+              marginBottom: '8px',
+            }}>
+              <div style={{
+                width: '34px', height: '34px', borderRadius: '50%', flexShrink: 0,
+                background: 'linear-gradient(135deg, rgba(26,111,212,0.3), rgba(13,43,82,0.5))',
+                border: '1px solid rgba(26,111,212,0.4)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'var(--blue-300)', fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: '13px',
+              }}>
                 {user.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
               </div>
-              {!sidebarCollapsed && (
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold truncate" style={{ color: '#f0e4c8' }}>
-                    {user.full_name || user.email?.split('@')[0]}
-                  </p>
-                  <p className="text-xs truncate" style={{ color: '#8a7055' }}>
-                    {user.organization || 'Workspace'}
-                  </p>
-                </div>
-              )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: "'Syne', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>
+                  {user.full_name || user.email?.split('@')[0]}
+                </p>
+                <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {user.organization || user.role_label || 'Member'}
+                </p>
+              </div>
             </div>
           )}
-
           <button
             onClick={handleLogout}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-              sidebarCollapsed ? 'justify-center' : ''
-            }`}
-            style={{ color: '#8a7055' }}
-            onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; }}
-            onMouseLeave={e => { e.currentTarget.style.color = '#8a7055'; e.currentTarget.style.background = 'transparent'; }}
             title={sidebarCollapsed ? 'Logout' : undefined}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center',
+              gap: '10px', padding: '10px 12px',
+              justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
+              borderRadius: '10px', border: 'none', cursor: 'pointer',
+              background: 'transparent', color: 'var(--text-muted)',
+              fontSize: '14px', fontFamily: "'DM Sans', sans-serif",
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.color = '#f87171'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)'; }}
           >
-            <LogOut className="w-5 h-5 flex-shrink-0" />
-            {!sidebarCollapsed && <span className="font-medium">Logout</span>}
+            <LogOut size={16} />
+            {!sidebarCollapsed && <span>Logout</span>}
           </button>
         </div>
       </aside>
 
-      {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 h-16 backdrop-blur-lg z-50 flex items-center justify-between px-4"
-        style={{ background: 'rgba(26,16,8,0.95)', borderBottom: '1px solid #3d2412' }}>
-        <Link to="/projects" className="flex items-center gap-2">
-          <div className="rounded-lg flex items-center justify-center"
-            style={{ width: 36, height: 36, background: 'linear-gradient(135deg, #2c1b0e, #3d2412)' }}>
-            <AcornLogoSVG size={28} />
+      {/* ── Mobile Header ── */}
+      <header style={{
+        position: 'fixed', top: 0, left: 0, right: 0, height: '60px',
+        background: 'rgba(17,31,48,0.95)', backdropFilter: 'blur(16px)',
+        borderBottom: '1px solid rgba(26,111,212,0.2)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 16px', zIndex: 50,
+      }} className="lg:hidden">
+        <Link to="/projects" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
+          <div style={{
+            width: '34px', height: '34px', borderRadius: '8px',
+            background: 'linear-gradient(135deg, #1A6FD4, #0d2b52)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Zap size={16} color="#fff" />
           </div>
-          <span className="text-lg font-bold text-gradient-forest">Acorn</span>
+          <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '16px', color: 'var(--text-primary)' }}>Acorn</span>
         </Link>
-
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="p-2 rounded-lg transition-all"
-          style={{ color: '#8a7055' }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '6px' }}
         >
-          {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
       </header>
 
-      {/* Mobile Menu */}
+      {/* Mobile menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 z-40 pt-16 animate-reveal-down"
-          style={{ background: 'rgba(19,12,7,0.97)', backdropFilter: 'blur(16px)' }}>
-          <nav className="p-4 space-y-2">
-            {navItems.map((item) => {
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 40, paddingTop: '60px',
+          background: 'rgba(13,27,42,0.97)', backdropFilter: 'blur(16px)',
+        }} className="lg:hidden animate-reveal-down">
+          <nav style={{ padding: '16px' }}>
+            {navItems.map(item => {
               const Icon   = item.icon;
               const active = isActive(item.path);
-
               return (
-                <button
-                  key={item.id}
+                <button key={item.id}
                   onClick={() => { navigate(item.path); setMobileMenuOpen(false); }}
-                  className="w-full flex items-center gap-4 px-5 py-4 rounded-xl transition-all"
                   style={{
-                    background: active ? 'rgba(212,160,23,0.12)' : 'transparent',
-                    color: active ? '#D4A017' : '#c8b090',
-                    border: active ? '1px solid rgba(212,160,23,0.3)' : '1px solid transparent',
+                    width: '100%', display: 'flex', alignItems: 'center', gap: '16px',
+                    padding: '16px', borderRadius: '12px', border: 'none', cursor: 'pointer',
+                    background: active ? 'rgba(26,111,212,0.15)' : 'transparent',
+                    color: active ? 'var(--blue-300)' : 'var(--text-muted)',
+                    fontSize: '16px', fontFamily: "'DM Sans', sans-serif", marginBottom: '4px',
                   }}
                 >
-                  <Icon className="w-6 h-6" />
-                  <span className="text-lg font-medium">{item.label}</span>
+                  <Icon size={20} />
+                  <span>{item.label}</span>
                 </button>
               );
             })}
-
-            <div className="pt-4 mt-4" style={{ borderTop: '1px solid #3d2412' }}>
+            <div style={{ paddingTop: '16px', borderTop: '1px solid rgba(26,111,212,0.15)', marginTop: '8px' }}>
               <button
                 onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
-                className="w-full flex items-center gap-4 px-5 py-4 rounded-xl text-red-400 hover:bg-red-500/10 transition-all"
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', gap: '16px',
+                  padding: '16px', borderRadius: '12px', border: 'none', cursor: 'pointer',
+                  background: 'transparent', color: '#f87171', fontSize: '16px',
+                }}
               >
-                <LogOut className="w-6 h-6" />
-                <span className="text-lg font-medium">Logout</span>
+                <LogOut size={20} />
+                <span>Logout</span>
               </button>
             </div>
           </nav>
         </div>
       )}
 
-      {/* Main Content */}
-      <main
-        className={`flex-1 transition-all duration-300 ${
-          sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-        } pt-16 lg:pt-0`}
+      {/* ── Main content ── */}
+      <main style={{
+        flex: 1,
+        marginLeft: 0,
+        paddingTop: '60px',
+        position: 'relative', zIndex: 10,
+      }}
+        className="lg:pt-0"
+        // inline style override for desktop via CSS var
       >
-        <div className="p-6 lg:p-8 relative z-10">
+        <style>{`@media (min-width:1024px) { main { margin-left: ${sidebarW}; padding-top: 0; } }`}</style>
+        <div style={{ padding: '24px 32px' }}>
           {children}
         </div>
       </main>
 
-      {/* AI Assistant */}
+      {/* ── AI Debate Panel (visible on any project page) ── */}
       {activeProjectId && (
+        <AIDebatePanel projectId={activeProjectId} />
+      )}
+
+      {/* ── AI Chat FAB (hidden on phase pages where Athena is already shown) ── */}
+      {activeProjectId && !onPhasePage && (
         <>
           {!assistantOpen && (
             <button
               onClick={() => setAssistantOpen(true)}
-              className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all group hover:scale-110"
               style={{
-                background: 'linear-gradient(135deg, #D4A017, #a86d0e)',
-                boxShadow: '0 4px 20px rgba(212,160,23,0.4)',
+                position: 'fixed', bottom: '24px', right: '24px', zIndex: 50,
+                width: '52px', height: '52px', borderRadius: '50%',
+                background: 'linear-gradient(135deg, #1A6FD4, #0d2b52)',
+                border: 'none', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 8px 24px rgba(26,111,212,0.45)',
+                transition: 'transform 0.2s, box-shadow 0.2s',
               }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(26,111,212,0.6)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)';   e.currentTarget.style.boxShadow = '0 8px 24px rgba(26,111,212,0.45)'; }}
             >
-              <MessageCircle className="w-6 h-6" style={{ color: '#130c07' }} />
-              <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 animate-pulse"
-                style={{ background: '#5a9e6a', borderColor: '#130c07' }} />
+              <MessageCircle size={22} color="#fff" />
+              <div style={{
+                position: 'absolute', top: '-2px', right: '-2px',
+                width: '12px', height: '12px', borderRadius: '50%',
+                background: '#1A6FD4', border: '2px solid var(--brand-900)',
+                animation: 'pulse-ring 2s infinite',
+              }} />
             </button>
           )}
-
           {assistantOpen && (
-            <div className="fixed bottom-6 right-6 z-50 w-96 max-h-[600px] overflow-hidden shadow-2xl animate-reveal-up"
-              style={{
-                background: 'rgba(34,21,8,0.95)',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(212,160,23,0.15)',
-                borderRadius: 16,
-              }}>
+            <div style={{
+              position: 'fixed', bottom: '24px', right: '24px', zIndex: 50,
+              width: '380px', maxHeight: '580px',
+              borderRadius: '20px', overflow: 'hidden',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.6)',
+            }} className="animate-reveal-up">
               <ConversationalDock
                 projectId={activeProjectId}
                 open={assistantOpen}

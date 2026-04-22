@@ -180,7 +180,7 @@ const ProfilePage: React.FC = () => {
             disabled={saving}
             className={`font-bold shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 ${
               saved 
-                ? 'bg-green-500 hover:bg-green-600' 
+                ? 'bg-blue-900/200 hover:bg-blue-500' 
                 : 'bg-gradient-to-r from-acorn-orange-500 to-acorn-orange-600 hover:from-acorn-orange-600 hover:to-acorn-orange-700'
             } text-white`}
           >

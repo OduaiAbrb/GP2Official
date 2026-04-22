@@ -1,12 +1,9 @@
 """FastAPI main application."""
 
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 from contextlib import asynccontextmanager
 import os
-import pathlib
 
 from database import init_db, close_db
 from routes import (
@@ -15,7 +12,21 @@ from routes import (
     negotiation, payment, version, notifications, traceability, templates, explainability, utils
 )
 from routes import ai_chat
+from routes import testing
+from routes import ai_debate
+from routes import ai_suggestions
 from config import settings
+
+try:
+    from slowapi import Limiter, _rate_limit_exceeded_handler
+    from slowapi.util import get_remote_address
+    from slowapi.errors import RateLimitExceeded
+
+    limiter = Limiter(key_func=get_remote_address)
+    SLOWAPI_AVAILABLE = True
+except ImportError:
+    SLOWAPI_AVAILABLE = False
+    limiter = None
 
 
 @asynccontextmanager
@@ -44,6 +55,11 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+# Rate limiting
+if SLOWAPI_AVAILABLE and limiter:
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS middleware - allow all origins
 app.add_middleware(
@@ -98,13 +114,14 @@ app.include_router(templates.router, prefix="/api", tags=["Templates"])
 app.include_router(explainability.router, prefix="/api", tags=["AI Explainability"])
 app.include_router(utils.router, prefix="/api/utils", tags=["Utilities"])
 app.include_router(ai_chat.router, prefix="/api/ai-chat", tags=["AI Chat"])
+app.include_router(testing.router, prefix="/api", tags=["Testing"])
+app.include_router(ai_debate.router, prefix="/api", tags=["AI Debate"])
+app.include_router(ai_suggestions.router, prefix="/api", tags=["AI Suggestions"])
 
 
 @app.api_route("/", methods=["GET", "HEAD"])
 async def root():
-    """Root endpoint — serves the React app in production, API info in dev."""
-    if _FRONTEND_DIST.is_dir():
-        return FileResponse(str(_FRONTEND_DIST / "index.html"))
+    """Root endpoint with API information."""
     return {
         "service": "Acorn - AI Planning Platform",
         "version": "1.0.0",
@@ -144,21 +161,3 @@ async def health_check():
 async def health_check_head():
     """Explicit HEAD handler for health probes."""
     return Response(status_code=200)
-
-
-# ── Serve built React frontend in production ──────────────────────────────────
-_FRONTEND_DIST = pathlib.Path(__file__).parent.parent / "frontend" / "dist"
-
-if _FRONTEND_DIST.is_dir():
-    # Mount static assets (JS, CSS, images) at /assets
-    app.mount("/assets", StaticFiles(directory=str(_FRONTEND_DIST / "assets")), name="assets")
-
-    @app.get("/{full_path:path}", include_in_schema=False)
-    async def serve_spa(full_path: str):
-        """Catch-all: serve React SPA for any non-API path."""
-        # Try to serve the exact file first (e.g. favicon.ico, robots.txt)
-        file_path = _FRONTEND_DIST / full_path
-        if file_path.is_file():
-            return FileResponse(str(file_path))
-        # Fallback to index.html for client-side routing
-        return FileResponse(str(_FRONTEND_DIST / "index.html"))

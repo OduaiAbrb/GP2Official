@@ -13,8 +13,7 @@ import logging
 import re
 from typing import Any, Dict, Optional
 
-from google import genai
-from google.genai import types as genai_types
+import google.generativeai as genai
 
 from config import settings
 
@@ -23,7 +22,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # SDK initialisation – done once at import time
 # ---------------------------------------------------------------------------
-_genai_client = genai.Client(api_key=settings.gemini_api_key) if settings.gemini_api_key else None
+genai.configure(api_key=settings.gemini_api_key)
 
 _MAX_RETRIES = 3
 
@@ -88,9 +87,9 @@ class _BaseAgent:
     """
     Common retry loop shared by all specialized agents.
     Sub-classes must set:
-      self.agent_name       – string identifier
-      self.model_name       – Gemini model string
-      self.system_instruction – system prompt string
+      self.agent_name   – string identifier
+      self.model_name   – Gemini model string
+      self.model        – genai.GenerativeModel instance
     and implement:
       self._build_prompt(context) -> str
       self._parse_response(text)  -> Any
@@ -98,28 +97,21 @@ class _BaseAgent:
 
     agent_name: str = "BaseAgent"
     model_name: str = settings.gemini_flash_model
-    system_instruction: str = ""
 
     async def run(self, context: dict) -> dict:
+        from services.openai_client import call_openai
         prompt = self._build_prompt(context)
         last_error: Optional[str] = None
 
         for attempt in range(_MAX_RETRIES):
             try:
-                response = await _genai_client.aio.models.generate_content(
-                    model=self.model_name,
-                    contents=prompt,
-                    config=genai_types.GenerateContentConfig(
-                        system_instruction=self.system_instruction,
-                    ),
-                )
-                raw_text = response.text
+                raw_text = await call_openai(prompt)
                 parsed = self._parse_response(raw_text)
                 return _build_envelope(
                     success=True,
                     content=parsed,
                     agent=self.agent_name,
-                    model=self.model_name,
+                    model=settings.openai_model,
                 )
             except Exception as exc:
                 last_error = str(exc)
@@ -139,7 +131,7 @@ class _BaseAgent:
             success=False,
             content=None,
             agent=self.agent_name,
-            model=self.model_name,
+            model=settings.openai_model,
             error=f"All {_MAX_RETRIES} attempts failed. Last error: {last_error}",
         )
 
@@ -160,7 +152,9 @@ class RequirementsAgent(_BaseAgent):
     model_name = settings.gemini_pro_model
 
     def __init__(self):
-        self.system_instruction = """You are an expert software requirements analyst with 15+ years of experience.
+        self.model = genai.GenerativeModel(
+            model_name=self.model_name,
+            system_instruction="""You are an expert software requirements analyst with 15+ years of experience.
 Your task is to extract clear, actionable, testable requirements from project descriptions.
 
 ALWAYS return valid JSON in this EXACT format (no extra text before or after):
@@ -184,7 +178,8 @@ Rules:
   security, scalability), and constraints (technology, budget, regulatory limits).
 - Acceptance criteria must be specific and testable (Given/When/Then style preferred).
 - confidence is a float 0.0–1.0 indicating how certain you are the requirement is intentional.
-- Do NOT include commentary outside the JSON block."""
+- Do NOT include commentary outside the JSON block.""",
+        )
 
     def _build_prompt(self, context: dict) -> str:
         project_name = context.get("project_name", "Unnamed Project")
@@ -218,7 +213,9 @@ class SRSAgent(_BaseAgent):
     model_name = settings.gemini_pro_model
 
     def __init__(self):
-        self.system_instruction = """You are a senior technical writer specialising in IEEE 830-compliant
+        self.model = genai.GenerativeModel(
+            model_name=self.model_name,
+            system_instruction="""You are a senior technical writer specialising in IEEE 830-compliant
 Software Requirements Specifications (SRS).
 
 Generate a COMPLETE, professional SRS document in Markdown.  The document MUST include these sections:
@@ -264,7 +261,8 @@ Generate a COMPLETE, professional SRS document in Markdown.  The document MUST i
 ## 6. Appendix
 
 Write in formal, precise language.  Use numbered lists for all requirements.
-Do NOT truncate – every section must be substantive."""
+Do NOT truncate – every section must be substantive.""",
+        )
 
     def _build_prompt(self, context: dict) -> str:
         project_name = context.get("project_name", "Unnamed Project")
@@ -304,7 +302,9 @@ class RiskAgent(_BaseAgent):
     model_name = settings.gemini_flash_model
 
     def __init__(self):
-        self.system_instruction = """You are a senior software project risk analyst with expertise in
+        self.model = genai.GenerativeModel(
+            model_name=self.model_name,
+            system_instruction="""You are a senior software project risk analyst with expertise in
 ISO 31000 risk management.
 
 ALWAYS return valid JSON in this EXACT format:
@@ -329,7 +329,8 @@ ALWAYS return valid JSON in this EXACT format:
 
 risk_score = impact_value * probability_value  (scale 1-25, where critical=5, high=4, medium=3, low=2, very_low=1)
 Return a MINIMUM of 8 risks for any real project.
-Return ONLY the JSON block."""
+Return ONLY the JSON block.""",
+        )
 
     def _build_prompt(self, context: dict) -> str:
         project_name = context.get("project_name", "Unnamed Project")
@@ -373,7 +374,9 @@ class DiagramAgent(_BaseAgent):
     }
 
     def __init__(self):
-        self.system_instruction = """You are a software architect specialising in UML diagram design.
+        self.model = genai.GenerativeModel(
+            model_name=self.model_name,
+            system_instruction="""You are a software architect specialising in UML diagram design.
 
 Generate PlantUML diagram code.  The code MUST:
 - Start exactly with @startuml
@@ -382,7 +385,8 @@ Generate PlantUML diagram code.  The code MUST:
 - Include meaningful labels, notes, and styling (skinparam or !theme)
 - Be detailed enough to communicate the architecture clearly
 
-Return ONLY the PlantUML code block – no explanation, no markdown fencing."""
+Return ONLY the PlantUML code block – no explanation, no markdown fencing.""",
+        )
 
     def _build_prompt(self, context: dict) -> str:
         project_name = context.get("project_name", "Unnamed Project")
@@ -419,7 +423,9 @@ class CostAgent(_BaseAgent):
     model_name = settings.gemini_flash_model
 
     def __init__(self):
-        self.system_instruction = """You are an experienced software project manager and cost estimator.
+        self.model = genai.GenerativeModel(
+            model_name=self.model_name,
+            system_instruction="""You are an experienced software project manager and cost estimator.
 Use industry-standard techniques (Function Point Analysis, COCOMO II, expert judgement).
 
 ALWAYS return valid JSON in this EXACT format:
@@ -491,7 +497,8 @@ ALWAYS return valid JSON in this EXACT format:
   "confidence_notes": "Estimate based on project description; detailed scope may alter by ±30%"
 }
 
-Adjust all numbers to fit the actual project scope.  Return ONLY the JSON block."""
+Adjust all numbers to fit the actual project scope.  Return ONLY the JSON block.""",
+        )
 
     def _build_prompt(self, context: dict) -> str:
         project_name = context.get("project_name", "Unnamed Project")
@@ -528,7 +535,9 @@ class PersonaAgent(_BaseAgent):
     model_name = settings.gemini_flash_model
 
     def __init__(self):
-        self.system_instruction = """You are a UX researcher and product designer specialising in persona creation.
+        self.model = genai.GenerativeModel(
+            model_name=self.model_name,
+            system_instruction="""You are a UX researcher and product designer specialising in persona creation.
 
 ALWAYS return valid JSON in this EXACT format:
 {
@@ -563,7 +572,8 @@ ALWAYS return valid JSON in this EXACT format:
 }
 
 Create 3-5 distinct, realistic personas that cover the full spectrum of users.
-Return ONLY the JSON block."""
+Return ONLY the JSON block.""",
+        )
 
     def _build_prompt(self, context: dict) -> str:
         project_name = context.get("project_name", "Unnamed Project")
@@ -597,7 +607,9 @@ class FeasibilityAgent(_BaseAgent):
     model_name = settings.gemini_pro_model
 
     def __init__(self):
-        self.system_instruction = """You are a senior technology consultant specialising in project feasibility analysis.
+        self.model = genai.GenerativeModel(
+            model_name=self.model_name,
+            system_instruction="""You are a senior technology consultant specialising in project feasibility analysis.
 
 ALWAYS return valid JSON in this EXACT format:
 {
@@ -646,7 +658,8 @@ ALWAYS return valid JSON in this EXACT format:
   }
 }
 
-Scores are 0-100.  Be realistic and evidence-based.  Return ONLY the JSON block."""
+Scores are 0-100.  Be realistic and evidence-based.  Return ONLY the JSON block.""",
+        )
 
     def _build_prompt(self, context: dict) -> str:
         project_name = context.get("project_name", "Unnamed Project")
@@ -684,7 +697,9 @@ class SystemDesignAgent(_BaseAgent):
     model_name = settings.gemini_pro_model
 
     def __init__(self):
-        self.system_instruction = """You are a principal software architect with 20 years of experience
+        self.model = genai.GenerativeModel(
+            model_name=self.model_name,
+            system_instruction="""You are a principal software architect with 20 years of experience
 designing scalable, maintainable systems.
 
 ALWAYS return valid JSON in this EXACT format:
@@ -758,7 +773,8 @@ ALWAYS return valid JSON in this EXACT format:
   "architecture_diagram_hint": "Brief description for generating a PlantUML component diagram"
 }
 
-Tailor ALL recommendations to the actual project.  Return ONLY the JSON block."""
+Tailor ALL recommendations to the actual project.  Return ONLY the JSON block.""",
+        )
 
     def _build_prompt(self, context: dict) -> str:
         project_name = context.get("project_name", "Unnamed Project")
@@ -795,7 +811,9 @@ class ConflictDetectionAgent(_BaseAgent):
     model_name = settings.gemini_pro_model
 
     def __init__(self):
-        self.system_instruction = """You are an expert requirements analyst specialising in detecting conflicts,
+        self.model = genai.GenerativeModel(
+            model_name=self.model_name,
+            system_instruction="""You are an expert requirements analyst specialising in detecting conflicts,
 contradictions, and ambiguities in software requirements documents.
 
 ALWAYS return valid JSON in this EXACT format:
@@ -826,7 +844,8 @@ ALWAYS return valid JSON in this EXACT format:
 
 Be thorough — scan for: direct contradictions, scope creep, missing non-functional requirements,
 circular dependencies, tech stack conflicts, regulatory conflicts, and ambiguous terms.
-Return ONLY the JSON block."""
+Return ONLY the JSON block.""",
+        )
 
     def _build_prompt(self, context: dict) -> str:
         requirements = context.get("requirements", [])
@@ -853,7 +872,9 @@ class TechStackRecommenderAgent(_BaseAgent):
     model_name = settings.gemini_pro_model
 
     def __init__(self):
-        self.system_instruction = """You are a principal software architect and CTO advisor.
+        self.model = genai.GenerativeModel(
+            model_name=self.model_name,
+            system_instruction="""You are a principal software architect and CTO advisor.
 Your job is to recommend the optimal technology stack for a given project.
 
 ALWAYS return valid JSON in this EXACT format:
@@ -915,7 +936,8 @@ ALWAYS return valid JSON in this EXACT format:
 }
 
 Base recommendations on: team size, project type, scalability needs, timeline, and budget.
-Return ONLY the JSON block."""
+Return ONLY the JSON block.""",
+        )
 
     def _build_prompt(self, context: dict) -> str:
         project_name = context.get("project_name", "Unnamed Project")
@@ -949,7 +971,9 @@ class SecurityAuditAgent(_BaseAgent):
     model_name = settings.gemini_pro_model
 
     def __init__(self):
-        self.system_instruction = """You are a senior application security architect and OWASP expert.
+        self.model = genai.GenerativeModel(
+            model_name=self.model_name,
+            system_instruction="""You are a senior application security architect and OWASP expert.
 Your job is to audit project requirements and design for security gaps.
 
 ALWAYS return valid JSON in this EXACT format:
@@ -979,7 +1003,8 @@ ALWAYS return valid JSON in this EXACT format:
 
 Cover: OWASP Top 10, authentication flows, data encryption, API security, input validation,
 secrets management, logging/monitoring, and dependency vulnerabilities.
-Return ONLY the JSON block."""
+Return ONLY the JSON block.""",
+        )
 
     def _build_prompt(self, context: dict) -> str:
         project_name = context.get("project_name", "Unnamed Project")
@@ -1012,7 +1037,9 @@ class UserStoryGeneratorAgent(_BaseAgent):
     model_name = settings.gemini_flash_model
 
     def __init__(self):
-        self.system_instruction = """You are an experienced Agile product manager and scrum master.
+        self.model = genai.GenerativeModel(
+            model_name=self.model_name,
+            system_instruction="""You are an experienced Agile product manager and scrum master.
 Convert requirements into properly formatted user stories with acceptance criteria.
 
 ALWAYS return valid JSON in this EXACT format:
@@ -1047,7 +1074,8 @@ ALWAYS return valid JSON in this EXACT format:
 }
 
 Generate user stories for ALL key features. Use Gherkin syntax for acceptance criteria.
-Return ONLY the JSON block."""
+Return ONLY the JSON block.""",
+        )
 
     def _build_prompt(self, context: dict) -> str:
         requirements = context.get("requirements", [])
@@ -1078,7 +1106,9 @@ class ApiDesignAgent(_BaseAgent):
     model_name = settings.gemini_pro_model
 
     def __init__(self):
-        self.system_instruction = """You are a senior API architect specialising in RESTful API design
+        self.model = genai.GenerativeModel(
+            model_name=self.model_name,
+            system_instruction="""You are a senior API architect specialising in RESTful API design
 and OpenAPI 3.0 specification.
 
 ALWAYS return valid JSON in this EXACT format:
@@ -1126,7 +1156,8 @@ ALWAYS return valid JSON in this EXACT format:
 }
 
 Design a complete, production-ready API. Cover all CRUD operations and business logic endpoints.
-Return ONLY the JSON block."""
+Return ONLY the JSON block.""",
+        )
 
     def _build_prompt(self, context: dict) -> str:
         project_name = context.get("project_name", "Unnamed Project")
@@ -1159,7 +1190,9 @@ class DatabaseSchemaAgent(_BaseAgent):
     model_name = settings.gemini_pro_model
 
     def __init__(self):
-        self.system_instruction = """You are a senior database architect specialising in PostgreSQL schema design,
+        self.model = genai.GenerativeModel(
+            model_name=self.model_name,
+            system_instruction="""You are a senior database architect specialising in PostgreSQL schema design,
 normalization, and performance optimization.
 
 ALWAYS return valid JSON in this EXACT format:
@@ -1211,7 +1244,8 @@ ALWAYS return valid JSON in this EXACT format:
 }
 
 Design a fully normalized, production-ready schema. Include ALL tables needed.
-Return ONLY the JSON block."""
+Return ONLY the JSON block.""",
+        )
 
     def _build_prompt(self, context: dict) -> str:
         project_name = context.get("project_name", "Unnamed Project")
@@ -1244,13 +1278,16 @@ class AIChatAgent(_BaseAgent):
     model_name = settings.gemini_flash_model
 
     def __init__(self):
-        self.system_instruction = """You are Athena, an expert AI assistant inside the Acorn project planning platform.
+        self.model = genai.GenerativeModel(
+            model_name=self.model_name,
+            system_instruction="""You are Athena, an expert AI assistant inside the Acorn project planning platform.
 You help users understand, improve, and expand upon their project phase outputs.
 
 Your personality: concise, expert, friendly. You speak like a senior consultant, not a chatbot.
 Always give actionable, specific advice relevant to the project phase context provided.
 Keep responses under 300 words unless the user asks for more detail.
-Format responses in Markdown for readability."""
+Format responses in Markdown for readability.""",
+        )
 
     def _build_prompt(self, context: dict) -> str:
         project_name = context.get("project_name", "")

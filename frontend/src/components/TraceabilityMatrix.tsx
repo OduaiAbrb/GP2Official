@@ -59,7 +59,7 @@ export const TraceabilityMatrix: React.FC<TraceabilityMatrixProps> = ({
               <AlertTriangle className="w-6 h-6 text-acorn-orange-500" />
             )}
             {coveragePercentage >= 80 && (
-              <CheckCircle2 className="w-6 h-6 text-green-500" />
+              <CheckCircle2 className="w-6 h-6 text-blue-400" />
             )}
           </div>
         </div>

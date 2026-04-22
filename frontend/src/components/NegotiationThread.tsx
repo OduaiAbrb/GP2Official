@@ -95,7 +95,7 @@ export const NegotiationThread: React.FC<NegotiationThreadProps> = ({
             </span>
           )}
           {status === 'resolved' && (
-            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium flex items-center gap-1">
+            <span className="px-3 py-1 bg-blue-900/30 text-blue-300 rounded-full text-sm font-medium flex items-center gap-1">
               <CheckCircle className="w-4 h-4" />
               Resolved
             </span>
@@ -164,7 +164,7 @@ export const NegotiationThread: React.FC<NegotiationThreadProps> = ({
               <div className="flex gap-2 mt-3">
                 <Button
                   onClick={handleResolve}
-                  className="bg-green-600 hover:bg-green-700 text-white"
+                  className="bg-blue-500 hover:bg-blue-600 text-white"
                 >
                   Confirm Resolution
                 </Button>

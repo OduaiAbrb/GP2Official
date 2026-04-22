@@ -245,7 +245,7 @@ export const GuidedWorkspaceBuilder: React.FC = () => {
           <Card className="border-indigo-100 shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                <CheckCircle2 className="h-5 w-5 text-blue-400" />
                 Recommended Workspace
               </CardTitle>
               <CardDescription>

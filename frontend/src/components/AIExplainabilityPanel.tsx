@@ -46,7 +46,7 @@ export const AIExplainabilityPanel: React.FC<ExplanationProps> = ({ type, data }
   };
 
   const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 80) return 'text-green-600 bg-green-100';
+    if (confidence >= 80) return 'text-blue-400 bg-blue-900/30';
     if (confidence >= 60) return 'text-acorn-orange-600 bg-acorn-orange-100';
     return 'text-red-600 bg-red-100';
   };
@@ -168,7 +168,7 @@ export const AIExplainabilityPanel: React.FC<ExplanationProps> = ({ type, data }
           <div className="pt-4 border-t border-acorn-gray-200">
             <p className="text-sm text-acorn-gray-600 mb-2">Was this explanation helpful?</p>
             <div className="flex gap-2">
-              <button className="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-sm font-medium">
+              <button className="px-4 py-2 bg-blue-900/30 text-blue-300 rounded-lg hover:bg-blue-900/50 transition-colors text-sm font-medium">
                 Yes, helpful
               </button>
               <button className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm font-medium">

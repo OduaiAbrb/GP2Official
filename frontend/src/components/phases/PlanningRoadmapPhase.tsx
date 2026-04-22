@@ -213,16 +213,16 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
     purple: { bg: 'bg-purple-100', border: 'border-purple-300', text: 'text-purple-700', bar: 'bg-purple-500' },
     blue: { bg: 'bg-blue-100', border: 'border-blue-300', text: 'text-blue-700', bar: 'bg-blue-500' },
     red: { bg: 'bg-red-100', border: 'border-red-300', text: 'text-red-700', bar: 'bg-red-500' },
-    green: { bg: 'bg-emerald-100', border: 'border-emerald-300', text: 'text-emerald-700', bar: 'bg-emerald-500' },
+    green: { bg: 'bg-blue-900/30', border: 'border-blue-600/50', text: 'text-blue-300', bar: 'bg-blue-500/40' },
     amber: { bg: 'bg-amber-100', border: 'border-amber-300', text: 'text-amber-700', bar: 'bg-amber-500' },
     cyan: { bg: 'bg-cyan-100', border: 'border-cyan-300', text: 'text-cyan-700', bar: 'bg-cyan-500' },
-    emerald: { bg: 'bg-emerald-100', border: 'border-emerald-300', text: 'text-emerald-700', bar: 'bg-emerald-500' },
+    emerald: { bg: 'bg-blue-900/30', border: 'border-blue-600/50', text: 'text-blue-300', bar: 'bg-blue-500/40' },
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
-        return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
+        return <CheckCircle2 className="h-4 w-4 text-blue-400" />;
       case 'in_progress':
         return <Play className="h-4 w-4 text-blue-500" />;
       default:
@@ -262,19 +262,19 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
   return (
     <div className="space-y-6">
       {/* Roadmap Builder - Navy Card */}
-      <div className="rounded-3xl shadow-xl overflow-hidden" style={{ backgroundColor: '#0f1f15', border: '1px solid #1e4a28' }}>
-        <div className="p-6" style={{ background: 'linear-gradient(to right, #b8962e, #4ade80, #e6c358)' }}>
+      <div className="rounded-3xl shadow-xl overflow-hidden" style={{ backgroundColor: 'var(--brand-850)', border: '1px solid var(--brand-700)' }}>
+        <div className="p-6" style={{ background: 'linear-gradient(to right, #b8962e, var(--blue-400), #e6c358)' }}>
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-2xl backdrop-blur-sm" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>
                 <Milestone className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-white" style={{ color: '#0a150e' }}>Roadmap Builder</h2>
+                <h2 className="text-2xl font-bold text-white" style={{ color: 'var(--brand-900)' }}>Roadmap Builder</h2>
                 <p className="text-sm" style={{ color: 'rgba(10,15,26,0.8)' }}>Create and manage project milestones</p>
               </div>
             </div>
-            <div className={`px-4 py-2 rounded-full text-sm font-semibold ${savingRoadmap ? 'bg-amber-100 text-amber-700' : ''}`} style={!savingRoadmap ? { backgroundColor: 'rgba(10,15,26,0.2)', color: '#0a150e' } : {}}>
+            <div className={`px-4 py-2 rounded-full text-sm font-semibold ${savingRoadmap ? 'bg-amber-100 text-amber-700' : ''}`} style={!savingRoadmap ? { backgroundColor: 'rgba(10,15,26,0.2)', color: 'var(--brand-900)' } : {}}>
               {savingRoadmap ? '⏳ Saving...' : '✓ Autosaved'}
             </div>
           </div>
@@ -288,12 +288,12 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
                 value={draftMilestone.name}
                 onChange={(e) => setDraftMilestone((prev) => ({ ...prev, name: e.target.value }))}
                 className="text-white placeholder-gray-500"
-                style={{ backgroundColor: '#0a150e', border: '1px solid #1e4a28' }}
+                style={{ backgroundColor: 'var(--brand-900)', border: '1px solid var(--brand-700)' }}
               />
               <label className="text-sm font-medium text-gray-300">Phase</label>
               <select
                 className="w-full rounded-lg px-3 py-2 text-sm text-white"
-                style={{ backgroundColor: '#0a150e', border: '1px solid #1e4a28' }}
+                style={{ backgroundColor: 'var(--brand-900)', border: '1px solid var(--brand-700)' }}
                 value={draftMilestone.phase}
                 onChange={(e) => setDraftMilestone((prev) => ({ ...prev, phase: e.target.value }))}
               >
@@ -315,7 +315,7 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
                   }
                   placeholder="Start"
                   className="text-white"
-                  style={{ backgroundColor: '#0a150e', border: '1px solid #1e4a28' }}
+                  style={{ backgroundColor: 'var(--brand-900)', border: '1px solid var(--brand-700)' }}
                 />
                 <Input
                   type="number"
@@ -327,7 +327,7 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
                   }
                   placeholder="End"
                   className="text-white"
-                  style={{ backgroundColor: '#0a150e', border: '1px solid #1e4a28' }}
+                  style={{ backgroundColor: 'var(--brand-900)', border: '1px solid var(--brand-700)' }}
                 />
               </div>
             </div>
@@ -335,7 +335,7 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
               <label className="text-sm font-medium text-gray-300">Status</label>
               <select
                 className="w-full rounded-lg px-3 py-2 text-sm text-white"
-                style={{ backgroundColor: '#0a150e', border: '1px solid #1e4a28' }}
+                style={{ backgroundColor: 'var(--brand-900)', border: '1px solid var(--brand-700)' }}
                 value={draftMilestone.status}
                 onChange={(e) => setDraftMilestone((prev) => ({ ...prev, status: e.target.value as RoadmapMilestone['status'] }))}
               >
@@ -355,12 +355,12 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
                   setDraftMilestone((prev) => ({ ...prev, progress: Number(e.target.value) }))
                 }
                 className="text-white"
-                style={{ backgroundColor: '#0a150e', border: '1px solid #1e4a28' }}
+                style={{ backgroundColor: 'var(--brand-900)', border: '1px solid var(--brand-700)' }}
               />
               <label className="text-sm font-medium text-gray-300">Color Theme</label>
               <select
                 className="w-full rounded-lg px-3 py-2 text-sm text-white"
-                style={{ backgroundColor: '#0a150e', border: '1px solid #1e4a28' }}
+                style={{ backgroundColor: 'var(--brand-900)', border: '1px solid var(--brand-700)' }}
                 value={draftMilestone.color}
                 onChange={(e) => setDraftMilestone((prev) => ({ ...prev, color: e.target.value }))}
               >
@@ -381,7 +381,7 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
                   }))
                 }
                 className="w-full rounded-lg px-3 py-2 text-sm h-24 text-white"
-                style={{ backgroundColor: '#0a150e', border: '1px solid #1e4a28' }}
+                style={{ backgroundColor: 'var(--brand-900)', border: '1px solid var(--brand-700)' }}
               >
                 {milestones.map((m) => (
                   <option key={m.id} value={m.id}>
@@ -399,7 +399,7 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
               onClick={handleAddMilestone} 
               disabled={!draftMilestone.name.trim()}
               className="shadow-lg"
-              style={{ background: 'linear-gradient(to right, #4ade80, #b8962e)', color: '#0a150e' }}
+              style={{ background: 'linear-gradient(to right, var(--blue-400), #b8962e)', color: 'var(--brand-900)' }}
             >
               <Plus className="mr-2 h-4 w-4" />
               Add Milestone
@@ -415,10 +415,10 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
       </div>
 
       {/* Strategic Plan Highlights - Navy Design */}
-      <div className="rounded-2xl p-6 shadow-sm" style={{ backgroundColor: '#0f1f15', border: '1px solid #1e4a28' }}>
+      <div className="rounded-2xl p-6 shadow-sm" style={{ backgroundColor: 'var(--brand-850)', border: '1px solid var(--brand-700)' }}>
         <div className="flex items-center gap-3 mb-5">
-          <div className="p-2 rounded-xl shadow-sm" style={{ backgroundColor: '#0a150e' }}>
-            <Target className="h-5 w-5" style={{ color: '#4ade80' }} />
+          <div className="p-2 rounded-xl shadow-sm" style={{ backgroundColor: 'var(--brand-900)' }}>
+            <Target className="h-5 w-5" style={{ color: 'var(--blue-400)' }} />
           </div>
           <div>
             <h3 className="font-bold text-white">Strategic Plan Highlights</h3>
@@ -435,9 +435,9 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
         ) : (
           <div className="space-y-3">
             {planBullets.map((bullet, idx) => (
-              <div key={bullet.id} className="flex items-start gap-4 p-4 rounded-xl transition-shadow" style={{ backgroundColor: '#0a150e', border: '1px solid #1e4a28' }}>
+              <div key={bullet.id} className="flex items-start gap-4 p-4 rounded-xl transition-shadow" style={{ backgroundColor: 'var(--brand-900)', border: '1px solid var(--brand-700)' }}>
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${
-                  bullet.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400' :
+                  bullet.status === 'completed' ? 'bg-blue-900/200/20 text-blue-400' :
                   bullet.status === 'in_progress' ? 'bg-blue-500/20 text-blue-400' :
                   'text-gray-500'
                 }`} style={bullet.status === 'upcoming' ? { backgroundColor: '#152238' } : {}}>
@@ -451,7 +451,7 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
                     <span className="text-xs text-gray-500">{bullet.window}</span>
                     <span className="text-xs text-gray-600">·</span>
                     <span className={`text-xs font-medium ${
-                      bullet.progress >= 80 ? 'text-emerald-400' :
+                      bullet.progress >= 80 ? 'text-blue-400' :
                       bullet.progress >= 40 ? 'text-amber-400' :
                       'text-gray-500'
                     }`}>{bullet.progress}% complete</span>
@@ -465,9 +465,9 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
       </div>
 
       {/* Controls - Navy Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl shadow-sm" style={{ backgroundColor: '#0f1f15', border: '1px solid #1e4a28' }}>
+      <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl shadow-sm" style={{ backgroundColor: 'var(--brand-850)', border: '1px solid var(--brand-700)' }}>
         <div className="flex items-center gap-2">
-          <div className="flex rounded-xl p-1" style={{ backgroundColor: '#0a150e' }}>
+          <div className="flex rounded-xl p-1" style={{ backgroundColor: 'var(--brand-900)' }}>
             <button
               onClick={() => setViewMode('quarterly')}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
@@ -490,7 +490,7 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1 rounded-xl p-1" style={{ backgroundColor: '#0a150e' }}>
+          <div className="flex items-center gap-1 rounded-xl p-1" style={{ backgroundColor: 'var(--brand-900)' }}>
             <button
               onClick={() => setZoomLevel((z) => Math.max(50, z - 25))}
               disabled={zoomLevel <= 50}
@@ -508,7 +508,7 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
             </button>
           </div>
 
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ backgroundColor: '#0a150e' }}>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ backgroundColor: 'var(--brand-900)' }}>
             <Calendar className="h-4 w-4 text-gray-500" />
             <span className="text-sm font-medium text-gray-400">2024</span>
           </div>
@@ -518,7 +518,7 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
           onClick={() => onGenerate('Generate project roadmap with milestones and dependencies')} 
           disabled={isGenerating}
           className="shadow-lg"
-          style={{ background: 'linear-gradient(to right, #4ade80, #b8962e)', color: '#0a150e' }}
+          style={{ background: 'linear-gradient(to right, var(--blue-400), #b8962e)', color: 'var(--brand-900)' }}
         >
           {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
           AI Generate
@@ -528,7 +528,7 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
       {/* Timeline Legend */}
       <div className="flex items-center gap-6 flex-wrap">
         <div className="flex items-center gap-2">
-          <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+          <CheckCircle2 className="h-4 w-4 text-blue-400" />
           <span className="text-sm text-gray-400">Completed</span>
         </div>
         <div className="flex items-center gap-2">
@@ -546,11 +546,11 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
       </div>
 
       {/* Roadmap Timeline - Navy Card */}
-      <div className="rounded-3xl shadow-xl overflow-hidden" style={{ backgroundColor: '#0f1f15', border: '1px solid #1e4a28' }}>
-        <div className="p-6" style={{ background: 'linear-gradient(to right, #1e4a28, #152238)' }}>
+      <div className="rounded-3xl shadow-xl overflow-hidden" style={{ backgroundColor: 'var(--brand-850)', border: '1px solid var(--brand-700)' }}>
+        <div className="p-6" style={{ background: 'linear-gradient(to right, var(--brand-700), #152238)' }}>
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-2xl backdrop-blur-sm" style={{ backgroundColor: 'rgba(212,175,55,0.2)' }}>
-              <Calendar className="h-6 w-6" style={{ color: '#4ade80' }} />
+              <Calendar className="h-6 w-6" style={{ color: 'var(--blue-400)' }} />
             </div>
             <div>
               <h2 className="text-2xl font-bold text-white">Project Timeline</h2>
@@ -569,8 +569,8 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
           <div className="overflow-x-auto">
             <div style={{ minWidth: `${zoomLevel * 10}px` }}>
               {/* Month/Quarter Headers */}
-              <div className="flex" style={{ borderBottom: '1px solid #1e4a28', backgroundColor: '#0a150e' }}>
-                <div className="w-48 flex-shrink-0 p-3 font-medium text-gray-300" style={{ borderRight: '1px solid #1e4a28' }}>
+              <div className="flex" style={{ borderBottom: '1px solid var(--brand-700)', backgroundColor: 'var(--brand-900)' }}>
+                <div className="w-48 flex-shrink-0 p-3 font-medium text-gray-300" style={{ borderRight: '1px solid var(--brand-700)' }}>
                   Phase
                 </div>
                 <div className="flex-1 flex">
@@ -579,7 +579,7 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
                         <div
                           key={q}
                           className="flex-1 p-3 text-center font-medium text-gray-300"
-                          style={{ minWidth: `${monthWidth * 3}%`, borderRight: '1px solid #1e4a28' }}
+                          style={{ minWidth: `${monthWidth * 3}%`, borderRight: '1px solid var(--brand-700)' }}
                         >
                           {q} 2024
                         </div>
@@ -588,7 +588,7 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
                         <div
                           key={m}
                           className="flex-1 p-2 text-center text-sm text-gray-400"
-                          style={{ minWidth: `${monthWidth}%`, borderRight: '1px solid #1e4a28' }}
+                          style={{ minWidth: `${monthWidth}%`, borderRight: '1px solid var(--brand-700)' }}
                         >
                           {m}
                         </div>
@@ -616,7 +616,7 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
                           top: `${depIdx * 72 + 36}px`,
                           width: '2px',
                           height: `${(mIdx - depIdx) * 72}px`,
-                          background: 'linear-gradient(to bottom, #1e4a28 50%, transparent 50%)',
+                          background: 'linear-gradient(to bottom, var(--brand-700) 50%, transparent 50%)',
                           backgroundSize: '2px 8px',
                         }}
                       />
@@ -631,9 +631,9 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
                   const isSelected = selectedMilestone === milestone.id;
 
                   return (
-                    <div key={milestone.id} style={{ borderBottom: '1px solid #1e4a28' }}>
+                    <div key={milestone.id} style={{ borderBottom: '1px solid var(--brand-700)' }}>
                       <div className={`flex transition-colors ${isSelected ? '' : ''}`} style={{ height: '72px', backgroundColor: isSelected ? 'rgba(212,175,55,0.1)' : 'transparent' }}>
-                        <div className="w-48 flex-shrink-0 p-3 flex items-center gap-2" style={{ borderRight: '1px solid #1e4a28' }}>
+                        <div className="w-48 flex-shrink-0 p-3 flex items-center gap-2" style={{ borderRight: '1px solid var(--brand-700)' }}>
                           {getStatusIcon(milestone.status)}
                           <div>
                             <div className="font-medium text-white text-sm">{milestone.name}</div>
@@ -652,7 +652,7 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
                           </div>
                           <div
                             className={`absolute top-1/2 -translate-y-1/2 h-10 rounded-lg cursor-pointer transition-all hover:scale-y-110 ${colors.border} border-2 ${
-                              isSelected ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-[#0f1f15]' : ''
+                              isSelected ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-[var(--brand-850)]' : ''
                             }`}
                             style={{
                               left: `${left}%`,
@@ -671,20 +671,20 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
                                 {milestone.progress}%
                               </span>
                               {milestone.status === 'completed' && (
-                                <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                                <CheckCircle2 className="h-4 w-4 text-blue-400 flex-shrink-0" />
                               )}
                             </div>
                           </div>
                           <div
                             className="absolute top-0 w-px h-full"
-                            style={{ left: `${left}%`, backgroundColor: '#1e4a28' }}
+                            style={{ left: `${left}%`, backgroundColor: 'var(--brand-700)' }}
                           >
                             <Flag className="h-3 w-3 text-gray-500 absolute -top-1 -left-1.5" />
                           </div>
                         </div>
                       </div>
                       {milestone.subItems?.length ? (
-                        <div className="px-10 py-3 space-y-2" style={{ backgroundColor: '#0a150e', borderTop: '1px solid #1e4a28' }}>
+                        <div className="px-10 py-3 space-y-2" style={{ backgroundColor: 'var(--brand-900)', borderTop: '1px solid var(--brand-700)' }}>
                           {milestone.subItems.map((child) => (
                             <div key={child.id} className="flex items-center gap-3">
                               <input
@@ -699,13 +699,13 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
                               />
                               <input
                                 className="flex-1 text-sm rounded px-2 py-1 text-white"
-                                style={{ backgroundColor: '#152238', border: '1px solid #1e4a28' }}
+                                style={{ backgroundColor: '#152238', border: '1px solid var(--brand-700)' }}
                                 value={child.title}
                                 onChange={(e) => handleUpdateSubItem(milestone.id, child.id, { title: e.target.value })}
                               />
                               <select
                                 className="text-xs rounded px-2 py-1 text-white"
-                                style={{ backgroundColor: '#152238', border: '1px solid #1e4a28' }}
+                                style={{ backgroundColor: '#152238', border: '1px solid var(--brand-700)' }}
                                 value={child.status}
                                 onChange={(e) => handleUpdateSubItem(milestone.id, child.id, { status: e.target.value as RoadmapSubItem['status'] })}
                               >
@@ -722,8 +722,8 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
                           ))}
                         </div>
                       ) : null}
-                      <div className="px-10 py-2" style={{ backgroundColor: '#0a150e', borderTop: '1px solid #1e4a28' }}>
-                        <button className="text-xs" style={{ color: '#4ade80' }} onClick={() => handleAddSubItem(milestone.id)}>
+                      <div className="px-10 py-2" style={{ backgroundColor: 'var(--brand-900)', borderTop: '1px solid var(--brand-700)' }}>
+                        <button className="text-xs" style={{ color: 'var(--blue-400)' }} onClick={() => handleAddSubItem(milestone.id)}>
                           + Add child item
                         </button>
                       </div>
@@ -739,10 +739,10 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
 
       {/* Selected Milestone Details */}
       {selectedMilestone && (
-        <Card className="border-amber-500/30" style={{ backgroundColor: '#0f1f15', borderColor: 'rgba(212,175,55,0.3)' }}>
+        <Card className="border-amber-500/30" style={{ backgroundColor: 'var(--brand-850)', borderColor: 'rgba(212,175,55,0.3)' }}>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2 text-white">
-              <Target className="h-5 w-5" style={{ color: '#4ade80' }} />
+              <Target className="h-5 w-5" style={{ color: 'var(--blue-400)' }} />
               Milestone Details
             </CardTitle>
           </CardHeader>
@@ -760,14 +760,14 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
                         value={m.name}
                         onChange={(e) => handleUpdateMilestone(m.id, { name: e.target.value })}
                         className="mt-1 text-white"
-                        style={{ backgroundColor: '#0a150e', border: '1px solid #1e4a28' }}
+                        style={{ backgroundColor: 'var(--brand-900)', border: '1px solid var(--brand-700)' }}
                       />
                     </div>
                     <div>
                       <span className="text-sm text-gray-500">Phase</span>
                       <select
                         className="mt-1 w-full rounded-lg px-3 py-2 text-sm text-white"
-                        style={{ backgroundColor: '#0a150e', border: '1px solid #1e4a28' }}
+                        style={{ backgroundColor: 'var(--brand-900)', border: '1px solid var(--brand-700)' }}
                         value={m.phase}
                         onChange={(e) => handleUpdateMilestone(m.id, { phase: e.target.value })}
                       >
@@ -788,7 +788,7 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
                           value={m.startMonth}
                           onChange={(e) => handleUpdateMilestone(m.id, { startMonth: Number(e.target.value) })}
                           className="text-white"
-                          style={{ backgroundColor: '#0a150e', border: '1px solid #1e4a28' }}
+                          style={{ backgroundColor: 'var(--brand-900)', border: '1px solid var(--brand-700)' }}
                         />
                         <Input
                           type="number"
@@ -797,7 +797,7 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
                           value={m.endMonth}
                           onChange={(e) => handleUpdateMilestone(m.id, { endMonth: Number(e.target.value) })}
                           className="text-white"
-                          style={{ backgroundColor: '#0a150e', border: '1px solid #1e4a28' }}
+                          style={{ backgroundColor: 'var(--brand-900)', border: '1px solid var(--brand-700)' }}
                         />
                       </div>
                     </div>
@@ -816,7 +816,7 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
                           value={m.progress}
                           onChange={(e) => handleUpdateMilestone(m.id, { progress: Number(e.target.value) })}
                           className="w-20 text-white"
-                          style={{ backgroundColor: '#0a150e', border: '1px solid #1e4a28' }}
+                          style={{ backgroundColor: 'var(--brand-900)', border: '1px solid var(--brand-700)' }}
                         />
                       </div>
                     </div>
@@ -826,7 +826,7 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
                         {getStatusIcon(m.status)}
                         <select
                           className="rounded-lg px-3 py-1.5 text-sm text-white"
-                          style={{ backgroundColor: '#0a150e', border: '1px solid #1e4a28' }}
+                          style={{ backgroundColor: 'var(--brand-900)', border: '1px solid var(--brand-700)' }}
                           value={m.status}
                           onChange={(e) => handleUpdateMilestone(m.id, { status: e.target.value as RoadmapMilestone['status'] })}
                         >
@@ -854,7 +854,7 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
                         <select
                           multiple
                           className="mt-2 w-full rounded-lg px-3 py-2 text-sm h-24 text-white"
-                          style={{ backgroundColor: '#0a150e', border: '1px solid #1e4a28' }}
+                          style={{ backgroundColor: 'var(--brand-900)', border: '1px solid var(--brand-700)' }}
                           value={m.dependencies || []}
                           onChange={(e) =>
                             handleUpdateMilestone(m.id, {
@@ -876,7 +876,7 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
                       <span className="text-sm text-gray-500">Color Theme</span>
                       <select
                         className="w-full rounded-lg px-3 py-2 text-sm mt-1 text-white"
-                        style={{ backgroundColor: '#0a150e', border: '1px solid #1e4a28' }}
+                        style={{ backgroundColor: 'var(--brand-900)', border: '1px solid var(--brand-700)' }}
                         value={m.color}
                         onChange={(e) => handleUpdateMilestone(m.id, { color: e.target.value })}
                       >
@@ -902,11 +902,11 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card style={{ backgroundColor: '#0f1f15', border: '1px solid #1e4a28' }}>
+        <Card style={{ backgroundColor: 'var(--brand-850)', border: '1px solid var(--brand-700)' }}>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(16,185,129,0.2)' }}>
-                <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                <CheckCircle2 className="h-5 w-5 text-blue-400" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-white">
@@ -917,7 +917,7 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
             </div>
           </CardContent>
         </Card>
-        <Card style={{ backgroundColor: '#0f1f15', border: '1px solid #1e4a28' }}>
+        <Card style={{ backgroundColor: 'var(--brand-850)', border: '1px solid var(--brand-700)' }}>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(59,130,246,0.2)' }}>
@@ -932,7 +932,7 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
             </div>
           </CardContent>
         </Card>
-        <Card style={{ backgroundColor: '#0f1f15', border: '1px solid #1e4a28' }}>
+        <Card style={{ backgroundColor: 'var(--brand-850)', border: '1px solid var(--brand-700)' }}>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#152238' }}>
@@ -947,11 +947,11 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
             </div>
           </CardContent>
         </Card>
-        <Card style={{ backgroundColor: '#0f1f15', border: '1px solid #1e4a28' }}>
+        <Card style={{ backgroundColor: 'var(--brand-850)', border: '1px solid var(--brand-700)' }}>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(212,175,55,0.2)' }}>
-                <Clock className="h-5 w-5" style={{ color: '#4ade80' }} />
+                <Clock className="h-5 w-5" style={{ color: 'var(--blue-400)' }} />
               </div>
               <div>
                 <p className="text-2xl font-bold text-white">12</p>
@@ -963,32 +963,32 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
       </div>
 
       {/* Summary */}
-      <Card style={{ backgroundColor: '#0f1f15', border: '1px solid #1e4a28' }}>
+      <Card style={{ backgroundColor: 'var(--brand-850)', border: '1px solid var(--brand-700)' }}>
         <CardHeader style={{ background: 'linear-gradient(to right, rgba(212,175,55,0.1), rgba(184,150,46,0.05))' }}>
           <CardTitle className="flex items-center gap-2 text-white">
-            <Milestone className="h-5 w-5" style={{ color: '#4ade80' }} />
+            <Milestone className="h-5 w-5" style={{ color: 'var(--blue-400)' }} />
             Roadmap Summary
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6">
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: '#0a150e' }}>
+            <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: 'var(--brand-900)' }}>
               <span className="text-gray-400">Overall Progress</span>
               <div className="flex items-center gap-3">
                 <div className="w-32 h-2 rounded-full overflow-hidden" style={{ backgroundColor: '#152238' }}>
                   <div
-                    style={{ width: `${overallProgress}%`, background: 'linear-gradient(to right, #4ade80, #b8962e)' }}
+                    style={{ width: `${overallProgress}%`, background: 'linear-gradient(to right, var(--blue-400), #b8962e)' }}
                     className="h-full"
                   />
                 </div>
                 <span className="font-bold text-white">{overallProgress}%</span>
               </div>
             </div>
-            <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: '#0a150e' }}>
+            <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: 'var(--brand-900)' }}>
               <span className="text-gray-400">Estimated Completion</span>
               <span className="font-bold text-white">December 2024</span>
             </div>
-            <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: '#0a150e' }}>
+            <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: 'var(--brand-900)' }}>
               <span className="text-gray-400">Next Milestone</span>
               <div className="flex items-center gap-2">
                 <span className="font-bold text-white">

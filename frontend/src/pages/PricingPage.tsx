@@ -245,7 +245,7 @@ export const PricingPage: React.FC = () => {
                   <div className="space-y-3">
                     {tier.features.map((feature, idx) => (
                       <div key={idx} className="flex items-start gap-3">
-                        <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        <Check className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
                         <span className="text-sm text-acorn-gray-700">{feature}</span>
                       </div>
                     ))}
