@@ -14,6 +14,8 @@ from models.user import User
 from routes.auth import get_current_user
 from services.phase_flow_service import PhaseFlowService, PHASE_ORDER, PHASE_TITLES
 from services.project_service import ProjectService
+from services.plan_limits import enforce_ai_run_quota
+from repositories.ai_run_repository import AiRunRepository
 from config import settings
 
 try:
@@ -28,6 +30,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 phase_service = PhaseFlowService()
 project_service = ProjectService()
+ai_run_repo = AiRunRepository()
 
 
 class PhaseGenerateRequest(BaseModel):
@@ -59,6 +62,7 @@ async def generate_phase_output(
     current_user: User = Depends(get_current_user),
 ):
     project = await project_service.get_project(project_id, current_user)
+    await enforce_ai_run_quota(current_user, ai_run_repo)
     try:
         phase_status, artifact = await phase_service.generate_phase(
             project_id,
@@ -111,6 +115,7 @@ async def stream_phase_generation(
     Returns text/event-stream with 'token', 'done', and 'error' event types.
     """
     project = await project_service.get_project(project_id, current_user)
+    await enforce_ai_run_quota(current_user, ai_run_repo)
 
     async def event_generator():
         try:

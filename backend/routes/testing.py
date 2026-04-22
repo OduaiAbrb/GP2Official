@@ -10,8 +10,10 @@ from models.testing import GenerateTestDataRequest, RunCoverageAuditRequest
 from routes.auth import get_current_user
 from services.testing_service import generate_test_data, run_coverage_audit
 from services.project_service import ProjectService
+from services.plan_limits import enforce_ai_run_quota
 from repositories.requirement_repository import RequirementRepository
 from repositories.artifact_repository import ArtifactRepository
+from repositories.ai_run_repository import AiRunRepository
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -19,6 +21,7 @@ logger = logging.getLogger(__name__)
 project_service = ProjectService()
 requirement_repo = RequirementRepository()
 artifact_repo = ArtifactRepository()
+ai_run_repo = AiRunRepository()
 
 
 def _serialize_requirement(req) -> dict:
@@ -53,6 +56,7 @@ async def api_generate_test_data(
     """Generate AI-driven synthetic test data from the project's functional requirements."""
 
     project = await project_service.get_project(project_id, current_user)
+    await enforce_ai_run_quota(current_user, ai_run_repo)
 
     # Fetch requirements
     all_reqs = await requirement_repo.list_by_project(project_id)
@@ -102,6 +106,7 @@ async def api_run_coverage_audit(
     """Run a coverage audit comparing requirements to generated test scenarios."""
 
     project = await project_service.get_project(project_id, current_user)
+    await enforce_ai_run_quota(current_user, ai_run_repo)
 
     # Fetch requirements
     all_reqs = await requirement_repo.list_by_project(project_id)

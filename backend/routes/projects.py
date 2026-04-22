@@ -33,6 +33,7 @@ from repositories.ai_run_repository import AiRunRepository
 from services.generation_service import GenerationService
 from services.context_assistant import ContextAssistantService
 from services.version_service import VersionService
+from services.plan_limits import enforce_ai_run_quota
 
 router = APIRouter()
 project_service = ProjectService()
@@ -250,6 +251,7 @@ async def trigger_project_generation(
     current_user: User = Depends(get_current_user)
 ):
     """Start AI generation for a project."""
+    await enforce_ai_run_quota(current_user, ai_run_repo)
     payload = config.dict(exclude_unset=True)
     payload["project_id"] = project_id
     request = GenerationRequest(**payload)

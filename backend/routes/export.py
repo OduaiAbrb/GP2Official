@@ -6,6 +6,7 @@ from io import BytesIO
 
 from services.export_service import ExportService
 from services.project_service import ProjectService
+from services.plan_limits import enforce_export_format
 from repositories.artifact_repository import ArtifactRepository
 from repositories.requirement_repository import RequirementRepository
 from routes.auth import get_current_user
@@ -23,6 +24,7 @@ async def export_pdf(
     current_user = Depends(get_current_user)
 ):
     """Export project as PDF."""
+    enforce_export_format(current_user, "pdf")
     try:
         project = await project_service.get_project(project_id, current_user)
         project_dict = {
@@ -83,6 +85,7 @@ async def export_docx(
     current_user = Depends(get_current_user)
 ):
     """Export project as DOCX."""
+    enforce_export_format(current_user, "docx")
     try:
         project = await project_service.get_project(project_id, current_user)
         project_dict = {

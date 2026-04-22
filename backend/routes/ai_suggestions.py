@@ -7,9 +7,12 @@ from typing import List
 
 from routes.auth import get_current_user
 from services.openai_client import call_openai
+from services.plan_limits import enforce_and_record_ai_run
+from repositories.ai_run_repository import AiRunRepository
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+ai_run_repo = AiRunRepository()
 
 
 class SuggestionsRequest(BaseModel):
@@ -37,6 +40,14 @@ async def get_phase_suggestions(
     current_user=Depends(get_current_user),
 ):
     """Return 3–5 proactive improvement suggestions for the current phase."""
+    await enforce_and_record_ai_run(
+        current_user,
+        ai_run_repo,
+        project_id=project_id,
+        job_type="ai_suggestions",
+        provider="openai",
+        phase=req.phase,
+    )
     content_snippet = req.phase_content[:3000] if req.phase_content else "No content yet."
 
     prompt = f"""You are Athena, an expert AI assistant for software project planning.

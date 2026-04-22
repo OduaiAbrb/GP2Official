@@ -26,23 +26,29 @@ from repositories.artifact_repository import ArtifactRepository
 from repositories.ai_run_repository import AiRunRepository
 from repositories.user_repository import UserRepository
 from services.phase_flow_service import PhaseFlowService, PHASE_ORDER
+from services.plan_limits import (
+    PLAN_LIMITS,
+    build_usage_snapshot,
+    enforce_team_size,
+    get_limits,
+    get_user_tier,
+)
 
 
 logger = logging.getLogger(__name__)
 
 
-# Subscription tier project limits. None = unlimited.
+# Backwards-compat shim: project limits are now sourced from PLAN_LIMITS so the
+# pricing page, billing service, and enforcement points all read from the same
+# place.
 PLAN_PROJECT_LIMITS: Dict[str, Optional[int]] = {
-    "free": 3,
-    "pro": None,
-    "enterprise": None,
+    tier: limits.get("max_projects") for tier, limits in PLAN_LIMITS.items()
 }
 
 
 def get_plan_limit(tier: Optional[str]) -> Optional[int]:
     """Return the active project limit for a subscription tier."""
-    key = (tier or "free").lower()
-    return PLAN_PROJECT_LIMITS.get(key, PLAN_PROJECT_LIMITS["free"])
+    return get_limits(tier).get("max_projects")
 
 
 class ProjectService:
@@ -122,21 +128,27 @@ class ProjectService:
         )
 
     async def get_usage(self, current_user: User) -> Dict[str, Any]:
-        """Return current project usage and the active limit for the user's plan."""
+        """Return current usage vs. plan limits across all premium features."""
         projects = await self.project_repo.list_by_organization(
             current_user.organization,
             current_user.id,
         )
         used = sum(1 for p in projects if p.status != "archived")
-        tier = (getattr(current_user, "subscription_tier", None) or "free").lower()
-        limit = get_plan_limit(tier)
-        return {
-            "tier": tier,
+        tier = get_user_tier(current_user)
+        limit = get_limits(tier).get("max_projects")
+        snapshot = await build_usage_snapshot(
+            current_user,
+            active_project_count=used,
+            ai_run_repo=self.ai_run_repo,
+        )
+        # Keep legacy top-level fields for the existing usage UI.
+        snapshot.update({
             "used": used,
             "limit": limit,
             "unlimited": limit is None,
             "can_create": limit is None or used < limit,
-        }
+        })
+        return snapshot
 
     async def create_project(self, project_data: ProjectCreate, current_user: User) -> ProjectResponse:
         """Create a new project."""
@@ -352,6 +364,9 @@ class ProjectService:
             (idx for idx, member in enumerate(members) if member.get("user_id") == target.id),
             None,
         )
+        if existing_idx is None:
+            # Enforce per-tier team size limit (owner counts toward total).
+            enforce_team_size(current_user, len(members))
         if existing_idx is not None:
             preserved_assigned_at = members[existing_idx].get("assigned_at", new_entry["assigned_at"])
             new_entry["assigned_at"] = preserved_assigned_at
