@@ -474,7 +474,7 @@ export const DevelopmentPhase: React.FC<DevelopmentPhaseProps> = ({
   return (
     <div className="space-y-6">
       {/* Tab Navigation */}
-      <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-xl w-fit">
+      <div className="flex items-center gap-2 bg-[var(--brand-850)] border border-[var(--brand-700)] p-1 rounded-xl w-fit">
         {[
           { id: 'stack', label: 'Tech Stack', icon: Layers },
           { id: 'flow', label: 'System Flow', icon: GitBranch },

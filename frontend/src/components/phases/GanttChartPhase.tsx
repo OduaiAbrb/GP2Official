@@ -334,7 +334,7 @@ export const GanttChartPhase: React.FC<GanttChartPhaseProps> = ({
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-2 justify-end">
               {/* View Mode */}
-              <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+              <div className="flex items-center gap-1 bg-[var(--brand-850)] border border-[var(--brand-700)] rounded-lg p-1">
                 {['days', 'weeks', 'months'].map((mode) => (
                   <button
                     key={mode}
@@ -349,7 +349,7 @@ export const GanttChartPhase: React.FC<GanttChartPhaseProps> = ({
               </div>
 
               {/* Zoom */}
-              <div className="flex items-center gap-1 bg-gray-100 rounded-lg px-2 py-1">
+              <div className="flex items-center gap-1 bg-[var(--brand-850)] border border-[var(--brand-700)] rounded-lg px-2 py-1">
                 <Button variant="ghost" size="sm" onClick={() => setZoomLevel((z) => Math.max(50, z - 25))}>
                   <ZoomOut className="h-4 w-4" />
                 </Button>

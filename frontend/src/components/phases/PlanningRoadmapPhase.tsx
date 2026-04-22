@@ -264,18 +264,18 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
     <div className="space-y-6">
       {/* Roadmap Builder - Navy Card */}
       <div className="rounded-3xl shadow-xl overflow-hidden" style={{ backgroundColor: 'var(--brand-850)', border: '1px solid var(--brand-700)' }}>
-        <div className="p-6" style={{ background: 'linear-gradient(to right, #b8962e, var(--blue-400), #e6c358)' }}>
+        <div className="p-6" style={{ background: 'linear-gradient(to right, var(--brand-700), #152238)' }}>
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-2xl backdrop-blur-sm" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>
                 <Milestone className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-white" style={{ color: 'var(--brand-900)' }}>Roadmap Builder</h2>
-                <p className="text-sm" style={{ color: 'rgba(10,15,26,0.8)' }}>Create and manage project milestones</p>
+                <h2 className="text-2xl font-bold text-white">Roadmap Builder</h2>
+                <p className="text-sm text-gray-400">Create and manage project milestones</p>
               </div>
             </div>
-            <div className={`px-4 py-2 rounded-full text-sm font-semibold ${savingRoadmap ? 'bg-amber-100 text-amber-700' : ''}`} style={!savingRoadmap ? { backgroundColor: 'rgba(10,15,26,0.2)', color: 'var(--brand-900)' } : {}}>
+            <div className={`px-4 py-2 rounded-full text-sm font-semibold ${savingRoadmap ? 'bg-amber-900/30 text-amber-300' : 'bg-white/10 text-gray-300'}`}>
               {savingRoadmap ? '⏳ Saving...' : '✓ Autosaved'}
             </div>
           </div>
@@ -438,7 +438,7 @@ export const PlanningRoadmapPhase: React.FC<PlanningRoadmapPhaseProps> = ({
             {planBullets.map((bullet, idx) => (
               <div key={bullet.id} className="flex items-start gap-4 p-4 rounded-xl transition-shadow" style={{ backgroundColor: 'var(--brand-900)', border: '1px solid var(--brand-700)' }}>
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${
-                  bullet.status === 'completed' ? 'bg-blue-900/200/20 text-blue-400' :
+                  bullet.status === 'completed' ? 'bg-blue-900/20 text-blue-400' :
                   bullet.status === 'in_progress' ? 'bg-blue-500/20 text-blue-400' :
                   'text-gray-500'
                 }`} style={bullet.status === 'upcoming' ? { backgroundColor: '#152238' } : {}}>

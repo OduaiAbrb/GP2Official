@@ -176,7 +176,7 @@ export const SystemDesignPhase: React.FC<SystemDesignPhaseProps> = ({
           </div>
           <div className="flex items-center gap-2">
             {/* Zoom Controls */}
-            <div className="flex items-center gap-1 bg-white rounded-lg border px-2 py-1">
+            <div className="flex items-center gap-1 bg-[var(--brand-850)] border border-[var(--brand-700)] rounded-lg px-2 py-1">
               <Button variant="ghost" size="sm" onClick={() => handleZoom(-25)} disabled={zoomLevel <= 25}>
                 <ZoomOut className="h-4 w-4" />
               </Button>
@@ -192,7 +192,7 @@ export const SystemDesignPhase: React.FC<SystemDesignPhaseProps> = ({
               variant="outline"
               size="sm"
               onClick={() => setIsPanning(!isPanning)}
-              className={isPanning ? 'bg-blue-100' : ''}
+              className={isPanning ? 'bg-blue-900/40 border-blue-500/50' : ''}
             >
               <Move className="h-4 w-4" />
             </Button>
