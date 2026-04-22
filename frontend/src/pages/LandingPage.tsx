@@ -375,6 +375,13 @@ const LandingPage: React.FC = () => {
           .lp-mobile-menu { display: none !important; }
           .lp-mobile-drawer { display: none !important; }
         }
+        @media (max-width: 768px) {
+          .lp-footer-grid { grid-template-columns: 1fr !important; gap: 28px !important; }
+          .lp-footer-bottom { flex-direction: column !important; align-items: center !important; text-align: center !important; }
+          .lp-flowchart-card { padding: 20px 14px !important; }
+          .lp-hero-ctas { flex-direction: column !important; align-items: stretch !important; }
+          .lp-hero-ctas button { width: 100% !important; justify-content: center !important; }
+        }
       `}</style>
 
       {/* ── NAV ── */}
@@ -485,7 +492,7 @@ const LandingPage: React.FC = () => {
           </div>
 
           {/* CTAs */}
-          <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center' }}>
+          <div className="lp-hero-ctas" style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center' }}>
             <button onClick={() => navigate('/register')}
               style={{ padding: '15px 36px', background: 'linear-gradient(135deg, #F97316, #cc4900)', border: 'none', borderRadius: '12px', color: '#fff', fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 28px rgba(249,115,22,0.4)', transition: 'all 0.25s' }}
               onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 36px rgba(249,115,22,0.5)'; }}
@@ -508,7 +515,7 @@ const LandingPage: React.FC = () => {
           </p>
 
           {/* Flowchart showcase */}
-          <div style={{ marginTop: '24px', padding: '28px 32px', ...card({ borderColor: 'rgba(26,111,212,0.25)' }), width: '100%', overflowX: 'auto' }}>
+          <div className="lp-flowchart-card" style={{ marginTop: '24px', padding: '28px 32px', ...card({ borderColor: 'rgba(26,111,212,0.25)' }), width: '100%', overflowX: 'auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '8px' }}>
               <p style={{ fontSize: '11px', color: '#4a6070', fontFamily: "'DM Sans', sans-serif", letterSpacing: '0.12em', textTransform: 'uppercase', margin: 0 }}>
                 Complete SDLC Pipeline · 11 Phases
@@ -753,7 +760,7 @@ const LandingPage: React.FC = () => {
       {/* ── FOOTER ── */}
       <footer style={{ borderTop: '1px solid rgba(26,111,212,0.15)', background: 'rgba(10,20,35,0.6)' }}>
         {/* Top footer */}
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '48px clamp(20px, 5vw, 40px) 32px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '40px' }}>
+        <div className="lp-footer-grid" style={{ maxWidth: '1200px', margin: '0 auto', padding: '48px clamp(20px, 5vw, 40px) 32px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '40px' }}>
           {/* Brand */}
           <div style={{ gridColumn: 'span 1' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
@@ -819,7 +826,7 @@ const LandingPage: React.FC = () => {
         </div>
 
         {/* Bottom bar */}
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px clamp(20px, 5vw, 40px)', borderTop: '1px solid rgba(26,111,212,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <div className="lp-footer-bottom" style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px clamp(20px, 5vw, 40px)', borderTop: '1px solid rgba(26,111,212,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
           <p style={{ color: '#4a6070', fontSize: '13px', fontFamily: "'DM Sans', sans-serif", margin: 0 }}>
             © 2025 Acorn · Project Intelligence Platform
           </p>
