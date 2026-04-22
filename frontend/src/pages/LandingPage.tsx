@@ -204,6 +204,7 @@ const MobileSDLCFlowchart: React.FC<MobileSDLCFlowchartProps> = ({ visibleCount 
         const isLast = i === PHASES.length - 1 || i === visibleCount - 1;
         const isExpanded = expandedId === phase.id;
         const panelId = `mobile-phase-desc-${phase.id}`;
+        const PhaseIcon = phase.icon;
         return (
           <li
             key={phase.id}
@@ -251,6 +252,13 @@ const MobileSDLCFlowchart: React.FC<MobileSDLCFlowchartProps> = ({ visibleCount 
               >
                 {i + 1}
               </div>
+              <PhaseIcon
+                size={18}
+                color={accent}
+                strokeWidth={2.25}
+                style={{ flexShrink: 0 }}
+                aria-hidden="true"
+              />
               <span
                 style={{
                   flex: 1,
@@ -282,7 +290,7 @@ const MobileSDLCFlowchart: React.FC<MobileSDLCFlowchartProps> = ({ visibleCount 
                 maxHeight: isExpanded ? '160px' : '0',
                 opacity: isExpanded ? 1 : 0,
                 transition: 'max-height 0.25s ease, opacity 0.2s ease, padding 0.2s ease',
-                padding: isExpanded ? '8px 14px 4px 52px' : '0 14px 0 52px',
+                padding: isExpanded ? '8px 14px 4px 82px' : '0 14px 0 82px',
                 color: '#B8C2D0',
                 fontFamily: "'DM Sans', sans-serif",
                 fontSize: '13px',
