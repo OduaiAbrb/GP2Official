@@ -6,7 +6,7 @@ import {
   Plus, FolderOpen, Calendar, Upload, Lightbulb, HelpCircle, MoreVertical,
   Clock, CheckCircle, AlertCircle, Loader2, Sparkles, ArrowRight, TrendingUp,
   Search, Filter, Grid3X3, List, Trash2, Edit3, ExternalLink, FileText,
-  TreePine, Activity, Zap, Archive, RotateCcw, Layers,
+  TreePine, Activity, Zap, Archive, RotateCcw, Layers, Crown, Lock,
 } from 'lucide-react';
 import type { Project } from '@/types';
 import { phaseConfigs } from '@/constants/phases';
@@ -35,6 +35,14 @@ const quickActions = [
 
 type ViewTab = 'active' | 'archived';
 
+interface PlanUsage {
+  tier: string;
+  used: number;
+  limit: number | null;
+  unlimited: boolean;
+  can_create: boolean;
+}
+
 export const ProjectsPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -49,6 +57,8 @@ export const ProjectsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode]       = useState<'grid' | 'list'>('grid');
   const [activeMenu, setActiveMenu]   = useState<string | null>(null);
+  const [usage, setUsage]             = useState<PlanUsage | null>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   useEffect(() => {
     loadAll();
@@ -66,17 +76,36 @@ export const ProjectsPage: React.FC = () => {
   const loadAll = async () => {
     setLoading(true);
     try {
-      const [active, arch] = await Promise.all([
+      const [active, arch, planUsage] = await Promise.all([
         api.getProjects(),
         api.getProjects({ only_archived: true }),
+        api.getProjectsUsage().catch(() => null),
       ]);
       setProjects(active);
       setArchived(arch);
+      if (planUsage) setUsage(planUsage);
     } catch (e) {
       console.error('Failed to load projects:', e);
     } finally {
       setLoading(false);
     }
+  };
+
+  const refreshUsage = async () => {
+    try {
+      const planUsage = await api.getProjectsUsage();
+      setUsage(planUsage);
+    } catch (e) {
+      console.error('Failed to refresh usage:', e);
+    }
+  };
+
+  const handleNewProject = () => {
+    if (usage && !usage.can_create) {
+      setShowUpgradeModal(true);
+      return;
+    }
+    navigate('/projects/new');
   };
 
   const archiveProject = async (projectId: string) => {
@@ -86,6 +115,7 @@ export const ProjectsPage: React.FC = () => {
       setProjects(prev => prev.filter(p => (p.id || p.project_id) !== projectId));
       if (moved) setArchived(prev => [{ ...moved, status: 'archived' as any }, ...prev]);
       toastSuccess('Project archived');
+      refreshUsage();
     } catch (e) {
       console.error(e);
       toastError('Failed to archive project');
@@ -101,6 +131,7 @@ export const ProjectsPage: React.FC = () => {
       setArchived(prev => prev.filter(p => (p.id || p.project_id) !== projectId));
       if (moved) setProjects(prev => [{ ...moved, status: 'active' as any }, ...prev]);
       toastSuccess('Project restored');
+      refreshUsage();
     } catch (e) {
       console.error(e);
       toastError('Failed to restore project');
@@ -135,7 +166,7 @@ export const ProjectsPage: React.FC = () => {
   };
 
   const handleQuickAction = (action: string) => {
-    if (action === 'new' || action === 'import') navigate('/projects/new');
+    if (action === 'new' || action === 'import') handleNewProject();
   };
 
   const formatDate = (s: string) => new Date(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -190,7 +221,7 @@ export const ProjectsPage: React.FC = () => {
                 Your AI-powered SDLC workspace
               </p>
             </div>
-            <button onClick={() => navigate('/projects/new')} className="btn-primary group" data-testid="new-project-btn">
+            <button onClick={handleNewProject} className="btn-primary group" data-testid="new-project-btn">
               <Plus className="w-5 h-5" />
               New Project
               <ArrowRight className="w-4 h-4 opacity-0 -ml-2 group-hover:opacity-100 group-hover:ml-0 transition-all duration-300" />
@@ -228,6 +259,116 @@ export const ProjectsPage: React.FC = () => {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* ── Plan Usage Indicator ── */}
+        {usage && (
+          <div
+            className={`mb-6 transition-all duration-700 delay-100 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+            data-testid="plan-usage-card"
+          >
+            {(() => {
+              const isFree = (usage.tier || 'free').toLowerCase() === 'free';
+              const limit = usage.limit;
+              const used = usage.used;
+              const pct = limit && limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+              const atLimit = limit !== null && used >= (limit ?? 0);
+              const nearLimit = limit !== null && !atLimit && used >= Math.max(1, (limit ?? 0) - 1);
+              const barColor = atLimit ? '#ef4444' : nearLimit ? '#F97316' : '#1A6FD4';
+              return (
+                <div
+                  style={{
+                    padding: '14px 18px',
+                    borderRadius: '14px',
+                    background: 'var(--brand-850)',
+                    border: `1px solid ${atLimit ? 'rgba(239,68,68,0.4)' : 'rgba(26,111,212,0.18)'}`,
+                  }}
+                >
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div
+                        style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: 12,
+                          background: isFree ? 'rgba(26,111,212,0.15)' : 'rgba(245,158,11,0.18)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        {isFree ? (
+                          <Layers size={18} color="#1A6FD4" />
+                        ) : (
+                          <Crown size={18} color="#F59E0B" />
+                        )}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          {(usage.tier || 'free').toUpperCase()} PLAN
+                        </div>
+                        <div style={{ fontSize: 13, color: 'var(--text-muted)' }} data-testid="plan-usage-text">
+                          {usage.unlimited
+                            ? `${used} active project${used === 1 ? '' : 's'} · Unlimited`
+                            : `${used} of ${limit} project${(limit ?? 0) === 1 ? '' : 's'} used`}
+                        </div>
+                      </div>
+                    </div>
+                    {!usage.unlimited && (
+                      <div className="flex items-center gap-3 flex-1 md:max-w-md md:ml-6">
+                        <div
+                          style={{
+                            flex: 1,
+                            height: 8,
+                            borderRadius: 999,
+                            background: 'rgba(74,96,112,0.25)',
+                            overflow: 'hidden',
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: `${pct}%`,
+                              height: '100%',
+                              background: barColor,
+                              transition: 'width 400ms ease',
+                            }}
+                          />
+                        </div>
+                        <button
+                          onClick={() => navigate('/billing')}
+                          className="btn-primary px-4 py-2 text-sm whitespace-nowrap"
+                          style={{ fontSize: 13 }}
+                          data-testid="upgrade-pro-btn"
+                        >
+                          <Crown className="w-4 h-4" />
+                          Upgrade to Pro
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  {atLimit && (
+                    <div
+                      style={{
+                        marginTop: 10,
+                        padding: '8px 12px',
+                        borderRadius: 10,
+                        background: 'rgba(239,68,68,0.08)',
+                        border: '1px solid rgba(239,68,68,0.25)',
+                        fontSize: 12,
+                        color: '#fca5a5',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                      }}
+                    >
+                      <Lock className="w-3.5 h-3.5" />
+                      You've reached your plan limit. Archive a project or upgrade to Pro to start a new one.
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         )}
 
@@ -349,11 +490,17 @@ export const ProjectsPage: React.FC = () => {
                   Create an AI-powered project plan in minutes. Start with a template or build from scratch.
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                  <button onClick={() => navigate('/projects/new?template=true')} className="btn-primary px-8 py-3 text-base">
+                  <button
+                    onClick={() => {
+                      if (usage && !usage.can_create) { setShowUpgradeModal(true); return; }
+                      navigate('/projects/new?template=true');
+                    }}
+                    className="btn-primary px-8 py-3 text-base"
+                  >
                     <TreePine className="w-5 h-5" />
                     Start with a Template
                   </button>
-                  <button onClick={() => navigate('/projects/new')} className="btn-secondary px-8 py-3 text-base">
+                  <button onClick={handleNewProject} className="btn-secondary px-8 py-3 text-base">
                     <Plus className="w-5 h-5" />
                     Create from Scratch
                   </button>
@@ -561,6 +708,78 @@ export const ProjectsPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* ── Upgrade Modal ── */}
+      {showUpgradeModal && (
+        <div
+          onClick={() => setShowUpgradeModal(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: 16,
+          }}
+          data-testid="upgrade-modal"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: 'var(--brand-850)',
+              border: '1px solid rgba(245,158,11,0.35)',
+              borderRadius: 18,
+              maxWidth: 460,
+              width: '100%',
+              padding: 28,
+              boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
+            }}
+          >
+            <div
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: 16,
+                background: 'rgba(245,158,11,0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 16,
+              }}
+            >
+              <Crown size={28} color="#F59E0B" />
+            </div>
+            <h3 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>
+              You've hit your Free plan limit
+            </h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: 14, lineHeight: 1.6, marginBottom: 20 }}>
+              Free accounts can have up to {usage?.limit ?? 3} active projects at a time. Upgrade to
+              Pro for unlimited projects, advanced AI, and priority support — or archive an existing
+              project to free up a slot.
+            </p>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <button
+                onClick={() => { setShowUpgradeModal(false); navigate('/billing'); }}
+                className="btn-primary"
+                style={{ flex: 1, justifyContent: 'center' }}
+                data-testid="upgrade-modal-upgrade-btn"
+              >
+                <Crown className="w-4 h-4" />
+                Upgrade to Pro
+              </button>
+              <button
+                onClick={() => setShowUpgradeModal(false)}
+                className="btn-secondary"
+                style={{ flex: 1, justifyContent: 'center' }}
+              >
+                Maybe later
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 };

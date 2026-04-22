@@ -19,8 +19,8 @@ class SubscriptionService:
     PLANS = {
         'free': {
             'price': 0,
-            'features': ['5 projects', 'Basic AI', 'Community support'],
-            'max_projects': 5,
+            'features': ['3 active projects', 'Basic AI', 'Community support'],
+            'max_projects': 3,
             'max_users': 3
         },
         'pro': {

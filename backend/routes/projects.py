@@ -133,6 +133,15 @@ async def create_project(
     return await project_service.create_project(project_data, current_user)
 
 
+@router.get("/usage/")
+@router.get("/usage", include_in_schema=False)
+async def get_project_usage(
+    current_user: User = Depends(get_current_user),
+):
+    """Return the current project usage and plan limit for the user."""
+    return await project_service.get_usage(current_user)
+
+
 @router.get("/", response_model=List[ProjectResponse])
 async def list_projects(
     current_user: User = Depends(get_current_user),

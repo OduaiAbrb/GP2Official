@@ -31,6 +31,20 @@ from services.phase_flow_service import PhaseFlowService, PHASE_ORDER
 logger = logging.getLogger(__name__)
 
 
+# Subscription tier project limits. None = unlimited.
+PLAN_PROJECT_LIMITS: Dict[str, Optional[int]] = {
+    "free": 3,
+    "pro": None,
+    "enterprise": None,
+}
+
+
+def get_plan_limit(tier: Optional[str]) -> Optional[int]:
+    """Return the active project limit for a subscription tier."""
+    key = (tier or "free").lower()
+    return PLAN_PROJECT_LIMITS.get(key, PLAN_PROJECT_LIMITS["free"])
+
+
 class ProjectService:
     """Service for project business logic."""
     
@@ -107,8 +121,43 @@ class ProjectService:
             updated_at=project.updated_at,
         )
 
+    async def get_usage(self, current_user: User) -> Dict[str, Any]:
+        """Return current project usage and the active limit for the user's plan."""
+        projects = await self.project_repo.list_by_organization(
+            current_user.organization,
+            current_user.id,
+        )
+        used = sum(1 for p in projects if p.status != "archived")
+        tier = (getattr(current_user, "subscription_tier", None) or "free").lower()
+        limit = get_plan_limit(tier)
+        return {
+            "tier": tier,
+            "used": used,
+            "limit": limit,
+            "unlimited": limit is None,
+            "can_create": limit is None or used < limit,
+        }
+
     async def create_project(self, project_data: ProjectCreate, current_user: User) -> ProjectResponse:
         """Create a new project."""
+        # Enforce per-tier project limits
+        tier = (getattr(current_user, "subscription_tier", None) or "free").lower()
+        limit = get_plan_limit(tier)
+        if limit is not None:
+            existing = await self.project_repo.list_by_organization(
+                current_user.organization,
+                current_user.id,
+            )
+            active_count = sum(1 for p in existing if p.status != "archived")
+            if active_count >= limit:
+                raise HTTPException(
+                    status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                    detail=(
+                        f"You've reached the {tier.title()} plan limit of {limit} active projects. "
+                        "Upgrade to Pro for unlimited projects."
+                    ),
+                )
+
         owner_member = self._build_member_entry(current_user, current_user.role, current_user.id)
         owner_member["status"] = "owner"
 

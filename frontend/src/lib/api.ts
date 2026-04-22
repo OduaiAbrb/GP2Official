@@ -231,6 +231,17 @@ class ApiClient {
     return response.data;
   }
 
+  async getProjectsUsage(): Promise<{
+    tier: string;
+    used: number;
+    limit: number | null;
+    unlimited: boolean;
+    can_create: boolean;
+  }> {
+    const response = await this.client.get('/projects/usage/');
+    return response.data;
+  }
+
   async getProject(id: string): Promise<Project> {
     const response = await this.client.get(`/projects/${id}/`);
     return response.data;

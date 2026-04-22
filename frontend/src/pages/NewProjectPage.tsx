@@ -77,7 +77,14 @@ export const NewProjectPage: React.FC = () => {
       } else if (error.response?.data?.detail) {
         message = error.response.data.detail;
       }
-      alert(message);
+      if (error.response?.status === 402) {
+        if (window.confirm(`${message}\n\nGo to Billing to upgrade now?`)) {
+          navigate('/billing');
+          return;
+        }
+      } else {
+        alert(message);
+      }
     } finally {
       setLoading(false);
     }

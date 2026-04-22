@@ -11,6 +11,7 @@ export interface User {
   role: string;
   role_label: string;
   role_authority: number;
+  subscription_tier?: string;
   avatar_url?: string;
   banner_url?: string;
   bio?: string;
