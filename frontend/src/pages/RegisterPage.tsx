@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/ui/Button';
+import { AcornLogo } from '@/components/AcornLogo';
 import {
   User,
   Building2,
@@ -87,7 +88,7 @@ export const RegisterPage: React.FC = () => {
         <div className="relative z-10 flex flex-col justify-center px-16 xl:px-24 w-full">
           {/* Logo */}
           <div className={`flex items-center gap-4 mb-16 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-12'}`}>
-            <img src="/acorn-logo-light.png" alt="Acorn" style={{ height: '52px', width: 'auto', objectFit: 'contain' }} />
+            <AcornLogo height={52} />
           </div>
 
           {/* Headline */}
@@ -132,7 +133,7 @@ export const RegisterPage: React.FC = () => {
           {/* Mobile Logo */}
           <div className="lg:hidden text-center mb-8">
             <Link to="/" className="inline-flex items-center gap-3">
-              <img src="/acorn-logo-light.png" alt="Acorn" style={{ height: '40px', width: 'auto', objectFit: 'contain' }} />
+              <AcornLogo height={40} />
             </Link>
           </div>
 

@@ -11,6 +11,7 @@ import {
 import { ConversationalDock } from '@/components/ConversationalDock';
 import { AIDebatePanel } from '@/components/AIDebatePanel';
 import { CommandPalette } from '@/components/CommandPalette';
+import { AcornLogo } from '@/components/AcornLogo';
 import { phaseConfigs } from '@/constants/phases';
 import { api } from '@/lib/api';
 import type { Project } from '@/types';
@@ -158,9 +159,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         }}>
           <Link to="/projects" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
             {!sidebarCollapsed ? (
-              <img src="/acorn-logo-light.png" alt="Acorn" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} />
+              <AcornLogo height={36} />
             ) : (
-              <img src="/acorn-logo-light.png" alt="Acorn" style={{ height: '28px', width: '28px', objectFit: 'contain' }} />
+              <AcornLogo variant="mark" height={28} width={28} />
             )}
           </Link>
           <button
@@ -487,7 +488,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         padding: '0 16px', zIndex: 50,
       }} className="lg:hidden">
         <Link to="/projects" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
-          <img src="/acorn-logo-light.png" alt="Acorn" style={{ height: '34px', width: 'auto', objectFit: 'contain' }} />
+          <AcornLogo height={34} />
         </Link>
         <div style={{ display: 'flex', gap: '6px' }}>
           <button

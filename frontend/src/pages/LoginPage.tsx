@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { Mail, Lock, ArrowRight, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
+import { AcornLogo } from '../components/AcornLogo';
 
 /* ── Animated SDLC pipeline on the left panel ── */
 const PIPELINE_NODES = ['Brief', 'Requirements', 'SRS', 'Design', 'Tasks', 'Deploy'];
@@ -129,7 +130,7 @@ const LoginPage: React.FC = () => {
 
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'relative', zIndex: 1 }}>
-          <img src="/acorn-logo-light.png" alt="Acorn" style={{ height: '44px', width: 'auto', objectFit: 'contain' }} />
+          <AcornLogo height={44} />
         </div>
 
         {/* Centre content */}
@@ -158,7 +159,7 @@ const LoginPage: React.FC = () => {
         <div style={{ width: '100%', maxWidth: '400px' }} className="animate-reveal-up">
           {/* Mobile logo */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '40px' }} className="lg:hidden">
-            <img src="/acorn-logo-light.png" alt="Acorn" style={{ height: '38px', width: 'auto', objectFit: 'contain' }} />
+            <AcornLogo height={38} />
           </div>
 
           <h1 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '28px', color: 'var(--text-primary)', marginBottom: '6px' }}>

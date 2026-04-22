@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
+import { AcornLogo } from '../components/AcornLogo';
 
 interface EndpointProps {
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'WS';
@@ -117,7 +118,7 @@ const DocsPage: React.FC = () => {
           Back
         </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <img src="/acorn-logo.png" alt="Acorn" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} />
+          <AcornLogo height={36} />
           <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '14px', color: '#4a6070' }}>
             / API Documentation
           </span>

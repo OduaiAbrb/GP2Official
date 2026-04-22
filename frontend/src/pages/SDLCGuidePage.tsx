@@ -8,6 +8,7 @@ import {
   Clock, Target, CheckSquare, Lightbulb, Database,
   BarChart3, Lock, Globe, Cpu, ArrowLeft,FlaskConical,
 } from 'lucide-react';
+import { AcornLogo } from '../components/AcornLogo';
 
 // ─── Phase definitions ────────────────────────────────────────────────────────
 const PHASES = [
@@ -426,7 +427,7 @@ const SDLCGuidePage: React.FC = () => {
           </button>
           <div className="sg-nav-brand-divider" style={{ width: '1px', height: '16px', background: 'rgba(26,111,212,0.3)' }} />
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-            <img src="/acorn-logo.png" alt="Acorn" style={{ height: '36px', width: 'auto', objectFit: 'contain', flexShrink: 0 }} />
+            <AcornLogo height={36} style={{ flexShrink: 0 }} />
             <span className="sg-nav-brand-sub" style={{ color: '#4a6070', fontSize: '13px' }}>/ SDLC Guide</span>
           </div>
         </div>
