@@ -46,7 +46,7 @@ interface PlanUsage {
 export const ProjectsPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { toastSuccess, toastError } = useToast();
+  const { success: toastSuccess, error: toastError } = useToast();
 
   const initialTab = (searchParams.get('view') === 'archived' ? 'archived' : 'active') as ViewTab;
   const [tab, setTab]         = useState<ViewTab>(initialTab);
