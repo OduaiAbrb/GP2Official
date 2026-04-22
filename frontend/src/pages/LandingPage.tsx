@@ -181,6 +181,8 @@ interface MobileSDLCFlowchartProps {
 }
 
 const MobileSDLCFlowchart: React.FC<MobileSDLCFlowchartProps> = ({ visibleCount }) => {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
   return (
     <ol
       style={{
@@ -200,6 +202,8 @@ const MobileSDLCFlowchart: React.FC<MobileSDLCFlowchartProps> = ({ visibleCount 
         const accent = isOrange ? '#F97316' : '#1A6FD4';
         const bg = isOrange ? 'rgba(249,115,22,0.12)' : 'rgba(26,111,212,0.15)';
         const isLast = i === PHASES.length - 1 || i === visibleCount - 1;
+        const isExpanded = expandedId === phase.id;
+        const panelId = `mobile-phase-desc-${phase.id}`;
         return (
           <li
             key={phase.id}
@@ -208,8 +212,13 @@ const MobileSDLCFlowchart: React.FC<MobileSDLCFlowchartProps> = ({ visibleCount 
               animation: 'nodeAppear 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards',
             }}
           >
-            <div
+            <button
+              type="button"
+              aria-expanded={isExpanded}
+              aria-controls={panelId}
+              onClick={() => setExpandedId(prev => (prev === phase.id ? null : phase.id))}
               style={{
+                width: '100%',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '12px',
@@ -218,6 +227,10 @@ const MobileSDLCFlowchart: React.FC<MobileSDLCFlowchartProps> = ({ visibleCount 
                 background: bg,
                 border: `1px solid ${accent}`,
                 boxShadow: `0 0 12px ${isOrange ? 'rgba(249,115,22,0.18)' : 'rgba(26,111,212,0.22)'}`,
+                cursor: 'pointer',
+                textAlign: 'left',
+                font: 'inherit',
+                color: 'inherit',
               }}
             >
               <div
@@ -240,6 +253,7 @@ const MobileSDLCFlowchart: React.FC<MobileSDLCFlowchartProps> = ({ visibleCount 
               </div>
               <span
                 style={{
+                  flex: 1,
                   color: '#E8EDF5',
                   fontFamily: "'DM Sans', sans-serif",
                   fontWeight: 600,
@@ -248,6 +262,34 @@ const MobileSDLCFlowchart: React.FC<MobileSDLCFlowchartProps> = ({ visibleCount 
               >
                 {phase.label}
               </span>
+              <ChevronRight
+                size={16}
+                color={accent}
+                style={{
+                  flexShrink: 0,
+                  transition: 'transform 0.2s ease',
+                  transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                }}
+                aria-hidden="true"
+              />
+            </button>
+            <div
+              id={panelId}
+              role="region"
+              aria-hidden={!isExpanded}
+              style={{
+                overflow: 'hidden',
+                maxHeight: isExpanded ? '160px' : '0',
+                opacity: isExpanded ? 1 : 0,
+                transition: 'max-height 0.25s ease, opacity 0.2s ease, padding 0.2s ease',
+                padding: isExpanded ? '8px 14px 4px 52px' : '0 14px 0 52px',
+                color: '#B8C2D0',
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: '13px',
+                lineHeight: 1.5,
+              }}
+            >
+              {phase.desc}
             </div>
             {!isLast && (
               <div
