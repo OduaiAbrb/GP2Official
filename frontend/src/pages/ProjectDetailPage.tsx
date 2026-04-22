@@ -4,9 +4,9 @@ import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/Button';
 import { ExportButtons } from '@/components/ExportButtons';
 import { api } from '@/lib/api';
-import type { Artifact, Project, Requirement, Task } from '@/types';
+import type { Artifact, PhaseCompletionMeta, Project, Requirement, Task } from '@/types';
 import { phaseConfigs, phaseHexColors } from '@/constants/phases';
-import { AlertCircle, ArrowLeft, Loader2, CheckCircle2, Circle, ChevronRight } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Loader2, CheckCircle2, Circle, ChevronRight, Clock, User as UserIcon } from 'lucide-react';
 import Joyride, { STATUS as JoyrideStatus, Step } from 'react-joyride';
 import { formatDate } from '@/lib/utils';
 import { workspacePresets } from '@/constants/workspacePresets';
@@ -132,6 +132,108 @@ const PhaseKanban: React.FC<{
 };
 
 /* =========================================================
+   PROJECT ACTIVITY TIMELINE
+   Consolidated, chronological list of every phase completion
+   ========================================================= */
+const ProjectActivityTimeline: React.FC<{
+  phaseCompletionMeta: Record<string, PhaseCompletionMeta>;
+  phaseStatus: Record<string, string>;
+  onPhaseClick: (phaseId: string) => void;
+}> = ({ phaseCompletionMeta, phaseStatus, onPhaseClick }) => {
+  const entries = useMemo(() => {
+    return phaseConfigs
+      .map((phase) => {
+        const meta = phaseCompletionMeta[phase.id];
+        const status = (phaseStatus[phase.id] || '').toLowerCase();
+        if (status !== 'completed' && !meta?.completed_at) return null;
+        return { phase, meta: meta || {} };
+      })
+      .filter((entry): entry is { phase: typeof phaseConfigs[0]; meta: PhaseCompletionMeta } => entry !== null)
+      .sort((a, b) => {
+        const ta = a.meta.completed_at ? new Date(a.meta.completed_at).getTime() : 0;
+        const tb = b.meta.completed_at ? new Date(b.meta.completed_at).getTime() : 0;
+        return tb - ta;
+      });
+  }, [phaseCompletionMeta, phaseStatus]);
+
+  return (
+    <div className="bg-[var(--brand-850)] border border-[var(--brand-700)]/50 rounded-2xl p-4 sm:p-6 shadow-lg">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="text-lg sm:text-xl font-semibold text-[var(--text-primary)]">Project Activity</h2>
+          <p className="text-xs sm:text-sm text-[var(--text-muted)]">
+            Audit trail of every confirmed phase completion across the project.
+          </p>
+        </div>
+        <span className="text-xs font-medium text-[var(--text-muted)] px-2.5 py-1 rounded-full bg-[var(--brand-800)] border border-[var(--brand-700)]">
+          {entries.length} {entries.length === 1 ? 'event' : 'events'}
+        </span>
+      </div>
+
+      {entries.length === 0 ? (
+        <div className="flex flex-col items-center justify-center text-center py-10 px-4 rounded-xl border border-dashed border-[var(--brand-700)] bg-[var(--brand-800)]/40">
+          <Clock className="h-8 w-8 text-[var(--text-faint)] mb-2" />
+          <p className="text-sm font-medium text-[var(--text-primary)]">No phase completions yet</p>
+          <p className="text-xs text-[var(--text-muted)] mt-1 max-w-sm">
+            Once a teammate confirms a phase, the event will appear here with their note.
+          </p>
+        </div>
+      ) : (
+        <ol className="relative border-l border-[var(--brand-700)]/70 ml-2 space-y-5">
+          {entries.map(({ phase, meta }) => {
+            const completedAt = meta.completed_at ? new Date(meta.completed_at) : null;
+            const confirmer = meta.completed_by_name || meta.completed_by || 'A team member';
+            const note = (meta.notes || '').trim();
+            return (
+              <li key={phase.id} className="ml-5">
+                <span className="absolute -left-[7px] flex items-center justify-center w-3.5 h-3.5 rounded-full bg-[var(--blue-400)] ring-4 ring-[var(--brand-850)]">
+                  <CheckCircle2 className="h-2.5 w-2.5 text-[var(--brand-900)]" />
+                </span>
+                <div className="rounded-xl border border-[var(--brand-700)]/60 bg-[var(--brand-800)] p-4 hover:border-[var(--blue-400)]/50 transition-colors">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <button
+                        onClick={() => onPhaseClick(phase.id)}
+                        className="text-sm font-semibold text-[var(--text-primary)] hover:text-[var(--blue-400)] transition-colors flex items-center gap-1.5"
+                      >
+                        Phase {phase.stepNumber}: {phase.title}
+                        <ChevronRight className="h-3.5 w-3.5" />
+                      </button>
+                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--text-muted)]">
+                        <span className="inline-flex items-center gap-1">
+                          <UserIcon className="h-3 w-3" />
+                          {confirmer}
+                        </span>
+                        {completedAt && (
+                          <span className="inline-flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {completedAt.toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide bg-blue-900/30 text-blue-300 border border-blue-500/30">
+                      Completed
+                    </span>
+                  </div>
+                  {note ? (
+                    <p className="mt-3 text-sm text-[var(--text-primary)] whitespace-pre-wrap border-l-2 border-[var(--blue-400)]/40 pl-3">
+                      {note}
+                    </p>
+                  ) : (
+                    <p className="mt-3 text-xs italic text-[var(--text-faint)]">No completion notes added.</p>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </div>
+  );
+};
+
+/* =========================================================
    MAIN PROJECT DETAIL PAGE
    ========================================================= */
 export const ProjectDetailPage: React.FC = () => {
@@ -142,6 +244,7 @@ export const ProjectDetailPage: React.FC = () => {
   const [tasks, setTasks]             = useState<Task[]>([]);
   const [artifacts, setArtifacts]     = useState<Artifact[]>([]);
   const [phaseStatus, setPhaseStatus] = useState<Record<string, string>>({});
+  const [phaseCompletionMeta, setPhaseCompletionMeta] = useState<Record<string, PhaseCompletionMeta>>({});
   const [tourRun, setTourRun]         = useState(false);
   const [isLoading, setIsLoading]     = useState(true);
   const [error, setError]             = useState<string | null>(null);
@@ -213,6 +316,7 @@ export const ProjectDetailPage: React.FC = () => {
       const projectData = await api.getProject(id);
       setProject(projectData);
       if (projectData.phase_status) setPhaseStatus(projectData.phase_status);
+      setPhaseCompletionMeta(projectData.phase_completion_meta ?? {});
 
       const [reqData, taskData, artifactData] = await Promise.all([
         api.getRequirements(id),
@@ -653,6 +757,12 @@ export const ProjectDetailPage: React.FC = () => {
                 ))}
               </div>
             </div>
+
+            <ProjectActivityTimeline
+              phaseCompletionMeta={phaseCompletionMeta}
+              phaseStatus={phaseStatus}
+              onPhaseClick={handlePhaseClick}
+            />
 
             <div className="grid gap-4">
               <div className="bg-[var(--brand-850)] border border-[var(--brand-700)]/50 rounded-2xl p-6 shadow-lg">
