@@ -196,6 +196,7 @@ function App() {
         />
         <Route path="/docs" element={<DocsPage />} />
         <Route path="/sdlc-guide" element={<SDLCGuidePage />} />
+        <Route path="/pricing" element={<Navigate to="/#pricing" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

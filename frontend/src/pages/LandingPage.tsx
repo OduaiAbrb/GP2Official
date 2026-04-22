@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   ArrowRight, Sparkles, Zap, Shield, BarChart3, Users, FileText,
   CheckCircle2, Star, Rocket, TrendingUp, Clock, Award, Cpu, Layers,
@@ -466,9 +466,20 @@ const scrollTo = (id: string) => {
 // ─── Main Landing Page ────────────────────────────────────────────────────────
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [showSplash, setShowSplash] = useState(() => !safeLocalStorage.getItem('acorn_visited'));
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isMobile = useIsMobile(600);
+
+  useEffect(() => {
+    if (!showSplash && location.hash) {
+      const id = location.hash.slice(1);
+      const el = document.getElementById(id);
+      if (el) {
+        setTimeout(() => el.scrollIntoView({ behavior: 'smooth' }), 100);
+      }
+    }
+  }, [showSplash, location.hash]);
 
   if (showSplash) {
     return (
@@ -546,6 +557,12 @@ const LandingPage: React.FC = () => {
           >
             How It Works
           </button>
+          <button onClick={() => scrollTo('pricing')} style={{ padding: '8px 14px', background: 'none', border: 'none', color: '#8899AA', fontFamily: "'DM Sans', sans-serif", fontSize: '14px', cursor: 'pointer', borderRadius: '8px', transition: 'color 0.2s' }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#E8EDF5'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#8899AA'; }}
+          >
+            Pricing
+          </button>
         </div>
 
         <div className="lp-nav-auth" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -587,6 +604,7 @@ const LandingPage: React.FC = () => {
           { label: 'SDLC Guide', action: () => { navigate('/sdlc-guide'); setMobileMenuOpen(false); } },
           { label: 'Features', action: () => { scrollTo('features'); setMobileMenuOpen(false); } },
           { label: 'How It Works', action: () => { scrollTo('how-it-works'); setMobileMenuOpen(false); } },
+          { label: 'Pricing', action: () => { scrollTo('pricing'); setMobileMenuOpen(false); } },
           { label: 'Sign In', action: () => { navigate('/login'); setMobileMenuOpen(false); } },
         ].map(({ label, action }) => (
           <button key={label} onClick={action} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '12px 0', background: 'none', border: 'none', borderBottom: '1px solid rgba(26,111,212,0.1)', color: '#8899AA', fontFamily: "'DM Sans', sans-serif", fontSize: '15px', cursor: 'pointer' }}>
@@ -854,6 +872,155 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
+      {/* ── PRICING ── */}
+      <section id="pricing" style={{ padding: 'clamp(60px, 8vw, 96px) clamp(20px, 5vw, 40px)', background: 'rgba(10,31,61,0.35)', borderTop: '1px solid rgba(26,111,212,0.1)', borderBottom: '1px solid rgba(26,111,212,0.1)' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '56px' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '5px 14px', background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.25)', borderRadius: '999px', marginBottom: '16px' }}>
+              <DollarSign size={12} color="#fb9042" />
+              <span style={{ fontSize: '12px', color: '#fb9042', fontFamily: "'DM Sans', sans-serif", fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Pricing</span>
+            </div>
+            <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 'clamp(28px, 4vw, 40px)', marginBottom: '14px', letterSpacing: '-0.02em' }}>
+              Simple, transparent pricing.
+            </h2>
+            <p style={{ color: '#8899AA', fontFamily: "'DM Sans', sans-serif", fontSize: '16px', maxWidth: '480px', margin: '0 auto', lineHeight: 1.7 }}>
+              Start free and scale when you're ready. No hidden fees, no surprises.
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', maxWidth: '900px', margin: '0 auto' }}>
+
+            {/* Free Tier */}
+            <div style={{
+              padding: '36px 32px',
+              background: 'rgba(26,46,69,0.6)',
+              border: '1px solid rgba(26,111,212,0.25)',
+              borderRadius: '20px',
+              backdropFilter: 'blur(12px)',
+              display: 'flex', flexDirection: 'column', gap: '0',
+            }}>
+              <div style={{ marginBottom: '24px' }}>
+                <div style={{ fontSize: '13px', color: '#3d8fe0', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '10px' }}>Free</div>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '6px', marginBottom: '8px' }}>
+                  <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '48px', color: '#E8EDF5', lineHeight: 1 }}>$0</span>
+                  <span style={{ color: '#8899AA', fontFamily: "'DM Sans', sans-serif", fontSize: '14px', paddingBottom: '8px' }}>/month</span>
+                </div>
+                <p style={{ color: '#8899AA', fontSize: '14px', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6 }}>
+                  Everything you need to get started — no credit card required.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '32px', flex: 1 }}>
+                {[
+                  '3 active projects',
+                  'All 11 SDLC phases',
+                  'AI-generated requirements & SRS',
+                  'Architecture & system design',
+                  'Task & sprint planning',
+                  'Risk and cost analysis',
+                  'PDF export',
+                  'Community support',
+                ].map(feature => (
+                  <div key={feature} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <CheckCircle2 size={16} color="#3d8fe0" style={{ flexShrink: 0 }} />
+                    <span style={{ color: '#C8D5E5', fontSize: '14px', fontFamily: "'DM Sans', sans-serif" }}>{feature}</span>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => navigate('/register')}
+                style={{
+                  width: '100%', padding: '14px', borderRadius: '12px',
+                  background: 'rgba(26,111,212,0.12)', border: '1px solid rgba(26,111,212,0.4)',
+                  color: '#3d8fe0', fontFamily: "'Syne', sans-serif", fontWeight: 700,
+                  fontSize: '15px', cursor: 'pointer', transition: 'all 0.2s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(26,111,212,0.22)'; e.currentTarget.style.borderColor = 'rgba(26,111,212,0.7)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(26,111,212,0.12)'; e.currentTarget.style.borderColor = 'rgba(26,111,212,0.4)'; }}
+              >
+                Get Started Free
+              </button>
+            </div>
+
+            {/* Pro Tier */}
+            <div style={{
+              padding: '36px 32px',
+              background: 'rgba(26,46,69,0.75)',
+              border: '2px solid rgba(249,115,22,0.5)',
+              borderRadius: '20px',
+              backdropFilter: 'blur(12px)',
+              display: 'flex', flexDirection: 'column', gap: '0',
+              position: 'relative', overflow: 'hidden',
+              boxShadow: '0 0 40px rgba(249,115,22,0.12)',
+            }}>
+              {/* Popular badge */}
+              <div style={{
+                position: 'absolute', top: '20px', right: '20px',
+                padding: '4px 12px',
+                background: 'linear-gradient(135deg, #F97316, #cc4900)',
+                borderRadius: '999px',
+                fontSize: '11px', color: '#fff', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
+              }}>
+                Most Popular
+              </div>
+
+              <div style={{ marginBottom: '24px' }}>
+                <div style={{ fontSize: '13px', color: '#fb9042', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '10px' }}>Pro</div>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '6px', marginBottom: '8px' }}>
+                  <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '48px', color: '#E8EDF5', lineHeight: 1 }}>$29</span>
+                  <span style={{ color: '#8899AA', fontFamily: "'DM Sans', sans-serif", fontSize: '14px', paddingBottom: '8px' }}>/month</span>
+                </div>
+                <p style={{ color: '#8899AA', fontSize: '14px', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6 }}>
+                  For teams serious about shipping production-quality software, faster.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '32px', flex: 1 }}>
+                {[
+                  'Unlimited projects',
+                  'Everything in Free',
+                  'Priority AI processing',
+                  'Confluence & Jira export',
+                  'Bring your own AI key',
+                  'Team collaboration (up to 5)',
+                  'Analytics dashboard',
+                  'Priority email support',
+                ].map((feature, i) => (
+                  <div key={feature} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <CheckCircle2 size={16} color={i === 1 ? '#8899AA' : '#F97316'} style={{ flexShrink: 0 }} />
+                    <span style={{ color: '#C8D5E5', fontSize: '14px', fontFamily: "'DM Sans', sans-serif" }}>{feature}</span>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => navigate('/register')}
+                style={{
+                  width: '100%', padding: '14px', borderRadius: '12px',
+                  background: 'linear-gradient(135deg, #F97316, #cc4900)',
+                  border: 'none',
+                  color: '#fff', fontFamily: "'Syne', sans-serif", fontWeight: 700,
+                  fontSize: '15px', cursor: 'pointer', transition: 'all 0.2s',
+                  boxShadow: '0 4px 20px rgba(249,115,22,0.4)',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(249,115,22,0.5)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(249,115,22,0.4)'; }}
+              >
+                Start Pro Free Trial
+              </button>
+            </div>
+          </div>
+
+          {/* FAQ-style reassurance */}
+          <div style={{ textAlign: 'center', marginTop: '36px' }}>
+            <p style={{ color: '#4a6070', fontSize: '13px', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.7 }}>
+              No credit card required for Free tier &nbsp;·&nbsp; Cancel anytime &nbsp;·&nbsp; Upgrade or downgrade at any time
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* ── FINAL CTA ── */}
       <section style={{ padding: 'clamp(80px, 10vw, 120px) clamp(20px, 5vw, 40px)', textAlign: 'center', background: 'linear-gradient(180deg, transparent, rgba(26,111,212,0.07) 50%, transparent)' }}>
         <div style={{ maxWidth: '640px', margin: '0 auto' }}>
@@ -910,6 +1077,7 @@ const LandingPage: React.FC = () => {
               { label: 'Features', onClick: () => scrollTo('features') },
               { label: 'SDLC Guide', onClick: () => navigate('/sdlc-guide') },
               { label: 'How It Works', onClick: () => scrollTo('how-it-works') },
+              { label: 'Pricing', onClick: () => scrollTo('pricing') },
             ].map(({ label, onClick }) => (
               <button key={label} onClick={onClick} style={{ display: 'block', background: 'none', border: 'none', color: '#8899AA', fontFamily: "'DM Sans', sans-serif", fontSize: '14px', cursor: 'pointer', padding: '4px 0', marginBottom: '4px', transition: 'color 0.2s', textAlign: 'left' }}
                 onMouseEnter={e => { e.currentTarget.style.color = '#E8EDF5'; }}
