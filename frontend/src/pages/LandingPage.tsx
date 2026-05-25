@@ -107,8 +107,16 @@ interface RevealProps {
   y?: number;
 }
 const Reveal: React.FC<RevealProps> = ({ children, delay = 0, as = 'div', style, className, y = 24 }) => {
+  const reduced = usePrefersReducedMotion();
   const [ref, shown] = useReveal<HTMLElement>();
   const Tag = as as React.ElementType;
+  if (reduced) {
+    return (
+      <Tag className={className} style={style}>
+        {children}
+      </Tag>
+    );
+  }
   return (
     <Tag
       ref={ref as React.Ref<HTMLElement>}
@@ -127,7 +135,15 @@ const Reveal: React.FC<RevealProps> = ({ children, delay = 0, as = 'div', style,
 };
 
 const WaveReveal: React.FC<{ children: React.ReactNode; className?: string; style?: React.CSSProperties; delay?: number }> = ({ children, className, style, delay = 0 }) => {
+  const reduced = usePrefersReducedMotion();
   const [ref, shown] = useReveal<HTMLDivElement>(0.1);
+  if (reduced) {
+    return (
+      <div className={`${className || ''} wave-revealed`} style={style}>
+        {children}
+      </div>
+    );
+  }
   return (
     <div
       ref={ref}
@@ -140,7 +156,15 @@ const WaveReveal: React.FC<{ children: React.ReactNode; className?: string; styl
 };
 
 const HeadingReveal: React.FC<{ children: React.ReactNode; style?: React.CSSProperties }> = ({ children, style }) => {
+  const reduced = usePrefersReducedMotion();
   const [ref, shown] = useReveal<HTMLDivElement>(0.1);
+  if (reduced) {
+    return (
+      <div className="heading-reveal heading-revealed" style={style}>
+        {children}
+      </div>
+    );
+  }
   return (
     <div
       ref={ref}
