@@ -217,6 +217,28 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onDone }) => {
         >
           Start building <ArrowRight size={18} />
         </button>
+
+        <button
+          onClick={onDone}
+          style={{
+            marginTop: '20px',
+            background: 'none',
+            border: 'none',
+            color: '#8899AA',
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: '13px',
+            cursor: 'pointer',
+            textDecoration: 'underline',
+            textUnderlineOffset: '3px',
+            opacity: 0,
+            animation: 'onboardCardIn 0.55s cubic-bezier(0.22,1,0.36,1) 500ms forwards',
+            transition: 'color 0.2s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color = '#aabbcc'; }}
+          onMouseLeave={e => { e.currentTarget.style.color = '#8899AA'; }}
+        >
+          Skip intro
+        </button>
       </div>
 
       <style>{`

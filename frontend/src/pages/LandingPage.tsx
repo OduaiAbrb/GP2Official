@@ -946,11 +946,23 @@ const LandingPage: React.FC = () => {
     }
   }, [showSplash, showOnboarding]);
 
+  const handleSplashDone = () => {
+    setShowSplash(false);
+    if (!sessionStorage.getItem('acorn_onboarding_seen')) {
+      setShowOnboarding(true);
+    }
+  };
+
+  const handleOnboardingDone = () => {
+    sessionStorage.setItem('acorn_onboarding_seen', '1');
+    setShowOnboarding(false);
+  };
+
   if (showSplash) {
     return (
       <SplashScreen
-        onComplete={() => { setShowSplash(false); setShowOnboarding(true); }}
-        onEnter={() => { setShowSplash(false); setShowOnboarding(true); }}
+        onComplete={handleSplashDone}
+        onEnter={handleSplashDone}
         onSkip={() => { setShowSplash(false); }}
         onViewDocs={() => { navigate('/sdlc-guide'); }}
       />
@@ -958,7 +970,7 @@ const LandingPage: React.FC = () => {
   }
 
   if (showOnboarding) {
-    return <OnboardingScreen onDone={() => setShowOnboarding(false)} />;
+    return <OnboardingScreen onDone={handleOnboardingDone} />;
   }
 
   const card = (style?: React.CSSProperties): React.CSSProperties => ({
