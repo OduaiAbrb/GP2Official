@@ -936,9 +936,10 @@ const scrollTo = (id: string) => {
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [showSplash, setShowSplash] = useState(true);
+  const reducedMotion = usePrefersReducedMotion();
+  const [showSplash, setShowSplash] = useState(() => !reducedMotion);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [heroReady, setHeroReady] = useState(false);
+  const [heroReady, setHeroReady] = useState(() => reducedMotion);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isMobile = useIsMobile(600);
 
