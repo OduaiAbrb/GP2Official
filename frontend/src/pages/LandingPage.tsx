@@ -1446,7 +1446,7 @@ const LandingPage: React.FC = () => {
       {/* ── PRICING ── */}
       <section id="pricing" style={{ padding: 'clamp(60px, 8vw, 96px) clamp(20px, 5vw, 40px)', background: 'rgba(10,31,61,0.35)', borderTop: '1px solid rgba(26,111,212,0.1)', borderBottom: '1px solid rgba(26,111,212,0.1)' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '56px' }}>
+          <HeadingReveal style={{ textAlign: 'center', marginBottom: '56px' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '5px 14px', background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.25)', borderRadius: '999px', marginBottom: '16px' }}>
               <DollarSign size={12} color="#fb9042" />
               <span style={{ fontSize: '12px', color: '#fb9042', fontFamily: "'DM Sans', sans-serif", fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Pricing</span>
@@ -1457,9 +1457,9 @@ const LandingPage: React.FC = () => {
             <p style={{ color: '#8899AA', fontFamily: "'DM Sans', sans-serif", fontSize: '16px', maxWidth: '480px', margin: '0 auto', lineHeight: 1.7 }}>
               Start free and scale when you're ready. No hidden fees, no surprises.
             </p>
-          </div>
+          </HeadingReveal>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', maxWidth: '900px', margin: '0 auto' }}>
+          <WaveReveal delay={800} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', maxWidth: '900px', margin: '0 auto' }}>
 
             {/* Free Tier */}
             <div style={{
@@ -1581,7 +1581,8 @@ const LandingPage: React.FC = () => {
                 Start Pro Free Trial
               </button>
             </div>
-          </div>
+
+          </WaveReveal>
 
           <div style={{ textAlign: 'center', marginTop: '36px' }} />
         </div>
@@ -1589,39 +1590,42 @@ const LandingPage: React.FC = () => {
 
       {/* ── FINAL CTA ── */}
       <section style={{ padding: 'clamp(80px, 10vw, 120px) clamp(20px, 5vw, 40px)', textAlign: 'center', background: 'linear-gradient(180deg, transparent, rgba(26,111,212,0.07) 50%, transparent)' }}>
-        <div style={{ maxWidth: '640px', margin: '0 auto' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 16px', background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.3)', borderRadius: '999px', marginBottom: '28px' }}>
-            <Award size={14} color="#F97316" />
-            <span style={{ fontSize: '13px', color: '#fb9042', fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>Free to get started — no card required</span>
+        <Reveal y={32}>
+          <div style={{ maxWidth: '640px', margin: '0 auto' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 16px', background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.3)', borderRadius: '999px', marginBottom: '28px' }}>
+              <Award size={14} color="#F97316" />
+              <span style={{ fontSize: '13px', color: '#fb9042', fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>Free to get started — no card required</span>
+            </div>
+            <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 'clamp(32px, 5vw, 54px)', marginBottom: '20px', lineHeight: 1.1, letterSpacing: '-0.03em' }}>
+              Ready to build smarter?
+            </h2>
+            <p style={{ color: '#8899AA', fontSize: '18px', fontFamily: "'DM Sans', sans-serif", marginBottom: '40px', lineHeight: 1.7 }}>
+              Join thousands of product teams who plan, architect, and ship better software with Acorn.
+            </p>
+            <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button onClick={() => navigate('/register')}
+                style={{ padding: '16px 48px', background: 'linear-gradient(135deg, #F97316, #cc4900)', border: 'none', borderRadius: '14px', color: '#fff', fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: '18px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '10px', boxShadow: '0 6px 36px rgba(249,115,22,0.45)', transition: 'all 0.25s' }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 14px 44px rgba(249,115,22,0.5)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 36px rgba(249,115,22,0.45)'; }}
+              >
+                <Rocket size={20} /> Start Building Free
+              </button>
+              <button onClick={() => navigate('/login')}
+                style={{ padding: '16px 32px', background: 'rgba(26,111,212,0.1)', border: '1px solid rgba(26,111,212,0.35)', borderRadius: '14px', color: '#3d8fe0', fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: '17px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', transition: 'all 0.25s' }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(26,111,212,0.18)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(26,111,212,0.1)'; }}
+              >
+                Sign In <ArrowRight size={16} />
+              </button>
+            </div>
           </div>
-          <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 'clamp(32px, 5vw, 54px)', marginBottom: '20px', lineHeight: 1.1, letterSpacing: '-0.03em' }}>
-            Ready to build smarter?
-          </h2>
-          <p style={{ color: '#8899AA', fontSize: '18px', fontFamily: "'DM Sans', sans-serif", marginBottom: '40px', lineHeight: 1.7 }}>
-            Join thousands of product teams who plan, architect, and ship better software with Acorn.
-          </p>
-          <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button onClick={() => navigate('/register')}
-              style={{ padding: '16px 48px', background: 'linear-gradient(135deg, #F97316, #cc4900)', border: 'none', borderRadius: '14px', color: '#fff', fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: '18px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '10px', boxShadow: '0 6px 36px rgba(249,115,22,0.45)', transition: 'all 0.25s' }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 14px 44px rgba(249,115,22,0.5)'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 36px rgba(249,115,22,0.45)'; }}
-            >
-              <Rocket size={20} /> Start Building Free
-            </button>
-            <button onClick={() => navigate('/login')}
-              style={{ padding: '16px 32px', background: 'rgba(26,111,212,0.1)', border: '1px solid rgba(26,111,212,0.35)', borderRadius: '14px', color: '#3d8fe0', fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: '17px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', transition: 'all 0.25s' }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(26,111,212,0.18)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(26,111,212,0.1)'; }}
-            >
-              Sign In <ArrowRight size={16} />
-            </button>
-          </div>
-        </div>
+        </Reveal>
       </section>
 
       {/* ── FOOTER ── */}
       <footer style={{ borderTop: '1px solid rgba(26,111,212,0.15)', background: 'rgba(10,20,35,0.6)' }}>
         {/* Top footer */}
+        <Reveal y={16}>
         <div className="lp-footer-grid" style={{ maxWidth: '1200px', margin: '0 auto', padding: '48px clamp(20px, 5vw, 40px) 32px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '40px' }}>
           {/* Brand */}
           <div style={{ gridColumn: 'span 1' }}>
@@ -1684,8 +1688,10 @@ const LandingPage: React.FC = () => {
             ))}
           </div>
         </div>
+        </Reveal>
 
         {/* Bottom bar */}
+        <Reveal y={8} delay={100}>
         <div className="lp-footer-bottom" style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px clamp(20px, 5vw, 40px)', borderTop: '1px solid rgba(26,111,212,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
           <p style={{ color: '#4a6070', fontSize: '13px', fontFamily: "'DM Sans', sans-serif", margin: 0 }}>
             © 2025 Acorn · Project Intelligence Platform
@@ -1698,6 +1704,7 @@ const LandingPage: React.FC = () => {
             ))}
           </div>
         </div>
+        </Reveal>
       </footer>
     </div>
   );
