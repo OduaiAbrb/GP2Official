@@ -126,12 +126,25 @@ const Reveal: React.FC<RevealProps> = ({ children, delay = 0, as = 'div', style,
   );
 };
 
-const WaveReveal: React.FC<{ children: React.ReactNode; className?: string; style?: React.CSSProperties }> = ({ children, className, style }) => {
+const WaveReveal: React.FC<{ children: React.ReactNode; className?: string; style?: React.CSSProperties; delay?: number }> = ({ children, className, style, delay = 0 }) => {
   const [ref, shown] = useReveal<HTMLDivElement>(0.1);
   return (
     <div
       ref={ref}
       className={`${className || ''} ${shown ? 'wave-revealed' : ''}`}
+      style={delay > 0 ? { ...style, '--wave-delay': `${delay}ms` } as React.CSSProperties : style}
+    >
+      {children}
+    </div>
+  );
+};
+
+const HeadingReveal: React.FC<{ children: React.ReactNode; style?: React.CSSProperties }> = ({ children, style }) => {
+  const [ref, shown] = useReveal<HTMLDivElement>(0.1);
+  return (
+    <div
+      ref={ref}
+      className={`heading-reveal ${shown ? 'heading-revealed' : ''}`}
       style={style}
     >
       {children}
@@ -1211,7 +1224,7 @@ const LandingPage: React.FC = () => {
 
       {/* ── HOW IT WORKS ── */}
       <section id="how-it-works" style={{ padding: 'clamp(60px, 8vw, 96px) clamp(20px, 5vw, 40px)', maxWidth: '1200px', margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: '56px' }}>
+        <HeadingReveal style={{ textAlign: 'center', marginBottom: '56px' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '5px 14px', background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.25)', borderRadius: '999px', marginBottom: '16px' }}>
             <span style={{ fontSize: '12px', color: '#fb9042', fontFamily: "'DM Sans', sans-serif", fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>How It Works</span>
           </div>
@@ -1221,9 +1234,9 @@ const LandingPage: React.FC = () => {
           <p style={{ color: '#8899AA', fontFamily: "'DM Sans', sans-serif", fontSize: '16px', maxWidth: '480px', margin: '0 auto', lineHeight: 1.7 }}>
             No templates, no guesswork. Just describe your project and let Acorn handle the rest.
           </p>
-        </div>
+        </HeadingReveal>
 
-        <WaveReveal style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
+        <WaveReveal delay={800} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
           {[
             {
               step: '01', icon: MessageSquare, title: 'Describe Your Project',
@@ -1272,7 +1285,7 @@ const LandingPage: React.FC = () => {
       {/* ── PHASES GRID ── */}
       <section style={{ padding: 'clamp(60px, 8vw, 96px) clamp(20px, 5vw, 40px)', background: 'rgba(10,31,61,0.35)', borderTop: '1px solid rgba(26,111,212,0.1)', borderBottom: '1px solid rgba(26,111,212,0.1)' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '56px' }}>
+          <HeadingReveal style={{ textAlign: 'center', marginBottom: '56px' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '5px 14px', background: 'rgba(26,111,212,0.1)', border: '1px solid rgba(26,111,212,0.25)', borderRadius: '999px', marginBottom: '16px' }}>
               <span style={{ fontSize: '12px', color: '#3d8fe0', fontFamily: "'DM Sans', sans-serif", fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Every Phase, Covered</span>
             </div>
@@ -1282,9 +1295,9 @@ const LandingPage: React.FC = () => {
             <p style={{ color: '#8899AA', fontFamily: "'DM Sans', sans-serif", fontSize: '16px', maxWidth: '520px', margin: '0 auto', lineHeight: 1.7 }}>
               From initial planning to deployment summary — every phase powered by purpose-built AI agents working in concert.
             </p>
-          </div>
+          </HeadingReveal>
 
-          <WaveReveal style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
+          <WaveReveal delay={800} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
             {PHASES.map((phase, i) => {
               const Icon = phase.icon;
               const isOrange = i >= 5;
@@ -1326,7 +1339,7 @@ const LandingPage: React.FC = () => {
 
       {/* ── AI FEATURES ── */}
       <section id="features" style={{ padding: 'clamp(60px, 8vw, 96px) clamp(20px, 5vw, 40px)', maxWidth: '1200px', margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: '56px' }}>
+        <HeadingReveal style={{ textAlign: 'center', marginBottom: '56px' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '5px 14px', background: 'rgba(26,111,212,0.1)', border: '1px solid rgba(26,111,212,0.25)', borderRadius: '999px', marginBottom: '16px' }}>
             <Cpu size={12} color="#3d8fe0" />
             <span style={{ fontSize: '12px', color: '#3d8fe0', fontFamily: "'DM Sans', sans-serif", fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Intelligent Agents</span>
@@ -1337,9 +1350,9 @@ const LandingPage: React.FC = () => {
           <p style={{ color: '#8899AA', fontFamily: "'DM Sans', sans-serif", fontSize: '16px', maxWidth: '500px', margin: '0 auto', lineHeight: 1.7 }}>
             Purpose-built agents collaborate behind the scenes to deliver expert-level outputs across your entire project.
           </p>
-        </div>
+        </HeadingReveal>
 
-        <WaveReveal style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
+        <WaveReveal delay={800} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
           {[
             { icon: FileText,   title: 'SRS Generator',     desc: 'Full software requirements specification with functional and non-functional requirements, acceptance criteria, and edge cases.', color: '#1A6FD4', bg: 'rgba(26,111,212,0.1)' },
             { icon: Users,      title: 'Persona Builder',   desc: 'AI-generated user personas with detailed pain points, goals, motivations, and user stories mapped to your product.', color: '#F97316', bg: 'rgba(249,115,22,0.08)' },
@@ -1381,15 +1394,15 @@ const LandingPage: React.FC = () => {
       {/* ── TESTIMONIALS ── */}
       <section style={{ padding: 'clamp(60px, 8vw, 96px) clamp(20px, 5vw, 40px)', background: 'rgba(10,31,61,0.35)', borderTop: '1px solid rgba(26,111,212,0.1)' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '56px' }}>
+          <HeadingReveal style={{ textAlign: 'center', marginBottom: '56px' }}>
             <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 'clamp(28px, 4vw, 40px)', marginBottom: '14px', letterSpacing: '-0.02em' }}>
               Trusted by product teams.
             </h2>
             <p style={{ color: '#8899AA', fontFamily: "'DM Sans', sans-serif", fontSize: '16px' }}>
               See what engineering leaders and product managers are saying.
             </p>
-          </div>
-          <WaveReveal style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
+          </HeadingReveal>
+          <WaveReveal delay={800} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
             {[
               { quote: 'Acorn cut our pre-dev planning phase from 3 weeks to 2 days. The SRS output is genuinely production-quality.', name: 'Sarah M.', role: 'VP Engineering', stars: 5 },
               { quote: 'The AI personas feature alone is worth it. No more guessing who our users are — we have data-backed profiles from day one.', name: 'James K.', role: 'Product Manager', stars: 5 },
