@@ -961,13 +961,13 @@ const LandingPage: React.FC = () => {
 
   const handleSplashDone = () => {
     setShowSplash(false);
-    if (!sessionStorage.getItem('acorn_onboarding_seen')) {
+    if (!safeLocalStorage.getItem('acorn_onboarding_seen')) {
       setShowOnboarding(true);
     }
   };
 
   const handleOnboardingDone = () => {
-    sessionStorage.setItem('acorn_onboarding_seen', '1');
+    safeLocalStorage.setItem('acorn_onboarding_seen', '1');
     setShowOnboarding(false);
   };
 
