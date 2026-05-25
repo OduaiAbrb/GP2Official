@@ -358,6 +358,8 @@ const WarpOverlay: React.FC<WarpOverlayProps> = ({ active }) => {
   );
 };
 
+const SWIPE_THRESHOLD = 60;
+
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onDone }) => {
   const [visible, setVisible] = useState(false);
   const [slideIdx, setSlideIdx] = useState(0);
@@ -365,25 +367,21 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onDone }) => {
   const [slideVisible, setSlideVisible] = useState(true);
   const reducedMotion = usePrefersReducedMotion();
   const advancingRef = useRef(false);
+  const touchStartXRef = useRef<number | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 60);
     return () => clearTimeout(t);
   }, []);
 
-  const advanceSlide = () => {
+  const transition = (toIdx: number) => {
     if (advancingRef.current) return;
-    const next = slideIdx + 1;
-    if (next >= SLIDE_COUNT) {
-      onDone();
-      return;
-    }
     advancingRef.current = true;
 
     if (reducedMotion) {
       setSlideVisible(false);
       setTimeout(() => {
-        setSlideIdx(next);
+        setSlideIdx(toIdx);
         setSlideVisible(true);
         advancingRef.current = false;
       }, 200);
@@ -391,7 +389,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onDone }) => {
       setSlideVisible(false);
       setWarpActive(true);
       setTimeout(() => {
-        setSlideIdx(next);
+        setSlideIdx(toIdx);
       }, 300);
       setTimeout(() => {
         setWarpActive(false);
@@ -401,11 +399,43 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onDone }) => {
     }
   };
 
+  const advanceSlide = () => {
+    const next = slideIdx + 1;
+    if (next >= SLIDE_COUNT) {
+      onDone();
+      return;
+    }
+    transition(next);
+  };
+
+  const retreatSlide = () => {
+    if (slideIdx === 0) return;
+    transition(slideIdx - 1);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartXRef.current;
+    touchStartXRef.current = null;
+    if (Math.abs(dx) < SWIPE_THRESHOLD) return;
+    if (dx < 0) {
+      advanceSlide();
+    } else {
+      retreatSlide();
+    }
+  };
+
   const CurrentSlide = SLIDES[slideIdx];
   const isLast = slideIdx === SLIDE_COUNT - 1;
 
   return (
     <div
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
       style={{
         position: 'fixed',
         inset: 0,
