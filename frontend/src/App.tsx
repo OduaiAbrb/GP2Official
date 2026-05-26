@@ -181,6 +181,14 @@ function App() {
           }
         />
         <Route
+          path="/analytics"
+          element={
+            <PrivateRoute>
+              <AnalyticsDashboardPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
           path="/projects/:id/analytics"
           element={
             <PrivateRoute>

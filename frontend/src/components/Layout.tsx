@@ -18,7 +18,7 @@ interface LayoutProps { children: React.ReactNode; }
 
 const getNavItems = (activeProjectId: string | null) => [
   { id: 'projects', icon: FolderKanban, label: 'Projects', path: '/projects' },
-  ...(activeProjectId ? [{ id: 'analytics', icon: BarChart3, label: 'Analytics', path: `/projects/${activeProjectId}/analytics` }] : []),
+  { id: 'analytics', icon: BarChart3, label: 'Analytics', path: activeProjectId ? `/projects/${activeProjectId}/analytics` : '/analytics' },
   { id: 'docs', icon: BookOpen, label: 'Docs', path: '/docs' },
   { id: 'profile', icon: UserIcon, label: 'Profile', path: '/profile' },
 ];

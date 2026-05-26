@@ -22,6 +22,7 @@ import {
   DollarSign,
   Circle,
   ArrowLeft,
+  FolderKanban,
 } from 'lucide-react';
 
 interface AnalyticsData {
@@ -35,6 +36,7 @@ interface AnalyticsData {
   riskLevel: 'low' | 'medium' | 'high';
   weeklyActivity: { day: string; count: number }[];
   phaseBreakdown: { name: string; progress: number; status: string; color: string }[];
+  totalProjects?: number;
 }
 
 const PHASE_COLORS: Record<string, string> = {
@@ -104,95 +106,147 @@ export const AnalyticsDashboardPage: React.FC = () => {
         });
         setActivityEntries(collectedEntries);
         const totalProjects = projects.length;
+        const isGlobal = !id;
 
-        // Aggregate phase statuses across all projects (or use id-specific project)
-        let targetProject = projects[0];
-        if (id) {
-          const found = projects.find((p: any) => (p.id || p.project_id) === id);
-          if (found) targetProject = found;
-        }
-
-        const phaseStatus: Record<string, string> = targetProject?.phase_status || {};
         let completedPhases = 0;
-        const phaseBreakdown = PHASE_META.map((pm) => {
-          const st = (phaseStatus[pm.key] || 'locked').toLowerCase();
-          const progress = st === 'completed' ? 100 : st === 'in_progress' ? 50 : st === 'ready' ? 10 : 0;
-          if (st === 'completed') completedPhases++;
-          return { name: pm.name, progress, status: st === 'completed' ? 'completed' : st === 'in_progress' ? 'in_progress' : 'pending', color: pm.color };
-        });
-
-        const progressPct = Math.round((completedPhases / 10) * 100);
-
-        // Fetch requirements for the target project
+        let totalPhasesCount = 10;
+        let phaseBreakdown: { name: string; progress: number; status: string; color: string }[];
         let totalReqs = 0;
         let completedReqs = 0;
-        try {
-          const projectId = targetProject?.id || targetProject?.project_id;
-          if (projectId) {
-            const reqs = await api.getRequirements(projectId);
-            totalReqs = reqs.length;
-            completedReqs = reqs.filter((r: any) => r.status === 'approved' || r.status === 'implemented').length;
-          }
-        } catch { /* ignore */ }
-
-        // AI runs (real usage)
         let aiGens = 0;
         let weeklyActivity: { day: string; count: number }[] = [];
-        try {
-          const projectId = targetProject?.id || targetProject?.project_id;
-          if (projectId) {
-            const aiRuns = await api.getAiRuns(projectId, 200);
-            aiGens = aiRuns.filter((run: any) => (run.status || '').toLowerCase() === 'completed').length || aiRuns.length;
 
-            // Prefer recorded activity logs; fall back to AI runs if the project has none.
-            const start = new Date();
-            start.setHours(0, 0, 0, 0);
-            start.setDate(start.getDate() - 6);
-            let activityItems: any[] = [];
-            try {
-              activityItems = await api.getActivity(projectId, 200);
-            } catch {
-              activityItems = [];
+        const weekStart = new Date();
+        weekStart.setHours(0, 0, 0, 0);
+        weekStart.setDate(weekStart.getDate() - 6);
+
+        if (isGlobal) {
+          // ── Global mode: aggregate across all projects ──
+          totalPhasesCount = projects.length * 10;
+          const allActivityItems: any[] = [];
+
+          phaseBreakdown = PHASE_META.map((pm) => {
+            let phaseCompleted = 0;
+            let phaseInProgress = 0;
+            for (const proj of projects) {
+              const st = ((proj.phase_status || {})[pm.key] || 'locked').toLowerCase();
+              if (st === 'completed') { phaseCompleted++; completedPhases++; }
+              else if (st === 'in_progress') phaseInProgress++;
             }
+            const progress = projects.length > 0
+              ? Math.round(((phaseCompleted + phaseInProgress * 0.5) / projects.length) * 100)
+              : 0;
+            const status = projects.length > 0 && phaseCompleted === projects.length
+              ? 'completed'
+              : phaseInProgress > 0 || phaseCompleted > 0
+                ? 'in_progress'
+                : 'pending';
+            return { name: pm.name, progress, status, color: pm.color };
+          });
 
-            const sourceItems = activityItems.length > 0 ? activityItems : aiRuns;
-            weeklyActivity = Array.from({ length: 7 }).map((_, i) => {
-              const dayStart = new Date(start);
-              dayStart.setDate(start.getDate() + i);
-              const dayEnd = new Date(dayStart);
-              dayEnd.setDate(dayStart.getDate() + 1);
-              const count = sourceItems.filter((item: any) => {
-                const raw = item.completed_at || item.created_at;
-                if (!raw) return false;
-                const when = new Date(raw);
-                return when >= dayStart && when < dayEnd;
-              }).length;
-              return {
-                day: dayStart.toLocaleDateString('en-US', { weekday: 'short' }),
-                count,
-              };
-            });
+          for (const proj of projects) {
+            const pid = proj.id || proj.project_id;
+            if (!pid) continue;
+            try {
+              const reqs = await api.getRequirements(pid);
+              totalReqs += reqs.length;
+              completedReqs += reqs.filter((r: any) => r.status === 'approved' || r.status === 'implemented').length;
+            } catch { /* ignore */ }
+            try {
+              const aiRuns = await api.getAiRuns(pid, 200);
+              aiGens += aiRuns.filter((run: any) => (run.status || '').toLowerCase() === 'completed').length || aiRuns.length;
+              try {
+                const items = await api.getActivity(pid, 200);
+                allActivityItems.push(...items);
+              } catch {
+                allActivityItems.push(...aiRuns);
+              }
+            } catch { /* ignore */ }
           }
-        } catch {
-          weeklyActivity = [];
+
+          weeklyActivity = Array.from({ length: 7 }).map((_, i) => {
+            const dayStart = new Date(weekStart);
+            dayStart.setDate(weekStart.getDate() + i);
+            const dayEnd = new Date(dayStart);
+            dayEnd.setDate(dayStart.getDate() + 1);
+            const count = allActivityItems.filter((item: any) => {
+              const raw = item.completed_at || item.created_at;
+              if (!raw) return false;
+              const when = new Date(raw);
+              return when >= dayStart && when < dayEnd;
+            }).length;
+            return { day: dayStart.toLocaleDateString('en-US', { weekday: 'short' }), count };
+          });
+        } else {
+          // ── Per-project mode ──
+          let targetProject = projects[0];
+          const found = projects.find((p: any) => (p.id || p.project_id) === id);
+          if (found) targetProject = found;
+
+          const phaseStatus: Record<string, string> = targetProject?.phase_status || {};
+          phaseBreakdown = PHASE_META.map((pm) => {
+            const st = (phaseStatus[pm.key] || 'locked').toLowerCase();
+            const progress = st === 'completed' ? 100 : st === 'in_progress' ? 50 : st === 'ready' ? 10 : 0;
+            if (st === 'completed') completedPhases++;
+            return { name: pm.name, progress, status: st === 'completed' ? 'completed' : st === 'in_progress' ? 'in_progress' : 'pending', color: pm.color };
+          });
+
+          try {
+            const projectId = targetProject?.id || targetProject?.project_id;
+            if (projectId) {
+              const reqs = await api.getRequirements(projectId);
+              totalReqs = reqs.length;
+              completedReqs = reqs.filter((r: any) => r.status === 'approved' || r.status === 'implemented').length;
+            }
+          } catch { /* ignore */ }
+
+          try {
+            const projectId = targetProject?.id || targetProject?.project_id;
+            if (projectId) {
+              const aiRuns = await api.getAiRuns(projectId, 200);
+              aiGens = aiRuns.filter((run: any) => (run.status || '').toLowerCase() === 'completed').length || aiRuns.length;
+
+              let activityItems: any[] = [];
+              try {
+                activityItems = await api.getActivity(projectId, 200);
+              } catch {
+                activityItems = [];
+              }
+              const sourceItems = activityItems.length > 0 ? activityItems : aiRuns;
+              weeklyActivity = Array.from({ length: 7 }).map((_, i) => {
+                const dayStart = new Date(weekStart);
+                dayStart.setDate(weekStart.getDate() + i);
+                const dayEnd = new Date(dayStart);
+                dayEnd.setDate(dayStart.getDate() + 1);
+                const count = sourceItems.filter((item: any) => {
+                  const raw = item.completed_at || item.created_at;
+                  if (!raw) return false;
+                  const when = new Date(raw);
+                  return when >= dayStart && when < dayEnd;
+                }).length;
+                return { day: dayStart.toLocaleDateString('en-US', { weekday: 'short' }), count };
+              });
+            }
+          } catch {
+            weeklyActivity = [];
+          }
         }
 
         if (weeklyActivity.length === 0) {
-          // Fallback empty week with zeros (keeps UI stable)
-          const fallbackStart = new Date();
-          fallbackStart.setHours(0, 0, 0, 0);
-          fallbackStart.setDate(fallbackStart.getDate() - 6);
           weeklyActivity = Array.from({ length: 7 }).map((_, i) => {
-            const day = new Date(fallbackStart);
-            day.setDate(fallbackStart.getDate() + i);
+            const day = new Date(weekStart);
+            day.setDate(weekStart.getDate() + i);
             return { day: day.toLocaleDateString('en-US', { weekday: 'short' }), count: 0 };
           });
         }
 
+        const progressPct = totalPhasesCount > 0 ? Math.round((completedPhases / totalPhasesCount) * 100) : 0;
         const riskLevel: 'low' | 'medium' | 'high' = completedPhases >= 7 ? 'low' : completedPhases >= 4 ? 'medium' : 'high';
-
         const now = new Date();
-        const estDate = new Date(now.getTime() + (10 - completedPhases) * 14 * 86400000);
+        const remainingPhases = isGlobal
+          ? Math.max(0, totalPhasesCount - completedPhases)
+          : Math.max(0, 10 - completedPhases);
+        const estDate = new Date(now.getTime() + remainingPhases * 14 * 86400000);
         const estimatedCompletion = estDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
         setAnalytics({
@@ -200,12 +254,13 @@ export const AnalyticsDashboardPage: React.FC = () => {
           totalRequirements: totalReqs,
           completedRequirements: completedReqs,
           aiGenerations: aiGens,
-          totalPhases: 10,
+          totalPhases: totalPhasesCount,
           completedPhases,
           estimatedCompletion,
           riskLevel,
           weeklyActivity,
           phaseBreakdown,
+          totalProjects: isGlobal ? totalProjects : undefined,
         });
       } catch (err) {
         console.error('Failed to fetch analytics', err);
@@ -224,6 +279,7 @@ export const AnalyticsDashboardPage: React.FC = () => {
     high: { color: '#C1440E', bg: 'rgba(193,68,14,0.12)', label: 'High Risk' },
   }[risk] || { color: 'var(--text-muted)', bg: 'rgba(107,158,122,0.12)', label: 'Unknown' });
 
+  const isGlobal = !id;
   const maxActivity = Math.max(1, ...(analytics?.weeklyActivity.map(d => d.count) || []));
   const risk = getRiskConfig(analytics?.riskLevel || 'low');
 
@@ -270,27 +326,46 @@ export const AnalyticsDashboardPage: React.FC = () => {
               <BarChart3 className="w-7 h-7 text-[var(--brand-900)]" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-[var(--text-primary)]">Analytics Dashboard</h1>
-              <p className="text-[var(--text-muted)]">Project insights and performance metrics</p>
+              <h1 className="text-3xl font-bold text-[var(--text-primary)]">
+                {isGlobal ? 'Workspace Analytics' : 'Analytics Dashboard'}
+              </h1>
+              <p className="text-[var(--text-muted)]">
+                {isGlobal
+                  ? `Insights across all ${analytics?.totalProjects ?? ''} projects`
+                  : 'Project insights and performance metrics'}
+              </p>
             </div>
           </div>
 
           {/* Key Metrics */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            {/* Progress */}
-            <div className="p-6" style={cardStyle}>
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 rounded-lg" style={{ background: 'rgba(26,111,212,0.12)' }}>
-                  <TrendingUp className="w-5 h-5 text-[var(--blue-400)]" />
+            {/* Progress / Total Projects */}
+            {isGlobal ? (
+              <div className="p-6" style={cardStyle}>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 rounded-lg" style={{ background: 'rgba(26,111,212,0.12)' }}>
+                    <FolderKanban className="w-5 h-5 text-[var(--blue-400)]" />
+                  </div>
+                  <span className="text-[var(--text-muted)] text-sm">Projects</span>
                 </div>
-                <span className="text-[var(--text-muted)] text-sm">Progress</span>
+                <p className="text-3xl font-bold text-[var(--text-primary)]">{analytics?.totalProjects ?? 0}</p>
+                <p className="text-xs text-[var(--text-muted)] mt-1">Total projects</p>
               </div>
-              <p className="text-3xl font-bold text-[var(--text-primary)]">{analytics?.projectProgress}%</p>
-              <div className="mt-2 h-2 rounded-full overflow-hidden" style={{ background: 'rgba(26,46,69,0.5)' }}>
-                <div className="h-full rounded-full transition-all"
-                  style={{ width: `${analytics?.projectProgress}%`, background: 'linear-gradient(to right, var(--blue-600), var(--blue-400))' }} />
+            ) : (
+              <div className="p-6" style={cardStyle}>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 rounded-lg" style={{ background: 'rgba(26,111,212,0.12)' }}>
+                    <TrendingUp className="w-5 h-5 text-[var(--blue-400)]" />
+                  </div>
+                  <span className="text-[var(--text-muted)] text-sm">Progress</span>
+                </div>
+                <p className="text-3xl font-bold text-[var(--text-primary)]">{analytics?.projectProgress}%</p>
+                <div className="mt-2 h-2 rounded-full overflow-hidden" style={{ background: 'rgba(26,46,69,0.5)' }}>
+                  <div className="h-full rounded-full transition-all"
+                    style={{ width: `${analytics?.projectProgress}%`, background: 'linear-gradient(to right, var(--blue-600), var(--blue-400))' }} />
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Requirements */}
             <div className="p-6" style={cardStyle}>
