@@ -737,20 +737,6 @@ const SplashScreen: React.FC<SplashProps> = ({ onEnter, onViewDocs, onComplete, 
             <span className="splash-enter-shimmer" aria-hidden />
             <ArrowRight size={18} /> Start Building Free
           </button>
-          <button
-            onClick={onViewDocs}
-            style={{
-              padding: '14px 26px',
-              background: 'rgba(26,111,212,0.12)',
-              border: '1px solid rgba(26,111,212,0.4)', borderRadius: '12px', cursor: 'pointer',
-              color: '#3d8fe0', fontFamily: "'DM Sans', sans-serif", fontWeight: 600,
-              fontSize: '15px', transition: 'background 0.2s',
-            }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(26,111,212,0.2)'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(26,111,212,0.12)'; }}
-          >
-            View SDLC Guide
-          </button>
         </div>
 
         <div className="splash-stats" style={{
@@ -1407,12 +1393,6 @@ const LandingPage: React.FC = () => {
 
         {/* Desktop nav links */}
         <div className="lp-nav-links" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <button onClick={() => navigate('/sdlc-guide')} style={{ padding: '8px 14px', background: 'none', border: 'none', color: '#8899AA', fontFamily: "'DM Sans', sans-serif", fontSize: '14px', cursor: 'pointer', borderRadius: '8px', transition: 'color 0.2s' }}
-            onMouseEnter={e => { e.currentTarget.style.color = '#E8EDF5'; }}
-            onMouseLeave={e => { e.currentTarget.style.color = '#8899AA'; }}
-          >
-            SDLC Guide
-          </button>
           <button onClick={() => scrollTo('features')} style={{ padding: '8px 14px', background: 'none', border: 'none', color: '#8899AA', fontFamily: "'DM Sans', sans-serif", fontSize: '14px', cursor: 'pointer', borderRadius: '8px', transition: 'color 0.2s' }}
             onMouseEnter={e => { e.currentTarget.style.color = '#E8EDF5'; }}
             onMouseLeave={e => { e.currentTarget.style.color = '#8899AA'; }}
@@ -1469,7 +1449,6 @@ const LandingPage: React.FC = () => {
         overflow: 'hidden', transition: 'max-height 0.3s ease, padding 0.3s ease',
       }}>
         {[
-          { label: 'SDLC Guide', action: () => { navigate('/sdlc-guide'); setMobileMenuOpen(false); } },
           { label: 'Features', action: () => { scrollTo('features'); setMobileMenuOpen(false); } },
           { label: 'How It Works', action: () => { scrollTo('how-it-works'); setMobileMenuOpen(false); } },
           { label: 'Pricing', action: () => { scrollTo('pricing'); setMobileMenuOpen(false); } },
@@ -1567,13 +1546,6 @@ const LandingPage: React.FC = () => {
               onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 28px rgba(249,115,22,0.4)'; }}
             >
               <Rocket size={18} /> Start Building Free
-            </button>
-            <button onClick={() => navigate('/sdlc-guide')}
-              style={{ padding: '15px 28px', background: 'rgba(26,111,212,0.1)', border: '1px solid rgba(26,111,212,0.35)', borderRadius: '12px', color: '#3d8fe0', fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.25s' }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(26,111,212,0.18)'; e.currentTarget.style.borderColor = 'rgba(26,111,212,0.6)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(26,111,212,0.1)'; e.currentTarget.style.borderColor = 'rgba(26,111,212,0.35)'; }}
-            >
-              View SDLC Guide <ChevronRight size={16} />
             </button>
           </div>
 
@@ -2046,7 +2018,6 @@ const LandingPage: React.FC = () => {
             <div style={{ fontSize: '11px', color: '#4a6070', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '16px' }}>Product</div>
             {[
               { label: 'Features', onClick: () => scrollTo('features') },
-              { label: 'SDLC Guide', onClick: () => navigate('/sdlc-guide') },
               { label: 'How It Works', onClick: () => scrollTo('how-it-works') },
               { label: 'Pricing', onClick: () => scrollTo('pricing') },
             ].map(({ label, onClick }) => (
@@ -2063,8 +2034,6 @@ const LandingPage: React.FC = () => {
           <div>
             <div style={{ fontSize: '11px', color: '#4a6070', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '16px' }}>Resources</div>
             {[
-              { label: 'Documentation', onClick: () => navigate('/sdlc-guide') },
-              { label: 'SDLC Guide', onClick: () => navigate('/sdlc-guide') },
               { label: 'Get Started', onClick: () => navigate('/register') },
             ].map(({ label, onClick }) => (
               <button key={label} onClick={onClick} style={{ display: 'block', background: 'none', border: 'none', color: '#8899AA', fontFamily: "'DM Sans', sans-serif", fontSize: '14px', cursor: 'pointer', padding: '4px 0', marginBottom: '4px', transition: 'color 0.2s', textAlign: 'left' }}
