@@ -1175,13 +1175,10 @@ const LandingPage: React.FC = () => {
 
   const handleSplashDone = () => {
     setShowSplash(false);
-    if (!safeLocalStorage.getItem('acorn_onboarding_seen')) {
-      setShowOnboarding(true);
-    }
+    setShowOnboarding(true);
   };
 
   const handleOnboardingDone = () => {
-    safeLocalStorage.setItem('acorn_onboarding_seen', '1');
     setShowOnboarding(false);
   };
 
@@ -1190,7 +1187,7 @@ const LandingPage: React.FC = () => {
       <SplashScreen
         onComplete={handleSplashDone}
         onEnter={handleSplashDone}
-        onSkip={() => { setShowSplash(false); }}
+        onSkip={() => { setShowSplash(false); setShowOnboarding(true); }}
         onViewDocs={() => { navigate('/sdlc-guide'); }}
       />
     );
