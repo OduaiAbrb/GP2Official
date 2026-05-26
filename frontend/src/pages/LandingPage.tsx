@@ -952,8 +952,7 @@ const scrollTo = (id: string) => {
 // ─── Orbital Ring ─────────────────────────────────────────────────────────────
 const OrbitalRing: React.FC<{
   reducedMotion: boolean;
-  onPhaseClick: (phaseId: string) => void;
-}> = ({ reducedMotion, onPhaseClick }) => {
+}> = ({ reducedMotion }) => {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const SIZE = 560;
@@ -961,9 +960,8 @@ const OrbitalRing: React.FC<{
   const CX = SIZE / 2;
   const CY = SIZE / 2;
 
-  const handleNodeClick = (i: number, phaseId: string) => {
+  const handleNodeClick = (i: number) => {
     setSelectedIdx(prev => prev === i ? null : i);
-    onPhaseClick(phaseId);
   };
 
   return (
@@ -1045,7 +1043,7 @@ const OrbitalRing: React.FC<{
             }}
             onMouseEnter={() => setHoveredIdx(i)}
             onMouseLeave={() => setHoveredIdx(null)}
-            onClick={() => handleNodeClick(i, phase.id)}
+            onClick={() => handleNodeClick(i)}
           >
             {/* Node dot */}
             <div style={{
@@ -1403,7 +1401,7 @@ const LandingPage: React.FC = () => {
           }}>
             {/* Desktop: interactive orbital ring */}
             <div className="lp-orbital-ring">
-              <OrbitalRing reducedMotion={reducedMotion} onPhaseClick={handlePhaseNodeClick} />
+              <OrbitalRing reducedMotion={reducedMotion} />
             </div>
 
             {/* Mobile (<700px): original pipeline card */}
