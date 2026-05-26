@@ -50,7 +50,34 @@ interface ProjectBreakdownRow {
   phasesCompleted: number;
   requirementsCount: number;
   aiRunCount: number;
+  weeklyActivity: number[];
 }
+
+const ProjectSparkline: React.FC<{ data: number[] }> = ({ data }) => {
+  const max = Math.max(1, ...data);
+  const W = 7, GAP = 2, H = 24;
+  const totalW = data.length * W + (data.length - 1) * GAP;
+  return (
+    <svg width={totalW} height={H} style={{ display: 'block', overflow: 'visible' }}>
+      {data.map((v, i) => {
+        const barH = v === 0 ? 2 : Math.max(3, Math.round((v / max) * (H - 2)));
+        const active = v > 0;
+        return (
+          <rect
+            key={i}
+            x={i * (W + GAP)}
+            y={H - barH}
+            width={W}
+            height={barH}
+            rx="1"
+            fill={active ? '#D4A017' : 'rgba(61,36,18,0.45)'}
+            opacity={active ? (0.35 + 0.65 * (v / max)) : 1}
+          />
+        );
+      })}
+    </svg>
+  );
+};
 
 const PHASE_COLORS: Record<string, string> = {
   Planning: '#D4A017',
@@ -176,6 +203,7 @@ export const AnalyticsDashboardPage: React.FC = () => {
 
             let projReqCount = 0;
             let projAiCount = 0;
+            let projActivityItems: any[] = [];
 
             try {
               const reqs = await api.getRequirements(pid);
@@ -190,11 +218,26 @@ export const AnalyticsDashboardPage: React.FC = () => {
               aiGens += projAiCount;
               try {
                 const items = await api.getActivity(pid, 200);
+                projActivityItems = items;
                 allActivityItems.push(...items);
               } catch {
+                projActivityItems = aiRuns;
                 allActivityItems.push(...aiRuns);
               }
             } catch { /* ignore */ }
+
+            const projWeeklyActivity = Array.from({ length: 7 }).map((_, i) => {
+              const dayStart = new Date(weekStart);
+              dayStart.setDate(weekStart.getDate() + i);
+              const dayEnd = new Date(dayStart);
+              dayEnd.setDate(dayStart.getDate() + 1);
+              return projActivityItems.filter((item: any) => {
+                const raw = item.completed_at || item.created_at;
+                if (!raw) return false;
+                const when = new Date(raw);
+                return when >= dayStart && when < dayEnd;
+              }).length;
+            });
 
             breakdownRows.push({
               id: pid,
@@ -203,6 +246,7 @@ export const AnalyticsDashboardPage: React.FC = () => {
               phasesCompleted: projPhasesCompleted,
               requirementsCount: projReqCount,
               aiRunCount: projAiCount,
+              weeklyActivity: projWeeklyActivity,
             });
           }
 
@@ -687,6 +731,7 @@ export const AnalyticsDashboardPage: React.FC = () => {
                         <th style={{ ...thBase, textAlign: 'center' }} onClick={() => handleSort('ai')}>
                           <span className="flex items-center justify-center gap-1.5">AI Runs <SortIcon col="ai" /></span>
                         </th>
+                        <th style={{ ...thBase, textAlign: 'center', cursor: 'default' }}>7-Day Trend</th>
                         <th style={{ ...thBase, textAlign: 'center', cursor: 'default' }}>View</th>
                       </tr>
                     </thead>
@@ -745,6 +790,13 @@ export const AnalyticsDashboardPage: React.FC = () => {
                             {/* AI Runs */}
                             <td style={{ padding: '12px 14px', textAlign: 'center' }}>
                               <span style={{ fontSize: '13px', color: 'var(--text-primary)' }}>{row.aiRunCount}</span>
+                            </td>
+
+                            {/* 7-Day Sparkline */}
+                            <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                              <div className="flex justify-center items-end" title={`Activity last 7 days: ${row.weeklyActivity.join(', ')}`}>
+                                <ProjectSparkline data={row.weeklyActivity} />
+                              </div>
                             </td>
 
                             {/* Quick link */}
