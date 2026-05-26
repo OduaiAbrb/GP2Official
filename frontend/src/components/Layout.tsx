@@ -652,12 +652,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* ── Main content ── */}
       <main
+        className="app-main"
         style={{ flex: 1, position: 'relative', zIndex: 10 }}
       >
-        <style>{`
-          @media (min-width:1024px) { main { margin-left: ${sidebarW}; padding-top: 0; } }
-          @media (max-width:1023px) { main { padding-top: 60px; } }
-        `}</style>
+        <style>{`@media (min-width:1024px){main{margin-left:${sidebarW};}}`}</style>
         <div style={{ padding: '24px 32px' }}>
           {children}
         </div>
