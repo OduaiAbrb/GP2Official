@@ -48,14 +48,6 @@ const SPLASH_STATS = [
   { value: '< 5 min', label: 'From idea to SRS' },
 ];
 
-const safeLocalStorage = {
-  getItem: (key: string) => {
-    try { return typeof window !== 'undefined' ? localStorage.getItem(key) : null; } catch { return null; }
-  },
-  setItem: (key: string, value: string) => {
-    try { if (typeof window !== 'undefined') localStorage.setItem(key, value); } catch { /* noop */ }
-  },
-};
 
 function usePrefersReducedMotion(): boolean {
   const [reduced, setReduced] = useState<boolean>(() => {
@@ -1144,7 +1136,8 @@ const LandingPage: React.FC = () => {
   const location = useLocation();
   const reducedMotion = usePrefersReducedMotion();
   const [showSplash, setShowSplash] = useState(() => !reducedMotion);
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  // Reduced-motion users skip the splash entirely — start them straight in onboarding
+  const [showOnboarding, setShowOnboarding] = useState(() => reducedMotion);
   const [heroReady, setHeroReady] = useState(() => reducedMotion);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [highlightedPhaseId, setHighlightedPhaseId] = useState<string | null>(null);
