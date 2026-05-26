@@ -956,6 +956,165 @@ const scrollTo = (id: string) => {
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
 };
 
+// ─── Orbital Ring ─────────────────────────────────────────────────────────────
+const OrbitalRing: React.FC<{
+  reducedMotion: boolean;
+  onPhaseClick: (phaseId: string) => void;
+}> = ({ reducedMotion, onPhaseClick }) => {
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const SIZE = 560;
+  const R = 228;
+  const CX = SIZE / 2;
+  const CY = SIZE / 2;
+
+  return (
+    <div style={{ position: 'relative', width: SIZE, height: SIZE, margin: '0 auto' }}>
+      {/* Orbit guide ring */}
+      <div style={{
+        position: 'absolute', top: '50%', left: '50%',
+        width: R * 2, height: R * 2,
+        border: '1px solid rgba(61,143,224,0.13)',
+        borderRadius: '50%',
+        transform: 'translate(-50%, -50%)',
+        pointerEvents: 'none',
+      }} />
+
+      {/* SVG bezier beams from each node to center */}
+      <svg
+        aria-hidden
+        width={SIZE} height={SIZE}
+        viewBox={`0 0 ${SIZE} ${SIZE}`}
+        style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'visible' }}
+      >
+        {PHASES.map((_, i) => {
+          const angle = ((i / PHASES.length) * 360 - 90) * Math.PI / 180;
+          const nx = CX + R * Math.cos(angle);
+          const ny = CY + R * Math.sin(angle);
+          const mx = (CX + nx) / 2 + (ny - CY) * 0.18;
+          const my = (CY + ny) / 2 - (nx - CX) * 0.18;
+          const isOrange = i >= 5;
+          const isHov = hoveredIdx === i;
+          return (
+            <path
+              key={i}
+              d={`M ${CX} ${CY} Q ${mx} ${my} ${nx} ${ny}`}
+              stroke={isOrange ? '#F97316' : '#3d8fe0'}
+              strokeWidth={isHov ? 2 : 1}
+              strokeOpacity={isHov ? 0.7 : 0.22}
+              strokeDasharray={reducedMotion ? undefined : '6 5'}
+              fill="none"
+              style={{ transition: 'stroke-opacity 0.22s, stroke-width 0.22s' }}
+            />
+          );
+        })}
+      </svg>
+
+      {/* Central Acorn logo */}
+      <div style={{
+        position: 'absolute', top: '50%', left: '50%',
+        transform: 'translate(-50%, -50%)', zIndex: 2,
+        filter: 'drop-shadow(0 0 20px rgba(26,111,212,0.55)) drop-shadow(0 0 36px rgba(249,115,22,0.28))',
+      }}>
+        <AcornLogo variant="mark" height={70} white />
+      </div>
+
+      {/* Phase nodes */}
+      {PHASES.map((phase, i) => {
+        const PhaseIcon = phase.icon;
+        const angle = ((i / PHASES.length) * 360 - 90) * Math.PI / 180;
+        const nx = CX + R * Math.cos(angle);
+        const ny = CY + R * Math.sin(angle);
+        const isOrange = i >= 5;
+        const accent = isOrange ? '#F97316' : '#3d8fe0';
+        const darkAccent = isOrange ? '#cc4900' : '#1452a0';
+        const isHov = hoveredIdx === i;
+        const NODE = 44;
+        const inBottom = ny > CY + 30;
+        const inTop = ny < CY - 30;
+        const tipX = nx < CX - 70 ? '0%' : nx > CX + 70 ? '-100%' : '-50%';
+
+        return (
+          <div
+            key={phase.id}
+            style={{
+              position: 'absolute',
+              top: ny, left: nx,
+              transform: 'translate(-50%, -50%)',
+              zIndex: 3,
+            }}
+            onMouseEnter={() => setHoveredIdx(i)}
+            onMouseLeave={() => setHoveredIdx(null)}
+            onClick={() => onPhaseClick(phase.id)}
+          >
+            {/* Node dot */}
+            <div style={{
+              width: NODE, height: NODE,
+              borderRadius: Math.round(NODE * 0.28),
+              background: `linear-gradient(135deg, ${accent}, ${darkAccent})`,
+              border: `1.5px solid ${accent}`,
+              boxShadow: isHov
+                ? `0 0 30px ${accent}cc, 0 0 54px ${accent}44, inset 0 0 14px rgba(255,255,255,0.22)`
+                : `0 0 14px ${accent}66, inset 0 0 8px rgba(255,255,255,0.12)`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer',
+              transform: isHov ? 'scale(1.3)' : 'scale(1)',
+              transition: 'transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.22s',
+              animation: reducedMotion ? 'none' : `orbPulse ${2.6 + (i % 3) * 0.4}s ease-in-out ${i * 0.22}s infinite`,
+            }}>
+              <PhaseIcon size={Math.round(NODE * 0.45)} color="#fff" strokeWidth={2.4} />
+            </div>
+
+            {/* Phase label — appears on hover */}
+            <div style={{
+              position: 'absolute',
+              top: inBottom ? 'auto' : '108%',
+              bottom: inBottom ? '108%' : 'auto',
+              left: '50%', transform: `translateX(${tipX})`,
+              marginTop: inBottom ? 0 : '2px',
+              marginBottom: inBottom ? '2px' : 0,
+              fontSize: '8.5px',
+              fontFamily: "'JetBrains Mono', monospace",
+              color: accent,
+              letterSpacing: '0.07em',
+              fontWeight: 700,
+              textShadow: `0 0 8px ${accent}99`,
+              whiteSpace: 'nowrap',
+              pointerEvents: 'none',
+              opacity: isHov ? 1 : 0,
+              transition: 'opacity 0.18s',
+            }}>{phase.label}</div>
+
+            {/* Description tooltip on hover */}
+            {isHov && (
+              <div style={{
+                position: 'absolute',
+                top: inTop ? 'calc(108% + 18px)' : 'auto',
+                bottom: !inTop ? 'calc(108% + 18px)' : 'auto',
+                left: '50%', transform: `translateX(${tipX})`,
+                background: 'rgba(8,20,38,0.97)',
+                border: `1px solid ${accent}44`,
+                borderRadius: '10px',
+                padding: '10px 14px',
+                zIndex: 20,
+                pointerEvents: 'none',
+                boxShadow: `0 10px 28px rgba(0,0,0,0.6), 0 0 14px ${accent}1a`,
+                minWidth: '160px',
+              }}>
+                <div style={{ fontSize: '11px', color: accent, fontWeight: 700, fontFamily: "'DM Sans', sans-serif", marginBottom: '5px', whiteSpace: 'nowrap' }}>
+                  Phase {i + 1} · {phase.label}
+                </div>
+                <div style={{ fontSize: '11px', color: '#8899AA', maxWidth: '180px', whiteSpace: 'normal', lineHeight: 1.55, fontFamily: "'DM Sans', sans-serif" }}>
+                  {phase.desc}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 // ─── Main Landing Page ────────────────────────────────────────────────────────
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
@@ -965,7 +1124,14 @@ const LandingPage: React.FC = () => {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [heroReady, setHeroReady] = useState(() => reducedMotion);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [highlightedPhaseId, setHighlightedPhaseId] = useState<string | null>(null);
   const isMobile = useIsMobile(600);
+
+  const handlePhaseNodeClick = useCallback((phaseId: string) => {
+    document.getElementById('phases')?.scrollIntoView({ behavior: 'smooth' });
+    setHighlightedPhaseId(phaseId);
+    setTimeout(() => setHighlightedPhaseId(null), 1600);
+  }, []);
 
   useEffect(() => {
     if (!showSplash && !showOnboarding && location.hash) {
@@ -1021,6 +1187,11 @@ const LandingPage: React.FC = () => {
 
   return (
     <div style={{ minHeight: '100vh', background: '#0D1B2A', color: '#E8EDF5' }}>
+      {/* Space background — same classes as splash screen */}
+      <div className="splash-stars" aria-hidden style={{ position: 'fixed', zIndex: 0 }} />
+      <div className="splash-aurora splash-aurora-blue" aria-hidden style={{ position: 'fixed', zIndex: 0 }} />
+      <div className="splash-aurora splash-aurora-orange" aria-hidden style={{ position: 'fixed', zIndex: 0 }} />
+
       <style>{`
         @media (max-width: 768px) {
           .lp-nav-links { display: none !important; }
@@ -1039,6 +1210,28 @@ const LandingPage: React.FC = () => {
           .lp-flowchart-card { padding: 20px 14px !important; }
           .lp-hero-ctas { flex-direction: column !important; align-items: stretch !important; }
           .lp-hero-ctas button { width: 100% !important; justify-content: center !important; }
+        }
+        @keyframes orbPulse {
+          0%, 100% { filter: brightness(0.85); }
+          50%       { filter: brightness(1.25); }
+        }
+        .lp-orbital-ring { display: block; }
+        .lp-pipeline-fallback { display: none; }
+        @media (max-width: 700px) {
+          .lp-orbital-ring { display: none !important; }
+          .lp-pipeline-fallback { display: block !important; }
+        }
+        @keyframes phaseHighlight {
+          0%   { box-shadow: 0 0 0 2px rgba(249,115,22,0.8), 0 0 28px rgba(249,115,22,0.5); }
+          70%  { box-shadow: 0 0 0 2px rgba(249,115,22,0.5), 0 0 16px rgba(249,115,22,0.3); }
+          100% { box-shadow: none; }
+        }
+        .phase-card-highlighted {
+          animation: phaseHighlight 1.6s ease-out forwards !important;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .splash-stars  { animation: none !important; opacity: 1 !important; }
+          .splash-aurora { animation: none !important; opacity: 0.5 !important; }
         }
       `}</style>
 
@@ -1189,45 +1382,35 @@ const LandingPage: React.FC = () => {
             </button>
           </div>
 
-          {/* Pipeline showcase */}
+          {/* Orbital ring (desktop) / Pipeline fallback (mobile) */}
           <div style={{
             width: '100%', marginTop: '24px',
             opacity: heroReady ? 1 : 0,
             animation: heroReady ? 'heroSlideUp 700ms cubic-bezier(0.22,1,0.36,1) 240ms forwards' : 'none',
           }}>
-          <Reveal delay={0} y={0} className="lp-flowchart-card" style={{ padding: isMobile ? '20px 14px' : '28px 32px', ...card({ borderColor: 'rgba(26,111,212,0.25)' }), width: '100%', position: 'relative', overflow: 'hidden' }}>
-            <div aria-hidden style={{
-              position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.5,
-              background: 'radial-gradient(800px circle at 30% 0%, rgba(26,111,212,0.15), transparent 60%), radial-gradient(600px circle at 90% 100%, rgba(249,115,22,0.12), transparent 60%)',
-            }} />
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '8px', position: 'relative' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#1A6FD4', boxShadow: '0 0 10px #1A6FD4', animation: 'pipelineLivePulse 1.6s ease-in-out infinite' }} />
-                <p style={{ fontSize: '11px', color: '#cdd5e0', fontFamily: "'DM Sans', sans-serif", letterSpacing: '0.12em', textTransform: 'uppercase', margin: 0, fontWeight: 600 }}>
-                  Complete SDLC Pipeline · 11 Phases
-                </p>
-              </div>
-              <div style={{ display: 'flex', gap: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <div style={{ width: '10px', height: '10px', borderRadius: '3px', background: 'linear-gradient(135deg, #1A6FD4, #3d8fe0)' }} />
-                  <span style={{ fontSize: '11px', color: '#8899AA', fontFamily: "'DM Sans', sans-serif" }}>Planning</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <div style={{ width: '10px', height: '10px', borderRadius: '3px', background: 'linear-gradient(135deg, #F97316, #fb9042)' }} />
-                  <span style={{ fontSize: '11px', color: '#8899AA', fontFamily: "'DM Sans', sans-serif" }}>Execution</span>
-                </div>
-              </div>
+            {/* Desktop: interactive orbital ring */}
+            <div className="lp-orbital-ring">
+              <OrbitalRing reducedMotion={reducedMotion} onPhaseClick={handlePhaseNodeClick} />
             </div>
-            <div style={{ position: 'relative' }}>
-              <SDLCPipeline />
+
+            {/* Mobile (<700px): original pipeline card */}
+            <div className="lp-pipeline-fallback">
+              <Reveal delay={0} y={0} className="lp-flowchart-card" style={{ padding: '20px 14px', ...card({ borderColor: 'rgba(26,111,212,0.25)' }), width: '100%', position: 'relative', overflow: 'hidden' }}>
+                <div aria-hidden style={{
+                  position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.5,
+                  background: 'radial-gradient(800px circle at 30% 0%, rgba(26,111,212,0.15), transparent 60%), radial-gradient(600px circle at 90% 100%, rgba(249,115,22,0.12), transparent 60%)',
+                }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', position: 'relative' }}>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#1A6FD4', boxShadow: '0 0 10px #1A6FD4' }} />
+                  <p style={{ fontSize: '11px', color: '#cdd5e0', fontFamily: "'DM Sans', sans-serif", letterSpacing: '0.12em', textTransform: 'uppercase', margin: 0, fontWeight: 600 }}>
+                    Complete SDLC Pipeline · 11 Phases
+                  </p>
+                </div>
+                <div style={{ position: 'relative' }}>
+                  <SDLCPipeline />
+                </div>
+              </Reveal>
             </div>
-            <style>{`
-              @keyframes pipelineLivePulse {
-                0%, 100% { opacity: 0.5; transform: scale(0.85); }
-                50%      { opacity: 1; transform: scale(1.15); }
-              }
-            `}</style>
-          </Reveal>
           </div>
         </div>
       </section>
@@ -1308,7 +1491,7 @@ const LandingPage: React.FC = () => {
       </section>
 
       {/* ── PHASES GRID ── */}
-      <section style={{ padding: 'clamp(60px, 8vw, 96px) clamp(20px, 5vw, 40px)', background: 'rgba(10,31,61,0.35)', borderTop: '1px solid rgba(26,111,212,0.1)', borderBottom: '1px solid rgba(26,111,212,0.1)' }}>
+      <section id="phases" style={{ padding: 'clamp(60px, 8vw, 96px) clamp(20px, 5vw, 40px)', background: 'rgba(10,31,61,0.35)', borderTop: '1px solid rgba(26,111,212,0.1)', borderBottom: '1px solid rgba(26,111,212,0.1)' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <HeadingReveal style={{ textAlign: 'center', marginBottom: '56px' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '5px 14px', background: 'rgba(26,111,212,0.1)', border: '1px solid rgba(26,111,212,0.25)', borderRadius: '999px', marginBottom: '16px' }}>
@@ -1327,11 +1510,13 @@ const LandingPage: React.FC = () => {
               const Icon = phase.icon;
               const isOrange = i >= 5;
               const accent = isOrange ? '#F97316' : '#1A6FD4';
+              const isHighlighted = highlightedPhaseId === phase.id;
               return (
                 <div key={phase.id}>
                   <Tilt
                     max={6}
                     scale={1.025}
+                    className={isHighlighted ? 'phase-card-highlighted' : undefined}
                     style={{
                       padding: '20px', ...card({ border: `1px solid ${isOrange ? 'rgba(249,115,22,0.22)' : 'rgba(26,111,212,0.2)'}` }),
                       display: 'flex', flexDirection: 'column', gap: '12px', height: '100%',
