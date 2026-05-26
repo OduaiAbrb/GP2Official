@@ -164,6 +164,38 @@ code, pre, .mono { font-family: 'JetBrains Mono', monospace; }
    Animations
    ============================================================ */
 
+/* ── Page transitions ── */
+@keyframes pageEnter {
+  0%   { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes pageExit {
+  0%   { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-8px); }
+}
+
+.page-idle {
+  opacity: 1;
+}
+
+.page-enter {
+  animation: pageEnter 260ms var(--ease-out-expo) both;
+  will-change: opacity, transform;
+}
+
+.page-exit {
+  animation: pageExit 200ms var(--ease-smooth) both;
+  will-change: opacity, transform;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter,
+  .page-exit {
+    animation: none;
+  }
+}
+
 @keyframes revealUp {
   0%   { opacity:0; transform:translateY(60px) scale(0.95); filter:blur(10px); }
   100% { opacity:1; transform:translateY(0) scale(1);       filter:blur(0); }
