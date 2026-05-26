@@ -380,9 +380,9 @@ class PhaseFlowService:
         user_id: Optional[str] = None,
         prior_context: str = "",
     ) -> str:
-        # Use placeholder content if no OpenAI API key is configured
-        if not settings.openai_api_key:
-            logger.info(f"No OpenAI API key configured, using placeholder content for phase {phase}")
+        # Use placeholder content only if neither AI provider is configured
+        if not settings.openai_api_key and not settings.gemini_api_key:
+            logger.info(f"No AI API key configured, using placeholder content for phase {phase}")
             return await self._generate_placeholder_content(phase, user_prompt)
             
         system_message = (
@@ -501,14 +501,28 @@ class PhaseFlowService:
             metadata={"phase_title": PHASE_TITLES.get(phase)},
         )
 
-        # Call OpenAI API
+        # Call AI API — prefer Gemini when no OpenAI key is set
         started_at = time.perf_counter()
         try:
-            logger.info(f"Calling OpenAI API with model: {settings.openai_model} for phase: {phase}")
-            full_prompt = f"{prompt}\n\nProduce a structured Markdown response with clear headings, bullet lists, and actionable items."
-            response = await call_openai(full_prompt, system=system_message, max_tokens=4000)
+            full_prompt = f"{system_message}\n\n{prompt}\n\nProduce a structured Markdown response with clear headings, bullet lists, and actionable items."
+            if settings.openai_api_key:
+                logger.info(f"Calling OpenAI API with model: {settings.openai_model} for phase: {phase}")
+                response = await call_openai(
+                    f"{prompt}\n\nProduce a structured Markdown response with clear headings, bullet lists, and actionable items.",
+                    system=system_message,
+                    max_tokens=4000
+                )
+            else:
+                logger.info(f"Calling Gemini API with model: {settings.gemini_pro_model} for phase: {phase}")
+                from google import genai as google_genai
+                client = google_genai.Client(api_key=settings.gemini_api_key)
+                result = client.models.generate_content(
+                    model=settings.gemini_pro_model,
+                    contents=full_prompt,
+                )
+                response = result.text or ""
             duration = int((time.perf_counter() - started_at) * 1000)
-            logger.info(f"OpenAI response received: {len(response)} characters in {duration}ms")
+            logger.info(f"AI response received: {len(response)} characters in {duration}ms")
             await self.ai_run_repo.complete_run(
                 run_entry.id,
                 status="completed",

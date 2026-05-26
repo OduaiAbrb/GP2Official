@@ -12,7 +12,6 @@ import { AlertCircle, ArrowLeft, Loader2, CheckCircle2, Circle, ChevronRight, Te
 import { PhaseActivityTimeline, type PhaseActivityEntry } from '@/components/PhaseActivityTimeline';
 import Joyride, { STATUS as JoyrideStatus, Step } from 'react-joyride';
 import { formatDate } from '@/lib/utils';
-import { workspacePresets } from '@/constants/workspacePresets';
 import { AIAgentsPanel } from '@/components/AIAgentsPanel';
 import { ProjectProgressBar } from '@/components/ProjectProgressBar';
 import { exportFullProjectPdf } from '@/lib/exportFullProjectPdf';
@@ -210,41 +209,11 @@ export const ProjectDetailPage: React.FC = () => {
     },
   ];
 
-  const activePreset   = project?.ui_preferences?.preset || 'default';
-  const presetConfig   = workspacePresets.find((preset) => preset.id === activePreset) || workspacePresets[0];
-  const showSummaryPanel = presetConfig.layout.showSummary !== false;
-  const condensePhases   = !!presetConfig.layout.condensePhases;
-  const phaseRowPadding  = condensePhases ? 'py-3 px-2' : 'py-4 px-2';
-
   const handleTourCallback = (data: any) => {
     const { status } = data;
     if ([JoyrideStatus.FINISHED, JoyrideStatus.SKIPPED].includes(status)) {
       setTourRun(false);
       localStorage.setItem('acorn_phase_tour', 'seen');
-    }
-  };
-
-  const handlePresetChange = async (presetId: string) => {
-    if (!project || updatingPreset || presetId === activePreset) return;
-    const projectIdentifier = project.project_id || project.id;
-    if (!projectIdentifier) return;
-    const previousPreset = activePreset;
-    setUpdatingPreset(true);
-    setProject((prev) =>
-      prev ? { ...prev, ui_preferences: { ...(prev.ui_preferences || {}), preset: presetId } } : prev
-    );
-    try {
-      const updated = await api.updateProject(projectIdentifier, {
-        ui_preferences: { ...(project.ui_preferences || {}), preset: presetId },
-      } as any);
-      setProject(updated);
-    } catch (err) {
-      console.error('Failed to update preset', err);
-      setProject((prev) =>
-        prev ? { ...prev, ui_preferences: { ...(prev.ui_preferences || {}), preset: previousPreset } } : prev
-      );
-    } finally {
-      setUpdatingPreset(false);
     }
   };
 
@@ -448,6 +417,11 @@ export const ProjectDetailPage: React.FC = () => {
     locked:      'Locked',
   };
 
+  const phaseKeys = ['planning','feasibility_study','requirements_gathering','validation','design','development','tasks','cost_benefit','risks','summary'];
+  const doneCount = phaseKeys.filter(k => (phaseStatus[k] || '').toLowerCase() === 'completed').length;
+  const healthScore = Math.round((doneCount / phaseKeys.length) * 100);
+  const healthColor = healthScore >= 70 ? '#1A6FD4' : healthScore >= 40 ? '#F97316' : '#4a6070';
+
   if (isLoading) {
     return (
       <Layout>
@@ -457,7 +431,6 @@ export const ProjectDetailPage: React.FC = () => {
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--blue-400)] to-[var(--blue-500)] flex items-center justify-center mx-auto mb-4 animate-pulse">
                 <Loader2 className="h-8 w-8 animate-spin text-[var(--brand-900)]" />
               </div>
-              <div className="absolute inset-0 w-16 h-16 mx-auto rounded-2xl bg-[var(--blue-400)]/20 blur-xl animate-pulse" />
             </div>
             <p className="text-[var(--text-muted)]">Loading project...</p>
           </div>
@@ -485,13 +458,9 @@ export const ProjectDetailPage: React.FC = () => {
         continuous
         showSkipButton
         callback={handleTourCallback}
-        styles={{
-          options: {
-            primaryColor: 'var(--blue-400)',
-          },
-        }}
+        styles={{ options: { primaryColor: 'var(--blue-400)' } }}
       />
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto space-y-5">
         {error && (
           <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-xl flex items-start">
             <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
@@ -499,304 +468,198 @@ export const ProjectDetailPage: React.FC = () => {
           </div>
         )}
 
-        {/* Project Header Card */}
+        {/* ── Header Card ── */}
         <div className="bg-[var(--brand-850)] border border-[var(--brand-700)]/50 rounded-2xl shadow-lg overflow-hidden">
-          {/* Header gradient bar - forest green */}
-          <div className="h-1.5 bg-gradient-to-r from-[var(--blue-400)] to-[var(--blue-500)]" />
+          <div className="h-1 bg-gradient-to-r from-[var(--blue-400)] to-[var(--blue-500)]" />
+          <div className="p-4 sm:p-6 space-y-4">
 
-          <div className="p-4 sm:p-6 space-y-4 sm:space-y-5">
+            {/* Top row: back + actions */}
             <div className="flex flex-wrap items-center justify-between gap-3">
               <button
                 onClick={() => navigate('/projects')}
                 className="inline-flex items-center text-sm font-medium text-[var(--text-muted)] hover:text-[var(--blue-400)] transition-colors"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Projects
+                Projects
               </button>
-              <div className="flex items-center gap-2 sm:gap-3">
-                <Button variant="outline" onClick={() => goToDraft('overview')} className="text-xs sm:text-sm px-2 sm:px-4 border-[var(--brand-700)] text-[var(--text-muted)] hover:border-[var(--blue-400)]/50 hover:text-[var(--blue-400)]">
-                  <span className="hidden sm:inline">Open </span>Draft
+              <div className="flex items-center gap-2">
+                <Button variant="outline" onClick={() => goToDraft('overview')}
+                  className="text-xs px-3 border-[var(--brand-700)] text-[var(--text-muted)] hover:border-[var(--blue-400)]/50 hover:text-[var(--blue-400)]">
+                  Draft
+                </Button>
+                <Button variant="outline"
+                  onClick={() => navigate(`/projects/${project.project_id || project.id}/governance`)}
+                  className="text-xs px-3 border-[var(--brand-700)] text-[var(--text-muted)] hover:border-[var(--blue-400)]/50 hover:text-[var(--blue-400)]">
+                  Governance
+                </Button>
+                <Button variant="outline"
+                  onClick={() => navigate(`/projects/${project.project_id || project.id}/updates`)}
+                  className="text-xs px-3 border-[var(--brand-700)] text-[var(--text-muted)] hover:border-[var(--blue-400)]/50 hover:text-[var(--blue-400)]">
+                  Updates
                 </Button>
                 <Button
-                  className="bg-gradient-to-r from-[var(--blue-400)] to-[var(--blue-500)] hover:from-[var(--blue-300)] hover:to-[var(--blue-400)] text-[var(--brand-900)] font-semibold shadow-lg shadow-[var(--blue-400)]/20 text-xs sm:text-sm px-2 sm:px-4"
+                  className="bg-gradient-to-r from-[var(--blue-400)] to-[var(--blue-500)] text-[var(--brand-900)] font-semibold text-xs px-4 shadow-lg shadow-[var(--blue-400)]/20"
                   onClick={() => navigate(`/projects/${project.project_id || project.id}/phases/${phaseConfigs[0]?.id}`)}
                 >
-                  <span className="hidden sm:inline">Continue </span>Planning
+                  Continue Planning
                 </Button>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div className="space-y-2">
+            {/* Project name + description */}
+            <div>
+              <div className="flex flex-wrap items-center gap-2 mb-1">
                 <h1 className="text-xl sm:text-2xl font-bold text-[var(--text-primary)]">{project.name}</h1>
-                {project.description && (
-                  <p className="text-[var(--text-muted)] max-w-2xl">{project.description}</p>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-2 items-center">
-                {/* Health Score Badge */}
-                {(() => {
-                  const phaseKeys = ['planning','feasibility_study','requirements_gathering','validation','design','development','tasks','cost_benefit','risks','summary'];
-                  const done = phaseKeys.filter(k => (phaseStatus[k] || '').toLowerCase() === 'completed').length;
-                  const score = Math.round((done / phaseKeys.length) * 100);
-                  const scoreColor = score >= 70 ? '#1A6FD4' : score >= 40 ? '#F97316' : '#4a6070';
-                  const scoreBg = score >= 70 ? 'rgba(26,111,212,0.15)' : score >= 40 ? 'rgba(249,115,22,0.12)' : 'rgba(74,96,112,0.15)';
-                  return (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: '999px', background: scoreBg, border: `1px solid ${scoreColor}44` }}>
-                      <div style={{ width: '28px', height: '28px', borderRadius: '50%', border: `2px solid ${scoreColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <span style={{ fontSize: '9px', fontWeight: 800, color: scoreColor, fontFamily: 'Syne, sans-serif' }}>{score}%</span>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: '11px', fontWeight: 700, color: scoreColor, fontFamily: 'Syne, sans-serif', lineHeight: 1 }}>Health Score</div>
-                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>{done}/10 phases</div>
-                      </div>
-                    </div>
-                  );
-                })()}
-                <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-[var(--blue-400)]/20 text-[var(--blue-400)] border border-[var(--blue-400)]/30 text-xs font-semibold uppercase tracking-wide">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-[var(--blue-400)]/20 text-[var(--blue-400)] border border-[var(--blue-400)]/30 text-xs font-semibold uppercase tracking-wide">
                   {project.status}
                 </span>
-                <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-[var(--brand-700)]/50 text-[var(--text-muted)] border border-[var(--brand-700)] text-xs font-medium">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-[var(--brand-700)]/50 text-[var(--text-muted)] border border-[var(--brand-700)] text-xs font-medium">
                   {project.template_type.replace('_', ' ')}
                 </span>
-                <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-[var(--blue-300)]/10 text-[var(--blue-300)] border border-[var(--blue-300)]/30 text-xs font-medium">
-                  {project.owner_name || 'Unassigned'}
-                </span>
+              </div>
+              {project.description && (
+                <p className="text-sm text-[var(--text-muted)] max-w-3xl">{project.description}</p>
+              )}
+            </div>
+
+            {/* Stats bar */}
+            <div className="flex flex-wrap items-stretch gap-3">
+              {[
+                { label: 'Requirements', value: requirements.length, phase: 'requirements_gathering' },
+                { label: 'Tasks',         value: tasks.length,        phase: 'tasks' },
+                { label: 'Artifacts',     value: artifacts.length,    phase: 'summary' },
+                { label: 'Est. Hours',    value: totalHours > 0 ? `${totalHours.toFixed(0)}h` : '—', phase: 'tasks' },
+              ].map((m) => (
+                <button
+                  key={m.label}
+                  onClick={() => navigate(`/projects/${project.project_id || project.id}/phases/${m.phase}`)}
+                  className="flex flex-col items-center justify-center min-w-[80px] px-4 py-3 rounded-xl bg-[var(--brand-800)] border border-[var(--brand-700)] hover:border-[var(--blue-400)]/50 hover:bg-[var(--brand-750)] transition-all group"
+                >
+                  <span className="text-xl font-bold text-[var(--text-primary)] group-hover:text-[var(--blue-400)] transition-colors leading-tight">{m.value}</span>
+                  <span className="text-xs text-[var(--text-muted)] group-hover:text-[var(--blue-400)]/70 transition-colors">{m.label}</span>
+                </button>
+              ))}
+
+              {/* Health score */}
+              <div style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 16px', borderRadius:'12px', background:'var(--brand-800)', border:`1px solid ${healthColor}33` }}>
+                <div style={{ width:'36px', height:'36px', borderRadius:'50%', border:`2px solid ${healthColor}`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                  <span style={{ fontSize:'10px', fontWeight:800, color:healthColor }}>{healthScore}%</span>
+                </div>
+                <div>
+                  <div style={{ fontSize:'12px', fontWeight:700, color:healthColor, lineHeight:1 }}>Health</div>
+                  <div style={{ fontSize:'11px', color:'var(--text-muted)' }}>{doneCount}/10 phases</div>
+                </div>
+              </div>
+
+              {/* Owner pill */}
+              <div className="flex items-center px-4 py-3 rounded-xl bg-[var(--brand-800)] border border-[var(--brand-700)]">
+                <div>
+                  <div className="text-xs text-[var(--text-muted)]">Owner</div>
+                  <div className="text-sm font-medium text-[var(--text-primary)]">{project.owner_name || 'Unassigned'}</div>
+                </div>
+              </div>
+
+              {/* Dates */}
+              <div className="flex items-center gap-4 px-4 py-3 rounded-xl bg-[var(--brand-800)] border border-[var(--brand-700)]">
+                <div>
+                  <div className="text-xs text-[var(--text-muted)]">Created</div>
+                  <div className="text-sm font-medium text-[var(--text-primary)]">{formatDate(project.created_at)}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-[var(--text-muted)]">Updated</div>
+                  <div className="text-sm font-medium text-[var(--text-primary)]">{formatDate(project.updated_at)}</div>
+                </div>
               </div>
             </div>
 
-            {/* Project-wide progress summary */}
+            {/* Progress bar */}
             <ProjectProgressBar
               projectId={project.project_id || project.id || ''}
               phaseStatus={phaseStatus}
             />
-
-            {/* Workspace Preset Switcher */}
-            <div className="pt-4 border-t border-[var(--brand-700)]/50">
-              <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-3">Workspace Mode</p>
-              <div className="flex flex-wrap items-center gap-2">
-                {workspacePresets.map((preset) => {
-                  const isActive = preset.id === activePreset;
-                  return (
-                    <button
-                      key={preset.id}
-                      onClick={() => handlePresetChange(preset.id)}
-                      disabled={updatingPreset}
-                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                        isActive
-                          ? 'bg-[var(--blue-400)] text-[var(--brand-900)] shadow-lg shadow-[var(--blue-400)]/20'
-                          : 'bg-[var(--brand-750)] text-[var(--text-muted)] hover:bg-[var(--brand-700)] hover:text-[var(--text-primary)] border border-[var(--brand-700)]'
-                      } ${updatingPreset ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                      {preset.label}
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="text-xs text-[var(--text-muted)] mt-2">{presetConfig.description}</p>
-            </div>
           </div>
         </div>
 
-        {/* Main Content Grid */}
-        <div className={`grid gap-4 sm:gap-6 ${showSummaryPanel ? 'lg:grid-cols-[280px_minmax(0,1fr)]' : ''}`}>
-          {showSummaryPanel && (
-            <aside className="space-y-6 side-summary">
-              <div className="bg-[var(--brand-850)] border border-[var(--brand-700)]/50 rounded-2xl p-4 sm:p-6 shadow-lg space-y-4 sm:space-y-6">
-                <div>
-                  <h2 className="text-lg font-bold text-[var(--text-primary)]">Project Summary</h2>
-                  <dl className="mt-4 space-y-3 text-sm text-[var(--text-muted)]">
-                    <div className="flex justify-between">
-                      <span>Status</span>
-                      <span className="font-medium text-[var(--blue-400)]">{project.status}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Type</span>
-                      <span className="font-medium text-[var(--text-primary)]">{project.template_type.replace('_', ' ')}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Owner</span>
-                      <span className="font-medium text-[var(--text-primary)]">{project.owner_name || 'Unassigned'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Created</span>
-                      <span className="font-medium text-[var(--text-primary)]">{formatDate(project.created_at)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Updated</span>
-                      <span className="font-medium text-[var(--text-primary)]">{formatDate(project.updated_at)}</span>
-                    </div>
-                  </dl>
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-[var(--text-muted)] mb-3">Key Metrics</h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    {[
-                      { label: 'Requirements', value: requirements.length, phase: 'requirements_gathering' },
-                      { label: 'Tasks',         value: tasks.length,        phase: 'tasks' },
-                      { label: 'Artifacts',     value: artifacts.length,    phase: 'summary' },
-                      { label: 'Total Hours',   value: totalHours.toFixed(0), phase: 'tasks' },
-                    ].map((metric) => (
-                      <button
-                        key={metric.label}
-                        onClick={() => navigate(`/projects/${project.project_id || project.id}/phases/${metric.phase}`)}
-                        className="rounded-xl border border-[var(--brand-700)] px-3 py-4 bg-[var(--brand-800)] text-center hover:border-[var(--blue-400)]/50 hover:bg-[var(--brand-750)] transition-all cursor-pointer group"
-                      >
-                        <div className="text-2xl font-semibold text-[var(--text-primary)] group-hover:text-[var(--blue-400)] transition-colors">{metric.value}</div>
-                        <div className="text-xs text-[var(--text-muted)] group-hover:text-[var(--blue-400)]/80 transition-colors">{metric.label}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="text-sm text-[var(--text-muted)]">
-                  <p className="mb-2">Need to unlock future workstream?</p>
-                  <span
-                    role="button"
-                    tabIndex={0}
-                    onClick={handleUnlockPhases}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        handleUnlockPhases();
-                      }
-                    }}
-                    className="text-[var(--blue-400)] font-medium hover:text-[var(--blue-300)] cursor-pointer"
-                  >
-                    Unlock all phases
-                  </span>
-                </div>
-              </div>
-
-              <div className="bg-[var(--brand-850)] border border-[var(--brand-700)]/50 rounded-2xl p-6 shadow-lg space-y-3">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-base font-semibold text-[var(--text-primary)]">Project Brief</h2>
-                  <Button variant="outline" size="sm" onClick={() => goToDraft('overview')} className="border-[var(--brand-700)] text-[var(--text-muted)] hover:border-[var(--blue-400)]/50 hover:text-[var(--blue-400)]">
-                    Open Draft
-                  </Button>
-                </div>
-                <p className="text-sm text-[var(--text-muted)] whitespace-pre-wrap">
-                  {project.brief_text || 'No brief provided.'}
-                </p>
-              </div>
-
-              <div className="bg-[var(--brand-850)] border border-[var(--brand-700)]/50 rounded-2xl p-6 shadow-lg space-y-4">
-                <h2 className="text-base font-semibold text-[var(--text-primary)]">Governance &amp; Updates</h2>
-                <p className="text-sm text-[var(--text-muted)]">Manage membership, branching, and development logs.</p>
-                <div className="flex flex-col gap-2">
-                  <Button variant="outline" onClick={() => navigate(`/projects/${project.project_id || project.id}/governance`)} className="border-[var(--brand-700)] text-[var(--text-muted)] hover:border-[var(--blue-400)]/50 hover:text-[var(--blue-400)]">
-                    Governance hub
-                  </Button>
-                  <Button onClick={() => navigate(`/projects/${project.project_id || project.id}/updates`)} className="bg-gradient-to-r from-[var(--blue-400)] to-[var(--blue-500)] text-[var(--brand-900)] font-semibold">
-                    Development updates
-                  </Button>
-                  
-                  {/* Scaffolding Button */}
-                  {(requirements.length > 0 || tasks.length > 0) && (
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start text-indigo-700 border-indigo-200 bg-indigo-50 hover:bg-indigo-100 mt-2"
-                      onClick={handleGenerateScaffold}
-                      disabled={isScaffolding}
-                    >
-                      {isScaffolding ? (
-                        <Loader2 className="w-4 h-4 mr-3 shrink-0 animate-spin" />
-                      ) : (
-                        <Terminal className="w-4 h-4 mr-3 shrink-0" />
-                      )}
-                      {isScaffolding ? 'Generating Scaffold...' : 'Generate Scaffold'}
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </aside>
-          )}
-
-          <div className="space-y-4 sm:space-y-6">
-            {/* Phases Section — Kanban Board */}
-            <div className="bg-[var(--brand-850)] border border-[var(--brand-700)]/50 rounded-2xl p-4 sm:p-6 shadow-lg phase-board">
-              <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-                <div>
-                  <h2 className="text-lg sm:text-xl font-semibold text-[var(--text-primary)]">Project Phases</h2>
-                  <p className="text-xs sm:text-sm text-[var(--text-muted)]">
-                    Select a phase to continue — complete them in order for best results.
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={handleExportAllPhases} disabled={!Object.keys(phaseOutputs).length} className="border-[var(--brand-700)] text-[var(--text-muted)] hover:border-[var(--blue-400)]/50 hover:text-[var(--blue-400)]">
-                    Export All (Markdown)
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={handleExportFullProjectPdf}
-                    disabled={!Object.keys(phaseOutputs).length}
-                    className="bg-gradient-to-r from-[var(--blue-400)] to-[var(--blue-500)] text-[var(--brand-900)] font-semibold disabled:opacity-50"
-                  >
-                    Export Full Project (PDF)
-                  </Button>
-                </div>
-              </div>
-
-              <PhaseKanban
-                phases={phaseConfigs}
-                phaseStatus={phaseStatus}
-                phaseOutputs={phaseOutputs}
-                onPhaseClick={handlePhaseClick}
-              />
-
-              {/* Legend */}
-              <div className="flex flex-wrap items-center gap-4 mt-5 pt-4 border-t border-[var(--brand-700)]/30">
-                {[
-                  { color: '#1A6FD4', label: 'Completed' },
-                  { color: '#F97316', label: 'In Progress' },
-                  { color: '#3d8fe0', label: 'Ready' },
-                  { color: '#4a6070', label: 'Locked' },
-                  { color: '#F97316', label: '● output ready', dot: true },
-                ].map(({ color, label, dot }) => (
-                  <div key={label} className="flex items-center gap-1.5">
-                    {dot
-                      ? <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: color }} />
-                      : <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: color, opacity: 0.7 }} />
-                    }
-                    <span className="text-xs text-[var(--text-muted)]">{label}</span>
-                  </div>
-                ))}
-              </div>
+        {/* ── Phase Board ── */}
+        <div className="bg-[var(--brand-850)] border border-[var(--brand-700)]/50 rounded-2xl p-4 sm:p-6 shadow-lg phase-board">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+            <div>
+              <h2 className="text-lg font-semibold text-[var(--text-primary)]">Project Phases</h2>
+              <p className="text-xs text-[var(--text-muted)] mt-0.5">Click any phase to open it. Complete them in order for best results.</p>
             </div>
-
-            <ProjectActivityTimeline
-              phaseCompletionMeta={phaseCompletionMeta}
-              phaseStatus={phaseStatus}
-              onPhaseClick={handlePhaseClick}
-            />
-
-            <div className="grid gap-4">
-              <div className="bg-[var(--brand-850)] border border-[var(--brand-700)]/50 rounded-2xl p-6 shadow-lg">
-                <h2 className="text-base font-semibold text-[var(--text-primary)] mb-4">Project Details</h2>
-                <dl className="space-y-3 text-sm text-[var(--text-muted)]">
-                  <div className="flex justify-between">
-                    <span>Type</span>
-                    <span className="font-medium text-[var(--text-primary)]">{project.template_type.replace('_', ' ')}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Owner</span>
-                    <span className="font-medium text-[var(--text-primary)]">{project.owner_name || 'Unassigned'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Created</span>
-                    <span className="font-medium text-[var(--text-primary)]">{formatDate(project.created_at)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Last Updated</span>
-                    <span className="font-medium text-[var(--text-primary)]">{formatDate(project.updated_at)}</span>
-                  </div>
-                </dl>
-              </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={handleUnlockPhases}
+                className="text-xs px-3 py-1.5 rounded-lg border border-[var(--brand-700)] text-[var(--text-muted)] hover:border-[var(--blue-400)]/50 hover:text-[var(--blue-400)] transition-all"
+              >
+                Unlock all
+              </button>
+              <Button variant="outline" size="sm" onClick={handleExportAllPhases} disabled={!Object.keys(phaseOutputs).length}
+                className="border-[var(--brand-700)] text-[var(--text-muted)] hover:border-[var(--blue-400)]/50 hover:text-[var(--blue-400)] text-xs">
+                Export MD
+              </Button>
+              <Button size="sm" onClick={handleExportFullProjectPdf} disabled={!Object.keys(phaseOutputs).length}
+                className="bg-gradient-to-r from-[var(--blue-400)] to-[var(--blue-500)] text-[var(--brand-900)] font-semibold text-xs disabled:opacity-50">
+                Export PDF
+              </Button>
             </div>
           </div>
+
+          <PhaseKanban
+            phases={phaseConfigs}
+            phaseStatus={phaseStatus}
+            phaseOutputs={phaseOutputs}
+            onPhaseClick={handlePhaseClick}
+          />
+
+          <div className="flex flex-wrap items-center gap-4 mt-4 pt-4 border-t border-[var(--brand-700)]/30">
+            {[
+              { color: '#1A6FD4', label: 'Completed' },
+              { color: '#F97316', label: 'In Progress' },
+              { color: '#3d8fe0', label: 'Ready' },
+              { color: '#4a6070', label: 'Locked' },
+              { color: '#F97316', label: '● Output ready', dot: true },
+            ].map(({ color, label, dot }) => (
+              <div key={label} className="flex items-center gap-1.5">
+                {dot
+                  ? <div style={{ width:'8px', height:'8px', borderRadius:'50%', background:color }} />
+                  : <div style={{ width:'12px', height:'12px', borderRadius:'3px', background:color, opacity:0.7 }} />
+                }
+                <span className="text-xs text-[var(--text-muted)]">{label}</span>
+              </div>
+            ))}
+          </div>
         </div>
+
+        {/* ── Scaffold quick-action (shown once requirements/tasks exist) ── */}
+        {(requirements.length > 0 || tasks.length > 0) && (
+          <div className="bg-[var(--brand-850)] border border-[var(--brand-700)]/50 rounded-2xl p-4 sm:p-6 shadow-lg flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h3 className="text-sm font-semibold text-[var(--text-primary)]">Code Scaffold</h3>
+              <p className="text-xs text-[var(--text-muted)] mt-0.5">Generate a starter folder structure and boilerplate from your project plan.</p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={handleGenerateScaffold}
+              disabled={isScaffolding}
+              className="border-[var(--brand-700)] text-[var(--text-muted)] hover:border-[var(--blue-400)]/50 hover:text-[var(--blue-400)] text-sm"
+            >
+              {isScaffolding
+                ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Generating…</>
+                : <><Terminal className="w-4 h-4 mr-2" />Generate Scaffold</>
+              }
+            </Button>
+          </div>
+        )}
+
+        {/* ── Activity Timeline ── */}
+        <ProjectActivityTimeline
+          phaseCompletionMeta={phaseCompletionMeta}
+          phaseStatus={phaseStatus}
+          onPhaseClick={handlePhaseClick}
+        />
       </div>
 
-      {/* AI Agents floating panel */}
       {project && (
         <AIAgentsPanel
           projectId={(project.project_id || project.id) ?? ''}
