@@ -23,6 +23,10 @@ import {
   Circle,
   ArrowLeft,
   FolderKanban,
+  ChevronUp,
+  ChevronDown,
+  ExternalLink,
+  ChevronsUpDown,
 } from 'lucide-react';
 
 interface AnalyticsData {
@@ -37,6 +41,15 @@ interface AnalyticsData {
   weeklyActivity: { day: string; count: number }[];
   phaseBreakdown: { name: string; progress: number; status: string; color: string }[];
   totalProjects?: number;
+}
+
+interface ProjectBreakdownRow {
+  id: string;
+  name: string;
+  completionPct: number;
+  phasesCompleted: number;
+  requirementsCount: number;
+  aiRunCount: number;
 }
 
 const PHASE_COLORS: Record<string, string> = {
@@ -73,6 +86,9 @@ export const AnalyticsDashboardPage: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
+  const [projectsBreakdown, setProjectsBreakdown] = useState<ProjectBreakdownRow[]>([]);
+  const [sortBy, setSortBy] = useState<'name' | 'completion' | 'phases' | 'requirements' | 'ai'>('completion');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -127,6 +143,7 @@ export const AnalyticsDashboardPage: React.FC = () => {
           // ── Global mode: aggregate across all projects ──
           totalPhasesCount = projects.length * 10;
           const allActivityItems: any[] = [];
+          const breakdownRows: ProjectBreakdownRow[] = [];
 
           phaseBreakdown = PHASE_META.map((pm) => {
             let phaseCompleted = 0;
@@ -150,14 +167,27 @@ export const AnalyticsDashboardPage: React.FC = () => {
           for (const proj of projects) {
             const pid = proj.id || proj.project_id;
             if (!pid) continue;
+
+            const projPhaseStatus: Record<string, string> = proj.phase_status || {};
+            const projPhasesCompleted = PHASE_META.filter(
+              (pm) => (projPhaseStatus[pm.key] || '').toLowerCase() === 'completed'
+            ).length;
+            const projCompletionPct = Math.round((projPhasesCompleted / 10) * 100);
+
+            let projReqCount = 0;
+            let projAiCount = 0;
+
             try {
               const reqs = await api.getRequirements(pid);
+              projReqCount = reqs.length;
               totalReqs += reqs.length;
               completedReqs += reqs.filter((r: any) => r.status === 'approved' || r.status === 'implemented').length;
             } catch { /* ignore */ }
             try {
               const aiRuns = await api.getAiRuns(pid, 200);
-              aiGens += aiRuns.filter((run: any) => (run.status || '').toLowerCase() === 'completed').length || aiRuns.length;
+              const projAiCompleted = aiRuns.filter((run: any) => (run.status || '').toLowerCase() === 'completed').length;
+              projAiCount = projAiCompleted || aiRuns.length;
+              aiGens += projAiCount;
               try {
                 const items = await api.getActivity(pid, 200);
                 allActivityItems.push(...items);
@@ -165,7 +195,18 @@ export const AnalyticsDashboardPage: React.FC = () => {
                 allActivityItems.push(...aiRuns);
               }
             } catch { /* ignore */ }
+
+            breakdownRows.push({
+              id: pid,
+              name: proj.name || 'Untitled project',
+              completionPct: projCompletionPct,
+              phasesCompleted: projPhasesCompleted,
+              requirementsCount: projReqCount,
+              aiRunCount: projAiCount,
+            });
           }
+
+          setProjectsBreakdown(breakdownRows);
 
           weeklyActivity = Array.from({ length: 7 }).map((_, i) => {
             const dayStart = new Date(weekStart);
@@ -577,6 +618,157 @@ export const AnalyticsDashboardPage: React.FC = () => {
               ))}
             </div>
           </div>
+
+          {/* Projects Breakdown Table — global mode only */}
+          {isGlobal && projectsBreakdown.length > 0 && (() => {
+            const handleSort = (col: typeof sortBy) => {
+              if (sortBy === col) {
+                setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+              } else {
+                setSortBy(col);
+                setSortDir(col === 'name' ? 'asc' : 'desc');
+              }
+            };
+
+            const sorted = [...projectsBreakdown].sort((a, b) => {
+              let cmp = 0;
+              if (sortBy === 'name') cmp = a.name.localeCompare(b.name);
+              else if (sortBy === 'completion') cmp = a.completionPct - b.completionPct;
+              else if (sortBy === 'phases') cmp = a.phasesCompleted - b.phasesCompleted;
+              else if (sortBy === 'requirements') cmp = a.requirementsCount - b.requirementsCount;
+              else if (sortBy === 'ai') cmp = a.aiRunCount - b.aiRunCount;
+              return sortDir === 'asc' ? cmp : -cmp;
+            });
+
+            const SortIcon = ({ col }: { col: typeof sortBy }) => {
+              if (sortBy !== col) return <ChevronsUpDown className="w-3.5 h-3.5 opacity-40" />;
+              return sortDir === 'asc'
+                ? <ChevronUp className="w-3.5 h-3.5" style={{ color: '#D4A017' }} />
+                : <ChevronDown className="w-3.5 h-3.5" style={{ color: '#D4A017' }} />;
+            };
+
+            const thBase: React.CSSProperties = {
+              padding: '10px 14px',
+              fontSize: '11px',
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              color: 'var(--text-muted)',
+              cursor: 'pointer',
+              userSelect: 'none',
+              whiteSpace: 'nowrap',
+              background: 'rgba(26,46,69,0.35)',
+            };
+
+            return (
+              <div className="mt-6 p-6" style={cardStyle}>
+                <div className="flex items-center gap-3 mb-5">
+                  <FolderKanban className="w-5 h-5" style={{ color: '#D4A017' }} />
+                  <h3 className="text-lg font-bold text-[var(--text-primary)]">Projects Breakdown</h3>
+                  <span className="ml-auto text-xs text-[var(--text-muted)]">{projectsBreakdown.length} project{projectsBreakdown.length !== 1 ? 's' : ''}</span>
+                </div>
+
+                <div className="overflow-x-auto rounded-xl" style={{ border: '1px solid rgba(61,36,18,0.5)' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid rgba(61,36,18,0.4)' }}>
+                        <th style={{ ...thBase, textAlign: 'left' }} onClick={() => handleSort('name')}>
+                          <span className="flex items-center gap-1.5">Project <SortIcon col="name" /></span>
+                        </th>
+                        <th style={{ ...thBase, textAlign: 'center' }} onClick={() => handleSort('completion')}>
+                          <span className="flex items-center justify-center gap-1.5">Completion <SortIcon col="completion" /></span>
+                        </th>
+                        <th style={{ ...thBase, textAlign: 'center' }} onClick={() => handleSort('phases')}>
+                          <span className="flex items-center justify-center gap-1.5">Phases <SortIcon col="phases" /></span>
+                        </th>
+                        <th style={{ ...thBase, textAlign: 'center' }} onClick={() => handleSort('requirements')}>
+                          <span className="flex items-center justify-center gap-1.5">Requirements <SortIcon col="requirements" /></span>
+                        </th>
+                        <th style={{ ...thBase, textAlign: 'center' }} onClick={() => handleSort('ai')}>
+                          <span className="flex items-center justify-center gap-1.5">AI Runs <SortIcon col="ai" /></span>
+                        </th>
+                        <th style={{ ...thBase, textAlign: 'center', cursor: 'default' }}>View</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sorted.map((row, i) => {
+                        const barColor = row.completionPct >= 70 ? '#D4A017' : row.completionPct >= 40 ? '#c8870f' : '#5c3820';
+                        const isEven = i % 2 === 0;
+                        const rowBg = isEven ? 'transparent' : 'rgba(26,16,8,0.3)';
+                        return (
+                          <tr
+                            key={row.id}
+                            onClick={() => navigate(`/projects/${row.id}`)}
+                            style={{
+                              background: rowBg,
+                              cursor: 'pointer',
+                              transition: 'background 0.15s',
+                              borderBottom: i < sorted.length - 1 ? '1px solid rgba(61,36,18,0.25)' : 'none',
+                            }}
+                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(212,160,23,0.07)')}
+                            onMouseLeave={e => (e.currentTarget.style.background = rowBg)}
+                          >
+                            {/* Project name */}
+                            <td style={{ padding: '12px 14px', maxWidth: '220px' }}>
+                              <span
+                                className="font-medium text-[var(--text-primary)] truncate block"
+                                style={{ fontSize: '13px', maxWidth: '200px' }}
+                                title={row.name}
+                              >
+                                {row.name}
+                              </span>
+                            </td>
+
+                            {/* Completion % with mini bar */}
+                            <td style={{ padding: '12px 14px', textAlign: 'center', minWidth: '120px' }}>
+                              <div className="flex flex-col items-center gap-1">
+                                <span style={{ fontSize: '13px', fontWeight: 700, color: barColor }}>{row.completionPct}%</span>
+                                <div style={{ width: '80px', height: '5px', borderRadius: '3px', background: 'rgba(26,46,69,0.5)', overflow: 'hidden' }}>
+                                  <div style={{ height: '100%', width: `${row.completionPct}%`, background: barColor, borderRadius: '3px', transition: 'width 0.4s ease' }} />
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Phases completed / 10 */}
+                            <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                              <span style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: 600 }}>
+                                {row.phasesCompleted}
+                                <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>/10</span>
+                              </span>
+                            </td>
+
+                            {/* Requirements */}
+                            <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                              <span style={{ fontSize: '13px', color: 'var(--text-primary)' }}>{row.requirementsCount}</span>
+                            </td>
+
+                            {/* AI Runs */}
+                            <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                              <span style={{ fontSize: '13px', color: 'var(--text-primary)' }}>{row.aiRunCount}</span>
+                            </td>
+
+                            {/* Quick link */}
+                            <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                              <div className="flex justify-center">
+                                <button
+                                  onClick={e => { e.stopPropagation(); navigate(`/projects/${row.id}`); }}
+                                  className="p-1.5 rounded-lg transition-all hover:scale-110"
+                                  style={{ background: 'rgba(212,160,23,0.1)', border: '1px solid rgba(212,160,23,0.25)', color: '#D4A017' }}
+                                  title={`Open ${row.name}`}
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Cross-project Activity Timeline */}
           <div className="mt-6">
