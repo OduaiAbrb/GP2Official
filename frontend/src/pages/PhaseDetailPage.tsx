@@ -2978,7 +2978,7 @@ export const PhaseDetailPage: React.FC = () => {
                             <th className="px-2 py-2 text-left font-semibold text-gray-300 border-b border-[var(--brand-700)]">Owner</th>
                           </tr>
                         </thead>
-                        <tbody>
+                        <tbody className="stagger-container">
                           {parsedRisks.riskRows.map((row, idx) => {
                             const impact = row.impact.toLowerCase();
                             const likelihood = row.likelihood.toLowerCase();
@@ -3890,8 +3890,8 @@ export const PhaseDetailPage: React.FC = () => {
             </Card>
 
             {/* Cost Overview Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card style={{ background: 'var(--brand-800)', border: '1px solid rgba(26,111,212,0.25)' }}>
+            <div className="stagger-container grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card className="phase-card-hover" style={{ background: 'var(--brand-800)', border: '1px solid rgba(26,111,212,0.25)' }}>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg" style={{ background: 'rgba(26,111,212,0.15)' }}>
@@ -3904,7 +3904,7 @@ export const PhaseDetailPage: React.FC = () => {
                   </div>
                 </CardContent>
               </Card>
-              <Card style={{ background: 'var(--brand-800)', border: '1px solid rgba(26,111,212,0.25)' }}>
+              <Card className="phase-card-hover" style={{ background: 'var(--brand-800)', border: '1px solid rgba(26,111,212,0.25)' }}>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg" style={{ background: 'rgba(26,111,212,0.15)' }}>
@@ -3917,7 +3917,7 @@ export const PhaseDetailPage: React.FC = () => {
                   </div>
                 </CardContent>
               </Card>
-              <Card style={{ background: 'var(--brand-800)', border: '1px solid rgba(249,115,22,0.25)' }}>
+              <Card className="phase-card-hover" style={{ background: 'var(--brand-800)', border: '1px solid rgba(249,115,22,0.25)' }}>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg" style={{ background: 'rgba(249,115,22,0.12)' }}>
@@ -3930,7 +3930,7 @@ export const PhaseDetailPage: React.FC = () => {
                   </div>
                 </CardContent>
               </Card>
-              <Card style={{ background: 'var(--brand-800)', border: '1px solid rgba(26,111,212,0.25)' }}>
+              <Card className="phase-card-hover" style={{ background: 'var(--brand-800)', border: '1px solid rgba(26,111,212,0.25)' }}>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg" style={{ background: 'rgba(26,111,212,0.15)' }}>
