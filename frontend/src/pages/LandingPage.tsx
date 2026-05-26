@@ -1058,6 +1058,19 @@ const OrbitalRing: React.FC<{
 }> = ({ reducedMotion }) => {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
+  // Track actual ring rotation angle so label/card positions stay correct
+  const [ringAngleDeg, setRingAngleDeg] = useState(0);
+  const startTimeRef = useRef<number>(Date.now());
+
+  useEffect(() => {
+    if (reducedMotion) return;
+    const intervalId = setInterval(() => {
+      const elapsed = (Date.now() - startTimeRef.current) / 1000;
+      setRingAngleDeg(((elapsed / 45) * 360) % 360);
+    }, 200);
+    return () => clearInterval(intervalId);
+  }, [reducedMotion]);
+
   const SIZE = 560;
   const R = 228;
   const CX = SIZE / 2;
@@ -1129,17 +1142,22 @@ const OrbitalRing: React.FC<{
       >
       {PHASES.map((phase, i) => {
         const PhaseIcon = phase.icon;
-        const angle = ((i / PHASES.length) * 360 - 90) * Math.PI / 180;
+        const staticAngleDeg = (i / PHASES.length) * 360 - 90;
+        const angle = staticAngleDeg * Math.PI / 180;
         const nx = CX + R * Math.cos(angle);
         const ny = CY + R * Math.sin(angle);
+        // Effective position after ring rotation — used for label/card placement
+        const effectiveAngleRad = (staticAngleDeg + ringAngleDeg) * Math.PI / 180;
+        const effectiveNx = CX + R * Math.cos(effectiveAngleRad);
+        const effectiveNy = CY + R * Math.sin(effectiveAngleRad);
         const isOrange = i >= 5;
         const accent = isOrange ? '#F97316' : '#3d8fe0';
         const darkAccent = isOrange ? '#cc4900' : '#1452a0';
         const isHov = hoveredIdx === i;
         const isSel = selectedIdx === i;
         const NODE = 44;
-        const inBottom = ny > CY + 30;
-        const tipX = nx < CX - 70 ? '0%' : nx > CX + 70 ? '-100%' : '-50%';
+        const inBottom = effectiveNy > CY + 30;
+        const tipX = effectiveNx < CX - 70 ? '0%' : effectiveNx > CX + 70 ? '-100%' : '-50%';
 
         return (
           <div
