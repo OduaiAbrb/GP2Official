@@ -549,6 +549,7 @@ export const PhaseDetailPage: React.FC = () => {
   // Copy-to-clipboard helper
   const [copied, setCopied] = useState(false);
   const [isMarkingComplete, setIsMarkingComplete] = useState(false);
+  const [justCompleted, setJustCompleted] = useState(false);
   const [editNoteDialogOpen, setEditNoteDialogOpen] = useState(false);
   const [editNoteValue, setEditNoteValue] = useState('');
   const [isSavingEditedNote, setIsSavingEditedNote] = useState(false);
@@ -616,6 +617,8 @@ export const PhaseDetailPage: React.FC = () => {
       toastSuccess(`${phaseConfig?.title || 'Phase'} marked as complete`);
       setCompletionDialogOpen(false);
       setCompletionNotes('');
+      setJustCompleted(true);
+      setTimeout(() => setJustCompleted(false), 1200);
     } catch (err) {
       console.error('Failed to mark phase complete', err);
       toastError('Failed to mark phase as complete');
@@ -1855,7 +1858,14 @@ export const PhaseDetailPage: React.FC = () => {
             <div className="space-y-5">
               {/* Phase Header */}
               <div className="rounded-2xl overflow-hidden shadow-lg no-print" style={{ background: 'var(--brand-850)', border: `1px solid ${phaseAccentColor}30` }}>
-                <div className="h-1" style={{ background: `linear-gradient(to right, ${phaseAccentColor}, ${phaseAccentColor}88)` }} />
+                <div
+                  className={justCompleted ? 'animate-accent-bar-shimmer' : ''}
+                  style={
+                    justCompleted
+                      ? { height: '4px', '--shimmer-from': phaseAccentColor, '--shimmer-to': `${phaseAccentColor}88` } as React.CSSProperties
+                      : { height: '4px', background: `linear-gradient(to right, ${phaseAccentColor}, ${phaseAccentColor}88)` }
+                  }
+                />
                 <div className="p-5 sm:p-6">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="flex items-center gap-4">
@@ -1921,10 +1931,12 @@ export const PhaseDetailPage: React.FC = () => {
                           Mark Complete
                         </Button>
                       )}
-                      <span className="px-3 py-1.5 rounded-full text-xs font-semibold"
+                      <span
+                        key={justCompleted ? 'completing' : 'stable'}
+                        className={`px-3 py-1.5 rounded-full text-xs font-semibold${justCompleted && status === 'completed' ? ' animate-completion-pop' : ''}`}
                         style={
                           status === 'completed'
-                            ? { background: 'rgba(26,111,212,0.15)', color: 'var(--blue-400)', border: '1px solid rgba(26,111,212,0.3)' }
+                            ? { background: 'rgba(212,160,23,0.18)', color: '#D4A017', border: '1px solid rgba(212,160,23,0.45)' }
                             : status === 'locked'
                               ? { background: 'rgba(26,46,69,0.15)', color: 'var(--text-muted)', border: '1px solid rgba(26,46,69,0.3)' }
                               : { background: `${phaseAccentColor}22`, color: phaseAccentColor, border: `1px solid ${phaseAccentColor}44` }
