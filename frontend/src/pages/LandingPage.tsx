@@ -363,9 +363,10 @@ const SplashScreen: React.FC<SplashProps> = ({ onEnter, onViewDocs, onComplete, 
   const [skipped, setSkipped] = useState(false);
 
   useEffect(() => {
-    const delay = reducedMotion ? 200 : 6000;
-    const t = setTimeout(() => onComplete?.(), delay);
-    return () => clearTimeout(t);
+    if (reducedMotion) {
+      const t = setTimeout(() => onComplete?.(), 200);
+      return () => clearTimeout(t);
+    }
   }, [reducedMotion]);
 
   const skip = () => {
@@ -962,13 +963,21 @@ const OrbitalRing: React.FC<{
   onPhaseClick: (phaseId: string) => void;
 }> = ({ reducedMotion, onPhaseClick }) => {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const SIZE = 560;
   const R = 228;
   const CX = SIZE / 2;
   const CY = SIZE / 2;
 
+  const handleNodeClick = (i: number, phaseId: string) => {
+    setSelectedIdx(prev => prev === i ? null : i);
+    onPhaseClick(phaseId);
+  };
+
   return (
-    <div style={{ position: 'relative', width: SIZE, height: SIZE, margin: '0 auto' }}>
+    <div style={{ position: 'relative', width: SIZE, height: SIZE, margin: '0 auto' }}
+      onClick={e => { if (e.target === e.currentTarget) setSelectedIdx(null); }}
+    >
       {/* Orbit guide ring */}
       <div style={{
         position: 'absolute', top: '50%', left: '50%',
@@ -1028,9 +1037,9 @@ const OrbitalRing: React.FC<{
         const accent = isOrange ? '#F97316' : '#3d8fe0';
         const darkAccent = isOrange ? '#cc4900' : '#1452a0';
         const isHov = hoveredIdx === i;
+        const isSel = selectedIdx === i;
         const NODE = 44;
         const inBottom = ny > CY + 30;
-        const inTop = ny < CY - 30;
         const tipX = nx < CX - 70 ? '0%' : nx > CX + 70 ? '-100%' : '-50%';
 
         return (
@@ -1040,31 +1049,33 @@ const OrbitalRing: React.FC<{
               position: 'absolute',
               top: ny, left: nx,
               transform: 'translate(-50%, -50%)',
-              zIndex: 3,
+              zIndex: isSel ? 10 : 3,
             }}
             onMouseEnter={() => setHoveredIdx(i)}
             onMouseLeave={() => setHoveredIdx(null)}
-            onClick={() => onPhaseClick(phase.id)}
+            onClick={() => handleNodeClick(i, phase.id)}
           >
             {/* Node dot */}
             <div style={{
               width: NODE, height: NODE,
               borderRadius: Math.round(NODE * 0.28),
               background: `linear-gradient(135deg, ${accent}, ${darkAccent})`,
-              border: `1.5px solid ${accent}`,
-              boxShadow: isHov
-                ? `0 0 30px ${accent}cc, 0 0 54px ${accent}44, inset 0 0 14px rgba(255,255,255,0.22)`
-                : `0 0 14px ${accent}66, inset 0 0 8px rgba(255,255,255,0.12)`,
+              border: isSel ? `2px solid ${accent}` : `1.5px solid ${accent}`,
+              boxShadow: isSel
+                ? `0 0 40px ${accent}ee, 0 0 70px ${accent}55, inset 0 0 18px rgba(255,255,255,0.28)`
+                : isHov
+                  ? `0 0 30px ${accent}cc, 0 0 54px ${accent}44, inset 0 0 14px rgba(255,255,255,0.22)`
+                  : `0 0 14px ${accent}66, inset 0 0 8px rgba(255,255,255,0.12)`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer',
-              transform: isHov ? 'scale(1.3)' : 'scale(1)',
+              transform: isSel ? 'scale(1.4)' : isHov ? 'scale(1.3)' : 'scale(1)',
               transition: 'transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.22s',
               animation: reducedMotion ? 'none' : `orbPulse ${2.6 + (i % 3) * 0.4}s ease-in-out ${i * 0.22}s infinite`,
             }}>
               <PhaseIcon size={Math.round(NODE * 0.45)} color="#fff" strokeWidth={2.4} />
             </div>
 
-            {/* Phase label — appears on hover */}
+            {/* Phase label — always visible */}
             <div style={{
               position: 'absolute',
               top: inBottom ? 'auto' : '108%',
@@ -1080,31 +1091,43 @@ const OrbitalRing: React.FC<{
               textShadow: `0 0 8px ${accent}99`,
               whiteSpace: 'nowrap',
               pointerEvents: 'none',
-              opacity: isHov ? 1 : 0,
-              transition: 'opacity 0.18s',
+              opacity: 1,
             }}>{phase.label}</div>
 
-            {/* Description tooltip on hover */}
-            {isHov && (
+            {/* Detail card — appears on click, persists until dismissed */}
+            {isSel && (
               <div style={{
                 position: 'absolute',
-                top: inTop ? 'calc(108% + 18px)' : 'auto',
-                bottom: !inTop ? 'calc(108% + 18px)' : 'auto',
+                top: inBottom ? 'auto' : 'calc(100% + 36px)',
+                bottom: inBottom ? 'calc(100% + 36px)' : 'auto',
                 left: '50%', transform: `translateX(${tipX})`,
-                background: 'rgba(8,20,38,0.97)',
-                border: `1px solid ${accent}44`,
-                borderRadius: '10px',
-                padding: '10px 14px',
-                zIndex: 20,
-                pointerEvents: 'none',
-                boxShadow: `0 10px 28px rgba(0,0,0,0.6), 0 0 14px ${accent}1a`,
-                minWidth: '160px',
+                background: 'rgba(6,16,32,0.98)',
+                border: `1.5px solid ${accent}66`,
+                borderRadius: '14px',
+                padding: '16px 18px',
+                zIndex: 30,
+                pointerEvents: 'auto',
+                boxShadow: `0 16px 40px rgba(0,0,0,0.7), 0 0 22px ${accent}25`,
+                minWidth: '200px',
+                maxWidth: '230px',
+                backdropFilter: 'blur(12px)',
+                animation: 'heroSlideUp 0.22s cubic-bezier(0.22,1,0.36,1) forwards',
               }}>
-                <div style={{ fontSize: '11px', color: accent, fontWeight: 700, fontFamily: "'DM Sans', sans-serif", marginBottom: '5px', whiteSpace: 'nowrap' }}>
-                  Phase {i + 1} · {phase.label}
+                {/* Card header */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '7px', background: `linear-gradient(135deg, ${accent}33, ${accent}11)`, border: `1px solid ${accent}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <PhaseIcon size={14} color={accent} strokeWidth={2.2} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '9px', color: accent, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Phase {i + 1}</div>
+                    <div style={{ fontSize: '13px', fontFamily: "'Syne', sans-serif", fontWeight: 700, color: '#E8EDF5', lineHeight: 1.1 }}>{phase.label}</div>
+                  </div>
                 </div>
-                <div style={{ fontSize: '11px', color: '#8899AA', maxWidth: '180px', whiteSpace: 'normal', lineHeight: 1.55, fontFamily: "'DM Sans', sans-serif" }}>
-                  {phase.desc}
+                <div style={{ width: '100%', height: '1px', background: `linear-gradient(90deg, ${accent}44, transparent)`, marginBottom: '10px' }} />
+                <p style={{ fontSize: '12px', color: '#8899AA', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.65, margin: 0 }}>{phase.desc}</p>
+                <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: accent, boxShadow: `0 0 6px ${accent}` }} />
+                  <span style={{ fontSize: '10px', color: accent, fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>AI-powered · Auto-generated</span>
                 </div>
               </div>
             )}
@@ -1444,7 +1467,7 @@ const LandingPage: React.FC = () => {
           </p>
         </HeadingReveal>
 
-        <WaveReveal delay={800} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
+        <WaveReveal delay={0} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
           {[
             {
               step: '01', icon: MessageSquare, title: 'Describe Your Project',
@@ -1505,7 +1528,7 @@ const LandingPage: React.FC = () => {
             </p>
           </HeadingReveal>
 
-          <WaveReveal delay={800} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
+          <WaveReveal delay={0} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
             {PHASES.map((phase, i) => {
               const Icon = phase.icon;
               const isOrange = i >= 5;
@@ -1562,7 +1585,7 @@ const LandingPage: React.FC = () => {
           </p>
         </HeadingReveal>
 
-        <WaveReveal delay={800} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
+        <WaveReveal delay={0} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
           {[
             { icon: FileText,   title: 'SRS Generator',     desc: 'Full software requirements specification with functional and non-functional requirements, acceptance criteria, and edge cases.', color: '#1A6FD4', bg: 'rgba(26,111,212,0.1)' },
             { icon: Users,      title: 'Persona Builder',   desc: 'AI-generated user personas with detailed pain points, goals, motivations, and user stories mapped to your product.', color: '#F97316', bg: 'rgba(249,115,22,0.08)' },
@@ -1612,7 +1635,7 @@ const LandingPage: React.FC = () => {
               See what engineering leaders and product managers are saying.
             </p>
           </HeadingReveal>
-          <WaveReveal delay={800} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
+          <WaveReveal delay={0} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
             {[
               { quote: 'Acorn cut our pre-dev planning phase from 3 weeks to 2 days. The SRS output is genuinely production-quality.', name: 'Sarah M.', role: 'VP Engineering', stars: 5 },
               { quote: 'The AI personas feature alone is worth it. No more guessing who our users are — we have data-backed profiles from day one.', name: 'James K.', role: 'Product Manager', stars: 5 },
@@ -1668,7 +1691,7 @@ const LandingPage: React.FC = () => {
             </p>
           </HeadingReveal>
 
-          <WaveReveal delay={800} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', maxWidth: '900px', margin: '0 auto' }}>
+          <WaveReveal delay={0} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', maxWidth: '900px', margin: '0 auto' }}>
 
             {/* Free Tier */}
             <div style={{
