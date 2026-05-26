@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { Layout } from '@/components/Layout';
@@ -25,6 +25,26 @@ function getHealthColor(score: number) {
   if (score >= 40) return { color: '#F97316', bg: 'rgba(249,115,22,0.12)', label: 'In Progress' };
   return { color: '#1A6FD4', bg: 'rgba(26,111,212,0.15)', label: 'Starting' };
 }
+
+function getCardAccentStyle(status: string): React.CSSProperties {
+  if (status === 'completed') return { '--card-accent-color': '#22c55e', '--card-accent-glow': 'rgba(34,197,94,0.45)' } as React.CSSProperties;
+  if (status === 'active' || status === 'planning') return { '--card-accent-color': '#3d8fe0', '--card-accent-glow': 'rgba(61,143,224,0.45)' } as React.CSSProperties;
+  if (status === 'archived') return { '--card-accent-color': '#F97316', '--card-accent-glow': 'rgba(249,115,22,0.4)' } as React.CSSProperties;
+  return { '--card-accent-color': '#8899AA', '--card-accent-glow': 'rgba(136,153,170,0.3)' } as React.CSSProperties;
+}
+
+const AnimatedProgressBar: React.FC<{ value: number; color: string }> = ({ value, color }) => {
+  const [width, setWidth] = React.useState(0);
+  React.useEffect(() => {
+    const id = requestAnimationFrame(() => setWidth(value));
+    return () => cancelAnimationFrame(id);
+  }, [value]);
+  return (
+    <div style={{ height: '6px', borderRadius: '999px', background: 'rgba(74,96,112,0.25)', overflow: 'hidden' }}>
+      <div className="progress-bar-fill" style={{ width: `${width}%`, height: '100%', borderRadius: '999px', background: color }} />
+    </div>
+  );
+};
 
 const quickActions = [
   { icon: Plus, label: 'New Project', description: 'Start from scratch', action: 'new', color: 'forest' },
@@ -58,10 +78,33 @@ export const ProjectsPage: React.FC = () => {
   const [usage, setUsage] = useState<PlanUsage | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
+  const cardsContainerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     loadAll();
     setIsVisible(true);
   }, []);
+
+  useEffect(() => {
+    if (typeof IntersectionObserver === 'undefined') return;
+    const container = cardsContainerRef.current;
+    if (!container) return;
+    const cards = container.querySelectorAll<Element>('.card-reveal');
+    if (!cards.length) return;
+    const observer = new IntersectionObserver(
+      (entries, obs) => {
+        entries.forEach(e => {
+          if (e.isIntersecting) {
+            (e.target as HTMLElement).classList.add('is-revealed');
+            obs.unobserve(e.target);
+          }
+        });
+      },
+      { threshold: 0.08, rootMargin: '0px 0px -32px 0px' },
+    );
+    cards.forEach(card => observer.observe(card));
+    return () => observer.disconnect();
+  }, [projects, archived, tab, searchQuery, viewMode]);
 
   // Sync tab to URL
   useEffect(() => {
@@ -219,7 +262,7 @@ export const ProjectsPage: React.FC = () => {
                 Your AI-powered SDLC workspace
               </p>
             </div>
-            <button onClick={handleNewProject} className="btn-primary group" data-testid="new-project-btn">
+            <button onClick={handleNewProject} className="btn-primary btn-new-shimmer group" data-testid="new-project-btn">
               <Plus className="w-5 h-5" />
               New Project
               <ArrowRight className="w-4 h-4 opacity-0 -ml-2 group-hover:opacity-100 group-hover:ml-0 transition-all duration-300" />
@@ -508,7 +551,7 @@ export const ProjectsPage: React.FC = () => {
         ) : (
           <div className={`transition-all duration-700 delay-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             {viewMode === 'grid' ? (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div ref={cardsContainerRef} className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {filteredProjects.map((project, index) => {
                   const projectId = project.id || project.project_id || '';
                   const statusConfig = getStatusConfig(project.status);
@@ -521,15 +564,19 @@ export const ProjectsPage: React.FC = () => {
                   return (
                     <div
                       key={projectId}
-                      className="group relative card p-5 cursor-pointer animate-reveal-up"
+                      className="group relative card card-accent-top p-5 cursor-pointer card-reveal"
                       onClick={() => navigate(`/projects/${projectId}`)}
-                      style={{ animationDelay: `${index * 60}ms`, opacity: isArchivedCard ? 0.85 : 1 }}
+                      style={{ '--card-i': index, opacity: isArchivedCard ? 0.85 : 1, ...getCardAccentStyle(project.status) } as React.CSSProperties}
                       data-testid={`project-card-${projectId}`}
                     >
                       {/* Header row */}
                       <div className="flex items-center justify-between mb-3">
                         <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${statusConfig.bgColor} ${statusConfig.color} border ${statusConfig.borderColor}`}>
-                          <StatusIcon className="w-3 h-3" />
+                          {(project.status === 'active' || project.status === 'planning') ? (
+                            <span className="status-pulse-dot" />
+                          ) : (
+                            <StatusIcon className="w-3 h-3" />
+                          )}
                           {statusConfig.label}
                         </div>
                         <button
@@ -561,13 +608,10 @@ export const ProjectsPage: React.FC = () => {
                             {healthScore}%
                           </span>
                         </div>
-                        <div style={{ height: '6px', borderRadius: '999px', background: 'rgba(74,96,112,0.25)', overflow: 'hidden' }}>
-                          <div style={{
-                            width: `${healthScore}%`, height: '100%', borderRadius: '999px',
-                            background: healthScore >= 70 ? '#22c55e' : healthScore >= 40 ? '#F97316' : '#1A6FD4',
-                            transition: 'width 600ms ease',
-                          }} />
-                        </div>
+                        <AnimatedProgressBar
+                          value={healthScore}
+                          color={healthScore >= 70 ? '#22c55e' : healthScore >= 40 ? '#F97316' : '#1A6FD4'}
+                        />
                       </div>
 
                       {/* Meta row */}
@@ -585,7 +629,7 @@ export const ProjectsPage: React.FC = () => {
                       {/* Dropdown menu */}
                       {activeMenu === projectId && (
                         <div
-                          className="absolute top-12 right-3 w-44 bg-[var(--brand-800)] border border-[var(--brand-700)]/60 rounded-xl shadow-xl overflow-hidden z-10 animate-reveal-down"
+                          className="absolute top-12 right-3 w-44 bg-[var(--brand-800)] border border-[var(--brand-700)]/60 rounded-xl shadow-xl overflow-hidden z-10 menu-spring"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <button
@@ -624,7 +668,7 @@ export const ProjectsPage: React.FC = () => {
                 })}
               </div>
             ) : (
-              <div className="space-y-2">
+              <div ref={cardsContainerRef} className="space-y-2">
                 {filteredProjects.map((project, index) => {
                   const projectId = project.id || project.project_id || '';
                   const statusConfig = getStatusConfig(project.status);
@@ -634,9 +678,9 @@ export const ProjectsPage: React.FC = () => {
                   return (
                     <div
                       key={projectId}
-                      className="group flex items-center gap-5 p-4 rounded-xl bg-[var(--brand-850)] border border-[var(--brand-700)]/50 hover:border-[var(--blue-400)]/30 cursor-pointer transition-all duration-300 animate-reveal-up"
+                      className="group flex items-center gap-5 p-4 rounded-xl bg-[var(--brand-850)] border border-[var(--brand-700)]/50 hover:border-[var(--blue-400)]/30 cursor-pointer transition-all duration-300 card-reveal"
                       onClick={() => navigate(`/projects/${projectId}`)}
-                      style={{ animationDelay: `${index * 40}ms`, opacity: isArchivedCard ? 0.85 : 1 }}
+                      style={{ '--card-i': index, opacity: isArchivedCard ? 0.85 : 1 } as React.CSSProperties}
                     >
                       <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[var(--blue-400)]/20 to-[var(--blue-600)]/20 flex items-center justify-center flex-shrink-0 border border-[var(--blue-400)]/30">
                         <FolderOpen className="w-5 h-5 text-[var(--blue-400)]" />
