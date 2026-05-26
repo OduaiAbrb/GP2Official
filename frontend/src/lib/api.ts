@@ -126,7 +126,7 @@ const normalizeVersionEntry = (entry: any): VersionHistoryEntry =>
   normalizeId(entry) as VersionHistoryEntry;
 
 const normalizeTraceabilityLink = (link: any): TraceabilityLink =>
-  normalizeId(link) as TraceabilityLink; = import.meta.env.VITE_API_URL || '';
+  normalizeId(link) as TraceabilityLink;
 
 type ArtifactUpdatePayload = {
   title?: string;
@@ -148,6 +148,8 @@ type PhaseGenerateResponse = {
   raw_markdown?: string;
   formatted_markdown?: string;
 };
+
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 class ApiClient {
   private client: AxiosInstance;
@@ -861,6 +863,9 @@ class ApiClient {
   async exportProjectMarkdown(projectId: string): Promise<Blob> {
     const response = await this.client.get(`/projects/${projectId}/export/markdown`, {
       responseType: 'blob'
+    });
+    return response.data;
+  }
 
   async triggerValidation(projectId: string, phasesToReview?: string[]): Promise<any> {
     const payload = phasesToReview ? { phases_to_review: phasesToReview } : {};
@@ -883,6 +888,8 @@ class ApiClient {
 
   async getTestingResults(projectId: string): Promise<any> {
     const response = await this.client.get(`/projects/${projectId}/testing/results`);
+    return response.data;
+  }
 
   async getValidations(projectId: string): Promise<any> {
     const response = await this.client.get(`/projects/${projectId}/validations`);
@@ -936,7 +943,6 @@ class ApiClient {
 
   async getScaffolds(projectId: string): Promise<{ success: boolean; scaffolds: ScaffoldResult[]; total: number }> {
     const response = await this.client.get(`/projects/${projectId}/scaffolds`);
->>>>>>> origin/new-AI-feature-under-dev
     return response.data;
   }
 }
