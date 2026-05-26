@@ -19,7 +19,6 @@ interface LayoutProps { children: React.ReactNode; }
 const getNavItems = (activeProjectId: string | null) => [
   { id: 'projects', icon: FolderKanban, label: 'Projects', path: '/projects' },
   { id: 'analytics', icon: BarChart3, label: 'Analytics', path: activeProjectId ? `/projects/${activeProjectId}/analytics` : '/analytics' },
-  { id: 'docs', icon: BookOpen, label: 'Docs', path: '/docs' },
   { id: 'profile', icon: UserIcon, label: 'Profile', path: '/profile' },
 ];
 
@@ -651,12 +650,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       )}
 
       {/* ── Main content ── */}
-      <main style={{
-        flex: 1,
-        position: 'relative', zIndex: 10,
-      }}
+      <main
+        className="pt-[60px] lg:pt-0"
+        style={{ flex: 1, position: 'relative', zIndex: 10 }}
       >
-        <style>{`main { margin-left: 0; padding-top: 60px; } @media (min-width:1024px) { main { margin-left: ${sidebarW}; padding-top: 0; } }`}</style>
+        <style>{`@media (min-width:1024px) { main { margin-left: ${sidebarW}; } }`}</style>
         <div style={{ padding: '24px 32px' }}>
           {children}
         </div>

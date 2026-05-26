@@ -1133,9 +1133,15 @@ const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const reducedMotion = usePrefersReducedMotion();
-  const [showSplash, setShowSplash] = useState(() => !reducedMotion);
+  const [showSplash, setShowSplash] = useState(() => {
+    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('acorn_splash_seen')) return false;
+    return true;
+  });
   // Reduced-motion users skip the splash entirely — start them straight in onboarding
-  const [showOnboarding, setShowOnboarding] = useState(() => reducedMotion);
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('acorn_splash_seen')) return false;
+    return reducedMotion;
+  });
   const [heroReady, setHeroReady] = useState(() => reducedMotion);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [highlightedPhaseId, setHighlightedPhaseId] = useState<string | null>(null);
@@ -1165,6 +1171,7 @@ const LandingPage: React.FC = () => {
   }, [showSplash, showOnboarding]);
 
   const handleSplashDone = () => {
+    if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('acorn_splash_seen', '1');
     setShowSplash(false);
     setShowOnboarding(true);
   };

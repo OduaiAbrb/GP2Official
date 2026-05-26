@@ -532,15 +532,16 @@ export const ProjectsPage: React.FC = () => {
                           <StatusIcon className="w-3 h-3" />
                           {statusConfig.label}
                         </div>
-                        <div style={{
-                          display: 'flex', alignItems: 'center', gap: '5px',
-                          padding: '3px 9px', borderRadius: '999px',
-                          background: healthColor.bg, border: `1px solid ${healthColor.color}44`,
-                          fontSize: '11px', fontWeight: 700, color: healthColor.color,
-                          fontFamily: 'Syne, sans-serif',
-                        }}>
-                          <Zap size={10} /> {healthScore}%
-                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveMenu(activeMenu === projectId ? null : projectId);
+                          }}
+                          className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 bg-[var(--brand-700)]/60 hover:bg-[var(--brand-700)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"
+                          aria-label="More actions"
+                        >
+                          <MoreVertical className="w-4 h-4" />
+                        </button>
                       </div>
 
                       <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-1.5 group-hover:text-[var(--blue-400)] transition-colors line-clamp-1">
@@ -550,32 +551,22 @@ export const ProjectsPage: React.FC = () => {
                         {project.description || 'No description provided'}
                       </p>
 
-                      {/* Phase journey strip */}
+                      {/* Progress bar */}
                       <div style={{ marginBottom: '14px' }}>
-                        <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center justify-between mb-2">
                           <span style={{ fontSize: '11px', color: 'var(--text-faint)', fontWeight: 600 }}>
-                            <Layers size={10} style={{ display: 'inline', marginRight: '4px' }} />
-                            {completedCount} / {PHASE_KEYS.length} phases
+                            {completedCount} / {PHASE_KEYS.length} phases complete
                           </span>
-                          <span style={{ fontSize: '11px', color: healthColor.color, fontWeight: 600 }}>
+                          <span style={{ fontSize: '11px', color: healthColor.color, fontWeight: 700 }}>
                             {healthScore}%
                           </span>
                         </div>
-                        <div style={{ display: 'flex', gap: '3px' }}>
-                          {phaseConfigs.map(ph => {
-                            const st = (project.phase_status?.[ph.id] || '').toLowerCase();
-                            let bg = 'rgba(74,96,112,0.3)';
-                            if (st === 'completed') bg = '#22c55e';
-                            else if (st === 'in_progress') bg = '#F97316';
-                            else if (st === 'ready') bg = '#1A6FD4';
-                            return (
-                              <div
-                                key={ph.id}
-                                title={`${ph.title}: ${st || 'locked'}`}
-                                style={{ flex: 1, height: '5px', borderRadius: '999px', background: bg, opacity: st ? 1 : 0.5 }}
-                              />
-                            );
-                          })}
+                        <div style={{ height: '6px', borderRadius: '999px', background: 'rgba(74,96,112,0.25)', overflow: 'hidden' }}>
+                          <div style={{
+                            width: `${healthScore}%`, height: '100%', borderRadius: '999px',
+                            background: healthScore >= 70 ? '#22c55e' : healthScore >= 40 ? '#F97316' : '#1A6FD4',
+                            transition: 'width 600ms ease',
+                          }} />
                         </div>
                       </div>
 
@@ -591,55 +582,43 @@ export const ProjectsPage: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Hover actions */}
-                      <div className="absolute top-12 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveMenu(activeMenu === projectId ? null : projectId);
-                          }}
-                          className="p-1.5 rounded-lg bg-[var(--brand-700)]/60 hover:bg-[var(--brand-700)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"
-                          aria-label="More actions"
+                      {/* Dropdown menu */}
+                      {activeMenu === projectId && (
+                        <div
+                          className="absolute top-12 right-3 w-44 bg-[var(--brand-800)] border border-[var(--brand-700)]/60 rounded-xl shadow-xl overflow-hidden z-10 animate-reveal-down"
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
-                        {activeMenu === projectId && (
-                          <div
-                            className="absolute top-full right-0 mt-2 w-44 bg-[var(--brand-800)] border border-[var(--brand-700)]/60 rounded-xl shadow-xl overflow-hidden z-10 animate-reveal-down"
-                            onClick={(e) => e.stopPropagation()}
+                          <button
+                            onClick={() => navigate(`/projects/${projectId}`)}
+                            className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-[var(--text-muted)] hover:bg-[var(--brand-700)]/30 hover:text-[var(--text-primary)] transition-colors"
                           >
+                            <ExternalLink className="w-4 h-4" /> Open
+                          </button>
+                          {!isArchivedCard ? (
                             <button
-                              onClick={() => navigate(`/projects/${projectId}`)}
-                              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-[var(--text-muted)] hover:bg-[var(--brand-700)]/30 hover:text-[var(--text-primary)] transition-colors"
+                              onClick={() => archiveProject(projectId)}
+                              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-amber-400 hover:bg-amber-500/10 transition-colors"
                             >
-                              <ExternalLink className="w-4 h-4" /> Open
+                              <Archive className="w-4 h-4" /> Archive
                             </button>
-                            {!isArchivedCard ? (
+                          ) : (
+                            <>
                               <button
-                                onClick={() => archiveProject(projectId)}
-                                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-amber-400 hover:bg-amber-500/10 transition-colors"
+                                onClick={() => restoreProject(projectId)}
+                                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-[var(--blue-300)] hover:bg-[var(--blue-400)]/10 transition-colors"
                               >
-                                <Archive className="w-4 h-4" /> Archive
+                                <RotateCcw className="w-4 h-4" /> Restore
                               </button>
-                            ) : (
-                              <>
-                                <button
-                                  onClick={() => restoreProject(projectId)}
-                                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-[var(--blue-300)] hover:bg-[var(--blue-400)]/10 transition-colors"
-                                >
-                                  <RotateCcw className="w-4 h-4" /> Restore
-                                </button>
-                                <button
-                                  onClick={() => permanentlyDelete(projectId)}
-                                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
-                                >
-                                  <Trash2 className="w-4 h-4" /> Delete forever
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        )}
-                      </div>
+                              <button
+                                onClick={() => permanentlyDelete(projectId)}
+                                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" /> Delete forever
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
