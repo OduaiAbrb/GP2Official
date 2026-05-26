@@ -3,6 +3,7 @@ import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/store/authStore';
 import { api } from '@/lib/api';
+import { useToast } from '@/contexts/ToastContext';
 import type { User } from '@/types';
 import {
   User as UserIcon,
@@ -93,6 +94,7 @@ const inputClasses =
 /* ─── Profile Page ─── */
 const ProfilePage: React.FC = () => {
   const { user } = useAuthStore();
+  const toast = useToast();
   const [profile, setProfile] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -165,7 +167,7 @@ const ProfilePage: React.FC = () => {
       await api.changePassword(passwordForm.current_password, passwordForm.new_password, passwordForm.confirm_password);
       setPasswordSuccess(true);
       setPasswordForm({ current_password: '', new_password: '', confirm_password: '' });
-      setTimeout(() => setPasswordSuccess(false), 4000);
+      toast.success('Password updated successfully!');
     } catch (err: any) {
       const msg = err?.response?.data?.detail || 'Failed to update password.';
       setPasswordError(msg);
@@ -360,7 +362,7 @@ const ProfilePage: React.FC = () => {
                 <input
                   type="password"
                   value={passwordForm.current_password}
-                  onChange={(e) => setPasswordForm({ ...passwordForm, current_password: e.target.value })}
+                  onChange={(e) => { setPasswordSuccess(false); setPasswordForm({ ...passwordForm, current_password: e.target.value }); }}
                   className={inputClasses}
                   placeholder="Enter current password"
                   autoComplete="current-password"
@@ -374,7 +376,7 @@ const ProfilePage: React.FC = () => {
                   <input
                     type="password"
                     value={passwordForm.new_password}
-                    onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
+                    onChange={(e) => { setPasswordSuccess(false); setPasswordForm({ ...passwordForm, new_password: e.target.value }); }}
                     className={inputClasses}
                     placeholder="Enter new password"
                     autoComplete="new-password"
@@ -387,7 +389,7 @@ const ProfilePage: React.FC = () => {
                   <input
                     type="password"
                     value={passwordForm.confirm_password}
-                    onChange={(e) => setPasswordForm({ ...passwordForm, confirm_password: e.target.value })}
+                    onChange={(e) => { setPasswordSuccess(false); setPasswordForm({ ...passwordForm, confirm_password: e.target.value }); }}
                     className={inputClasses}
                     placeholder="Confirm new password"
                     autoComplete="new-password"
