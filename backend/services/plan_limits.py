@@ -16,8 +16,8 @@ from models.user import User
 
 PLAN_LIMITS: Dict[str, Dict[str, Any]] = {
     "free": {
-        "max_projects": 3,
-        "max_team_members": 3,
+        "max_projects": 100,
+        "max_team_members": 100,
         "max_ai_runs_per_month": None,
         "advanced_ai": False,
         "exports_pdf_docx": False,
